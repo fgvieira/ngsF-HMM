@@ -126,12 +126,17 @@ split()
 uint64_t split(char* str, const char* sep, int** out){
   uint64_t i = strlen(str);
   int* buf = new int[i];
+  char* end_ptr;
 
   i = 0;
   char* pch = strtok(str, sep);
   while(pch != NULL){
-    buf[i++] = atoi(pch);
+    buf[i++] = strtol(pch, &end_ptr, 0);
     pch = strtok(NULL, sep);
+
+    // Check if a int
+    if(*end_ptr)
+      i--;
   }
 
   *out = new int[i]; // FGV: why the need for *out?!?!!?
@@ -145,12 +150,17 @@ uint64_t split(char* str, const char* sep, int** out){
 uint64_t split(char* str, const char* sep, float** out){
   uint64_t i = strlen(str);
   float* buf = new float[i];
+  char* end_ptr;
 
   i = 0;
   char* pch = strtok(str, sep);
   while(pch != NULL){
-    buf[i++] = atof(pch);
+    buf[i++] = strtof(pch, &end_ptr);
     pch = strtok(NULL, sep);
+
+    // Check if a float
+    if(*end_ptr)
+      i--;
   }
 
   *out = new float[i];
@@ -164,12 +174,17 @@ uint64_t split(char* str, const char* sep, float** out){
 uint64_t split(char* str, const char* sep, double** out){
   uint64_t i = strlen(str);
   double* buf = new double[i];
+  char* end_ptr;
 
   i = 0;
   char* pch = strtok(str, sep);
   while(pch != NULL){
-    buf[i++] = atof(pch);
+    buf[i++] = strtod(pch, &end_ptr);
     pch = strtok(NULL, sep);
+
+    // Check if a double
+    if(*end_ptr)
+      i--;
   }
 
   *out = new double[i];

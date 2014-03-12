@@ -142,9 +142,6 @@ int main (int argc, char** argv) {
   // pars struct
   //free_ptr((void*) pars->in_geno);
   free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
-  free_ptr((void*) pars->in_freq);
-  free_ptr((void*) pars->in_trans);
-  free_ptr((void*) pars->in_path);
 
   if( pars->verbose >= 1 ) printf("Done!\n");
   delete pars;

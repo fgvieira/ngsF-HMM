@@ -180,6 +180,11 @@ int init_output(params* pars, out_data* data) {
 
 
 int read_geno(params* pars){
+  uint64_t n_fields;
+  // Depending on input we will have either 1 or 3 genot
+  uint64_t n_geno = (pars->in_lkl ? N_GENO : 1);
+  double* t;
+  double* ptr;
   char* buf = new char[BUFF_LEN];
 
   // Allocate memory
@@ -200,26 +205,20 @@ int read_geno(params* pars){
       if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
 	error("cannot read GENO file!");
       
-      // Depending on input we will have either 1 or 3 genot
-      double n_geno = (pars->in_lkl ? N_GENO : 1);
-      double* t = NULL;
-      double* ptr;
-      double n_fields = split(buf, (const char*) " \t\r\n", &t);
+      // Parse input line into array
+      n_fields = split(buf, (const char*) " \t\r\n", &t);
+
+      // Check if header and skip
+      if(!n_fields){
+	s--;
+	continue;
+      }
+
+      if(n_fields < pars->n_ind * n_geno)
+	error("wrong GENO file format!");
       
-      if(n_fields == pars->n_ind * n_geno)
-	ptr = t;
-       else if(n_fields == pars->n_ind * N_GENO + 2)
-	// If ANGSD format (chr, pos, ...), skip first 2 columns
-	ptr = t + 2;
-       else if(n_fields == pars->n_ind * N_GENO + 3){
-	 // If BEAGLE format (id, allele1, allele2, ...), skip first line and 3 columns
-	 if(s == 1){
-	   s--;
-	   continue;
-	 }
-	 ptr = t + 3;
-       }else
-	 error("wrong GENO file format!");
+      // Use last "n_ind * n_geno" columns
+      ptr = t + (n_fields - pars->n_ind * n_geno);
       
       if(pars->in_lkl)
 	for(uint64_t i = 0; i < pars->n_ind; i++)
