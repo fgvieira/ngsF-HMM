@@ -40,7 +40,7 @@ int EM (params *pars, out_data *data) {
     cpy(prev_lkl, data->lkl, pars->n_ind, sizeof(double));
 
     if(pars->verbose >= 5)
-      printf("Lkl epsilon: %s\n", merge(lkl_epsilon, pars->n_ind, "\t"));
+      printf("Lkl epsilon: %s\n", join(lkl_epsilon, pars->n_ind, "\t"));
 
     if(pars->verbose >= 1) {
       time_t iter_end = time(NULL);
@@ -73,14 +73,14 @@ int EM (params *pars, out_data *data) {
 	    gzwrite(log_fh, &mp, sizeof(double));
 	  }
       }else{
-	buf = merge(data->lkl, pars->n_ind, "\t");
+	buf = join(data->lkl, pars->n_ind, "\t");
 	// Print Lkl
 	gzprintf(log_fh, "//\t%s\n", buf);
 	delete [] buf;
 
 	// Print most probable path (Viterbi)
 	for (uint64_t i = 0; i < pars->n_ind; i++){
-	  buf = merge(data->path[i], pars->n_sites, "");
+	  buf = join(data->path[i], pars->n_sites, "");
 	  gzprintf(log_fh, "%s\n", buf);
 	  delete [] buf;
 	}
