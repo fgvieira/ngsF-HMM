@@ -1,12 +1,11 @@
-#include <signal.h>
 #include "shared.hpp"
 
 
 bool SIG_COND;
 
 
-void error(const char* msg) {
-  fprintf(stderr, "\nERROR: %s\n", msg);
+void error(const char* func, const char* msg) {
+  fprintf(stderr, "\n[%s] ERROR: %s\n", func, msg);
   perror("\t");
   exit(-1);
 }
@@ -39,13 +38,15 @@ double check_interv(double value, bool verbose) {
   double errTol = 1e-5;
 
   if (value != value) {
-    error("\nWARN: value is NaN!\n");
+    error(__FUNCTION__, "value is NaN!\n");
   } else if(value < errTol) {
     value = 0;
-    if(verbose && value < 0) printf("\nWARN: value %f < 0!\n", value);
+    if(verbose && value < 0)
+      printf("\nWARN: value %f < 0!\n", value);
   } else if(value > 1 - errTol) {
     value = 1;
-    if(verbose && value > 1) printf("\nWARN: value %f > 1!\n", value);
+    if(verbose && value > 1)
+      printf("\nWARN: value %f > 1!\n", value);
   }
 
   return value;
@@ -117,6 +118,48 @@ double logsum3(double a, double b, double c){
   buf[2] = c;
   return logsum(buf, 3);
 }
+
+
+// Read data from file and place into array
+int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
+  uint64_t cnt = 0;
+  char buf[buff_size];
+  char** tmp = NULL;
+
+  // Open file
+  gzFile in_file_fh = gzopen(in_file, "r");
+  if(in_file_fh == NULL)
+    error(__FUNCTION__, "cannot open file");
+
+  while(!gzeof(in_file_fh)){
+    buf[0] = '\0';
+    // Read line from file
+    gzgets(in_file_fh, buf, buff_size);
+    // Remove trailing newline
+    char* p = strchr(buf, '\n');
+    if(p) *p = '\0';
+    // Check if empty
+    if(strlen(buf) == 0)
+      continue;
+    // Alloc memory
+    tmp = (char**) realloc(tmp, (cnt+1)*sizeof(char*));
+    tmp[cnt] = (char*) calloc(buff_size, sizeof(char));
+    strcpy(tmp[cnt], buf);
+    cnt++;
+  }
+
+  // Copy to final array
+  *ptr = init_char(cnt, buff_size, NULL);
+  for(uint64_t i = 0; i < cnt; i++){
+    strcpy(ptr[0][i], tmp[i]);
+    free(tmp[i]);
+  }
+  free(tmp);
+
+  gzclose(in_file_fh);
+  return cnt;
+}
+
 
 /***************************
 split()
@@ -320,16 +363,8 @@ char* init_char(uint64_t A, const char* init){
 
 char** init_char(uint64_t A, uint64_t B, const char* init){
   char** ptr = new char*[A];
-  for(uint64_t a = 0; a < A; a++){
-    char init_tmp[1000];
-    strcpy(init_tmp, init);
-
-    char* pch = strchr(init_tmp, '#');
-    if(pch)
-      sprintf(pch, "%lu", a);
-
-    ptr[a] = init_char(B, init_tmp);
-  }
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_char(B, init);
 
   return ptr;
 }

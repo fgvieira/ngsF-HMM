@@ -1,16 +1,9 @@
 #pragma once
 
-#include <algorithm>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
-#include <stdint.h>
-#include <zlib.h>
 #include <semaphore.h>
-#include <sys/mman.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <gsl/gsl_rng.h>
 
 #include "shared.hpp"
 

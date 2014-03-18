@@ -1,6 +1,5 @@
-#include <pthread.h>
-#include "ngsF-HMM.hpp"
 
+#include "ngsF-HMM.hpp"
 
 
 
@@ -20,7 +19,7 @@ int EM (params *pars, out_data *data) {
   if(pars->log){
     strcpy(out_prefix, pars->out_prefix);
     if( (log_fh = gzopen( strcat(out_prefix,".log.gz"), pars->log_bin ? "wb" : "w")) == NULL )
-      error("cannot open log file!");
+      error(__FUNCTION__, "cannot open log file!");
   }
 
   while( (max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND ) {
@@ -377,7 +376,7 @@ void print_iter(char* out_file, params* pars, out_data* data){
   // Open filehandle to write
   FILE* out_fh = fopen(out_file, "w");
   if(out_fh == NULL)
-    error("cannot open iteration file!");
+    error(__FUNCTION__, "cannot open iteration file!");
 
   // Print indF
   for(uint16_t i = 0; i < pars->n_ind; i++)

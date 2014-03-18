@@ -3,12 +3,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
+#include <zlib.h>
+#include <signal.h>
 
 using namespace std;
 
-void error(const char*);
+void error(const char*, const char*);
 void handler(int);
 void catch_SIG();
 double check_interv(double, bool);
@@ -17,6 +18,7 @@ void call_geno(double*, int);
 double logsum(double*, uint64_t);
 double logsum2(double, double);
 double logsum3(double, double, double);
+int64_t read_file(char*, char***, uint64_t);
 uint64_t split(char*, const char*, int**);
 uint64_t split(char*, const char*, float**);
 uint64_t split(char*, const char*, double**);

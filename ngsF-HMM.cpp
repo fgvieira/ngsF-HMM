@@ -19,7 +19,6 @@
  *
 */
 
-#include <sys/stat.h>
 #include "ngsF-HMM.hpp"
 
 
@@ -52,13 +51,13 @@ int main (int argc, char** argv) {
   // Check Arguments //
   /////////////////////
   if(pars->in_geno == NULL)
-    error("Genotype input file (-geno) missing!");
+    error(__FUNCTION__, "Genotype input file (-geno) missing!");
   if(pars->out_prefix == NULL)
-    error("Output prefix (-out_prefix) missing!");
+    error(__FUNCTION__, "Output prefix (-out_prefix) missing!");
   if(pars->n_ind == 0)
-    error("Number of individuals (-n_ind) missing!");
+    error(__FUNCTION__, "Number of individuals (-n_ind) missing!");
   if(pars->n_sites == 0)
-    error("Number of sites (-n_sites) missing!");
+    error(__FUNCTION__, "Number of sites (-n_sites) missing!");
   
   
   
@@ -86,7 +85,7 @@ int main (int argc, char** argv) {
   // Get file total size
   struct stat st;
   if( stat(pars->in_geno, &st) != 0 )
-    error("cannot check file size!");
+    error(__FUNCTION__, "cannot check file size!");
   if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
     printf("==> GZIP input file (never BINARY)\n");
     pars->in_bin = false;
@@ -96,7 +95,7 @@ int main (int argc, char** argv) {
     pars->in_lkl = true;
     pars->in_loglkl = true;
   }else
-    error("invalid/corrupt genotype input file!");
+    error(__FUNCTION__, "invalid/corrupt genotype input file!");
   
 
 

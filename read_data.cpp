@@ -1,4 +1,3 @@
-#include <gsl/gsl_rng.h>
 #include "ngsF-HMM.hpp"
 
 
@@ -36,7 +35,7 @@ int init_output(params* pars, out_data* data) {
 	  strcmp(buf,"\r\n") == 0 ) break;
 
       if( i > pars->n_ind || split(buf, (const char*) " ,-\t\r\n", &t) != 2)
-	error("wrong TRANS file format!");
+	error(__FUNCTION__, "wrong TRANS file format!");
       data->a[i][0][1] = min(max(t[0], trans_rng_min), trans_rng_max);
       data->a[i][0][0] = 1 - data->a[i][0][1];
       data->a[i][1][0] = min(max(t[1], trans_rng_min), trans_rng_max);
@@ -50,7 +49,7 @@ int init_output(params* pars, out_data* data) {
 
   else{
     if( split(pars->in_trans, (const char*) ",-", &t) != 2 )
-      error("wrong TRANS parameters format!");
+      error(__FUNCTION__, "wrong TRANS parameters format!");
 
     for(uint64_t i = 0; i < pars->n_ind; i++){
       data->a[i][0][1] = min(max(t[0], trans_rng_min), trans_rng_max);
@@ -92,7 +91,7 @@ int init_output(params* pars, out_data* data) {
 	  strcmp(buf,"\r\n") == 0 ) break;
 
       if( s > pars->n_sites || split(buf, (const char*) " ,-\t\r\n", &t) != 1)
-        error("wrong FREQ file format!");
+        error(__FUNCTION__, "wrong FREQ file format!");
       data->freq[s] = min(max(t[0], freq_rng_min), freq_rng_max);
       s++;
       delete [] t;
@@ -137,7 +136,7 @@ int init_output(params* pars, out_data* data) {
 
       int* t = NULL;
       if( s > pars->n_sites || split(buf, (const char*) " ,-\t\r\n", &t) != pars->n_ind )
-        error("wrong PATH file format!");
+        error(__FUNCTION__, "wrong PATH file format!");
       for(uint64_t i = 0; i < pars->n_ind; i++)
 	data->path[i][s] = t[i] > 0.5 ? 1 : 0;
       s++;
@@ -193,17 +192,17 @@ int read_geno(params* pars){
   // Open GENO file
   gzFile in_geno_fh;
   if( (in_geno_fh = gzopen(pars->in_geno, pars->in_bin ? "rb" : "r")) == NULL )
-    error("cannot open genotype file!");
+    error(__FUNCTION__, "cannot open genotype file!");
 
   for(uint64_t s = 1; s <= pars->n_sites; s++){
     if(pars->in_bin){
       for(uint64_t i = 0; i < pars->n_ind; i++)
 	if( gzread(in_geno_fh, pars->geno_lkl[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
-	  error("cannot read GENO file!");
+	  error(__FUNCTION__, "cannot read GENO file!");
     }
     else{
       if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
-	error("cannot read GENO file!");
+	error(__FUNCTION__, "cannot read GENO file!");
       
       // Parse input line into array
       n_fields = split(buf, (const char*) " \t\r\n", &t);
@@ -215,7 +214,7 @@ int read_geno(params* pars){
       }
 
       if(n_fields < pars->n_ind * n_geno)
-	error("wrong GENO file format!");
+	error(__FUNCTION__, "wrong GENO file format!");
       
       // Use last "n_ind * n_geno" columns
       ptr = t + (n_fields - pars->n_ind * n_geno);
