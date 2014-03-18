@@ -38,12 +38,13 @@ int main (int argc, char** argv) {
     exit(0);
   }
 
-  if( pars->verbose >= 1 ) {
+  if(pars->verbose >= 1) {
     printf("==> Input Arguments:\n");
     printf("\tgeno file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %d\n\tfreqs: %s\n\tfixed freqs: %s\n\ttrans: %s\n\tfixed trans: %s\n\tpath: %s\n\tfixed paths: %s\n\tout prefix: %s\n\tlog: %s\n\tlog binary: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_geno, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno, pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log ? "true":"false", pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
-  if( pars->verbose > 4 ) printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
+  if(pars->verbose >= 4)
+    printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
   
 
 
@@ -70,7 +71,8 @@ int main (int argc, char** argv) {
 
   // Calculate total number of chunks
   pars->n_chunks = ceil( (double) pars->n_sites / (double) pars->max_chunk_size );
-  if( pars->verbose >= 1 ) printf("==> Analysis will be run in %d chunk(s)\n", pars->n_chunks);
+  if(pars->verbose >= 1)
+    printf("==> Analysis will be run in %d chunk(s)\n", pars->n_chunks);
 
   // Adjust thread number to chunks
   if(pars->n_chunks < pars->n_threads)
@@ -122,14 +124,16 @@ int main (int argc, char** argv) {
   // Analyze Data //
   //////////////////
   EM(pars, data);
-  if( pars->verbose >= 1 ) printf("\nFinal logLkl: %f\n", logsum(data->lkl,pars->n_ind));
+  if(pars->verbose >= 1)
+    printf("\nFinal logLkl: %f\n", logsum(data->lkl,pars->n_ind));
   
 
   
   /////////////////
   // Free Memory //
   /////////////////
-  if( pars->verbose >= 1 ) printf("Freeing memory...\n");
+  if(pars->verbose >= 1)
+    printf("Freeing memory...\n");
   // data struct
   free_ptr((void***) data->a, pars->n_ind, N_STATES);
   free_ptr((void*) data->freq);
@@ -143,7 +147,8 @@ int main (int argc, char** argv) {
   //free_ptr((void*) pars->in_geno);
   free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
 
-  if( pars->verbose >= 1 ) printf("Done!\n");
+  if(pars->verbose >= 1)
+    printf("Done!\n");
   delete pars;
 
   return 0;

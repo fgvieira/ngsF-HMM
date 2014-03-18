@@ -238,32 +238,3 @@ int read_geno(params* pars){
   delete [] buf;
   return 0;
 }
-
-
-
-
-uint64_t read_chunk(double** chunk_data, params* pars, uint64_t chunk) {
-  uint64_t total_elems_read = 0;
-  
-  if(chunk >= pars->n_chunks)
-    error("invalid chunk number!");
-  
-  // Define chunk start and end positions
-  uint64_t start_pos = chunk * pars->max_chunk_size;
-  uint64_t end_pos = start_pos + pars->max_chunk_size - 1;
-  if(end_pos >= pars->n_sites)	end_pos = pars->n_sites - 1;
-  uint64_t chunk_size = end_pos - start_pos + 1;
-  if( pars->verbose >= 6 ) printf("\tReading chunk %lu from position %lu to %lu (%lu)\n", chunk+1, start_pos, end_pos, chunk_size);
-  
-  // Read data from file
-  for(uint64_t c = 0; c < chunk_size; c++) {
-    //    chunk_data[c] = pars->geno_lkl[start_pos+c];
-    uint64_t elems_read = pars->n_ind * 3;
-
-    if( elems_read != pars->n_ind * 3 )
-      error("cannot read GLF file!");
-    total_elems_read += elems_read;
-  }
-
-  return( total_elems_read/(pars->n_ind * 3) );
-}

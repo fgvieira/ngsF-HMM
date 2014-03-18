@@ -14,7 +14,6 @@ void catch_SIG();
 double check_interv(double, bool);
 int array_max_pos(double*, int);
 void call_geno(double*, int);
-double factorial(uint64_t);
 double logsum(double*, uint64_t);
 double logsum2(double, double);
 double logsum3(double, double, double);

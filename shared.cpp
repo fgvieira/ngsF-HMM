@@ -79,17 +79,6 @@ void call_geno(double* geno, int n_geno) {
 
 
 
-double factorial(uint64_t n)
-{
-  double fact = 1;
-  
-  for (uint64_t i = 1; i <= n; i++)
-    fact *= i;
-  
-  return fact;
-}
-
-
 
 //function does: log(exp(a)+exp(b)) while protecting for underflow
 double logsum(double* a, uint64_t n){
@@ -168,12 +157,11 @@ uint64_t split(char* str, const char* sep, float** out){
   char* pch = strtok(str, sep);
   while(pch != NULL){
     buf[i++] = strtof(pch, &end_ptr);
+    pch = strtok(NULL, sep);
 
     // Check if a float
-    if(*end_ptr || strlen(pch) <= 2)
+    if(*end_ptr)
       i--;
-
-    pch = strtok(NULL, sep);
   }
 
   *out = new float[i];
@@ -193,12 +181,11 @@ uint64_t split(char* str, const char* sep, double** out){
   char* pch = strtok(str, sep);
   while(pch != NULL){
     buf[i++] = strtod(pch, &end_ptr);
+    pch = strtok(NULL, sep);
 
     // Check if a double
-    if(*end_ptr || strlen(pch) <= 2)
+    if(*end_ptr)
       i--;
-
-    pch = strtok(NULL, sep);
   }
 
   *out = new double[i];
@@ -323,7 +310,8 @@ char* init_char(uint64_t A, const char* init){
   char* ptr = new char[A];
   memset(ptr, '\0', A*sizeof(char));
 
-  strcpy(ptr, init);
+  if(init != NULL)
+    strcpy(ptr, init);
 
   return ptr;
 }
