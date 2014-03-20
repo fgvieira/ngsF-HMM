@@ -217,7 +217,7 @@ library(optparse)
 option_list <- list(make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to input file; it can be either genotypes {0,1,2} or genotype likelihoods [%default]"),
                     make_option(c("--is_lkl"), action="store_true", type="logical", default=FALSE, help="Is input genotype likelihoods? [%default]"),
                     make_option(c("--is_log"), action="store_true", type="logical", default=FALSE, help="Is input in log-scale? [%default]"),
-                    make_option(c("--callG"), action="store_true", type="logical", default=FALSE, help="Call genotytpes? [%default]"),
+                    make_option(c("--call_geno"), action="store_true", type="logical", default=FALSE, help="Call genotytpes? [%default]"),
                     make_option(c("-f", "--freq"), action="store", type="character", default="r", help="Allele frequencies initial vallues [%default]"),
                     make_option(c("--freq_fixed"), action="store_true", type="logical", default=FALSE, help="Are freqs values to be fixed (not estimated)? [%default]"),
                     make_option(c("-t", "--trans"), action="store", type="character", default="r", help="Transition probabilities initial values [%default]"),
@@ -250,7 +250,7 @@ if(!is.null(opt$geno) && file.exists(opt$geno)){
   if(opt$is_lkl){
     cat("==> Genotype likelihoods in", ifelse(opt$is_log,"log-scale","normal-scale"),fill=TRUE)
     
-    if(opt$callG)
+    if(opt$call_geno)
       cat("==> Calling genotype with highest Lkl",fill=TRUE)
     
     fh <- file(opt$geno, "r")
@@ -403,7 +403,7 @@ while(iter <= opt$max_iters &&
   old_Px <- params$Px
 
   cat("====> Iter:", iter, fill=TRUE)
-  params <- iter_EM(geno_lkl,params$a,params$e,params$v,opt$callG)
+  params <- iter_EM(geno_lkl,params$a,params$e,params$v,opt$call_geno)
 
   # Print Lkl to output
   write(params$Px - old_Px, ncolumns=n_ind+1, "", sep="\t")

@@ -18,16 +18,16 @@ int EM (params *pars, out_data *data) {
   // Open filehandle for iteration log
   if(pars->log){
     strcpy(out_prefix, pars->out_prefix);
-    if( (log_fh = gzopen( strcat(out_prefix,".log.gz"), pars->log_bin ? "wb" : "w")) == NULL )
+    if((log_fh = gzopen( strcat(out_prefix,".log.gz"), pars->log_bin ? "wb" : "w")) == NULL)
       error(__FUNCTION__, "cannot open log file!");
   }
 
-  while( (max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND ) {
+  while((max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
 	  
     time_t iter_start = time(NULL);
 	  
     // Next Iteration...
-    if( pars->verbose >= 1 ) printf("\nIteration %lu:\n", ++iter);
+    if(pars->verbose >= 1) printf("\nIteration %lu:\n", ++iter);
 	  
     iter_EM(pars, data);
 
@@ -97,7 +97,7 @@ int EM (params *pars, out_data *data) {
 
     printf("==> Printing current iteration parameters\n");
     strcpy(out_prefix, pars->out_prefix);
-    print_iter( strcat(out_prefix,".out"), pars, data );
+    print_iter(strcat(out_prefix,".out"), pars, data);
   }
 
 
@@ -106,7 +106,7 @@ int EM (params *pars, out_data *data) {
     gzclose(log_fh);
 
   
-  if( iter >= pars->max_iters )
+  if(iter >= pars->max_iters)
     printf("WARN: Maximum number of iterations reached! Check if analysis converged... \n");
 
   // Free memory and return
@@ -124,13 +124,13 @@ void *run_chunk(void *pth_struct) {
   EM_iter(p->pars, p->chunk_data, p->chunk_abs_start_pos, p->chunk_size, p->data, p->iter);
   
   // Signal semaphores
-  if( sem_post(&p->pars->launch_thread_semaph) )
+  if(sem_post(&p->pars->launch_thread_semaph))
     printf("WARN: launch thread semaphore post failed!\n");
-  if( sem_post(&p->pars->running_thread_semaph) )
+  if(sem_post(&p->pars->running_thread_semaph))
     printf("WARN: running thread semaphore post failed!\n");
   
   // Debug
-  if( p->pars->verbose >= 6 ) {
+  if(p->pars->verbose >= 6) {
     int n_free_threads = 0;
     sem_getvalue(&p->pars->launch_thread_semaph, &n_free_threads);
     printf("Thread finished! Still running: %d\n", p->pars->n_threads - n_free_threads);
@@ -165,7 +165,8 @@ void iter_EM(params *pars, out_data *data) {
   double*** Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
   double*** Vi = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
 
-  if( pars->verbose >= 1 ) printf("==> Forward Recursion\n");
+  if(pars->verbose >= 1)
+    printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
     // Initialise Forward table
     Fw[i][0][0] = log(1-inbreed);
@@ -174,7 +175,7 @@ void iter_EM(params *pars, out_data *data) {
     for (uint64_t s = 1; s <= pars->n_sites; s++){
       post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
       if(pars->call_geno == 2) 
-	call_geno(pp, N_GENO);
+	call_geno(pp, N_GENO, true);
 
       for(uint64_t l = 0; l < N_STATES; l++){
 	// logsum(k==0,k==1)
@@ -186,7 +187,8 @@ void iter_EM(params *pars, out_data *data) {
   }
     
 
-  if( pars->verbose >= 1 ) printf("==> Backward Recursion\n");
+  if(pars->verbose >= 1)
+    printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
     // Initialise Backward table
     Bw[i][pars->n_sites][0] = log(1);
@@ -195,7 +197,7 @@ void iter_EM(params *pars, out_data *data) {
     for (uint64_t s = pars->n_sites; s > 0; s--){ 
       post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
       if(pars->call_geno == 2) 
-	call_geno(pp, N_GENO);
+	call_geno(pp, N_GENO, true);
 
       double LS_0 = logsum3(e[s][0][0]+pp[0], e[s][0][1]+pp[1], e[s][0][2]+pp[2]);
       double LS_1 = logsum3(e[s][1][0]+pp[0], e[s][1][1]+pp[1], e[s][1][2]+pp[2]);
@@ -206,14 +208,16 @@ void iter_EM(params *pars, out_data *data) {
 				a[i][k][1] + LS_1 + Bw[i][s][1]);
     }
   }
-  if( pars->verbose >= 1 ) printf("==> Backward Recursion termination\n");
+  if(pars->verbose >= 1)
+    printf("==> Backward Recursion termination\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t k = 0; k < N_STATES; k++)
       Bw[i][0][k] += Fw[i][0][k];
 
 
 
-  if( pars->verbose >= 1 ) printf("==> Marginal probabilities\n");
+  if(pars->verbose >= 1)
+    printf("==> Marginal probabilities\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
     data->lkl[i] = logsum(Fw[i][pars->n_sites],2);
     for (uint64_t s = 1; s <= pars->n_sites; s++)
@@ -225,8 +229,7 @@ void iter_EM(params *pars, out_data *data) {
     
   if(pars->path_fixed){
     printf("==> Most probable path not estimated!\n");
-  }
-  else{
+  }else{
     printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++){
       // Initialise Forward table
@@ -236,7 +239,7 @@ void iter_EM(params *pars, out_data *data) {
       for (uint64_t s = 1; s <= pars->n_sites; s++){
 	post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
 	if(pars->call_geno == 2)
-	  call_geno(pp, N_GENO);
+	  call_geno(pp, N_GENO, true);
 
 	for(uint64_t l = 0; l < N_STATES; l++){
 	  // max(k==0,k==1)
@@ -274,7 +277,7 @@ void iter_EM(params *pars, out_data *data) {
 	  for (uint64_t s = 1; s < pars->n_sites; s++){
 	    post_prob(pp, pars->geno_lkl[i][s+1], e[s+1][path[i][s+1]], N_GENO);
 	    if(pars->call_geno == 2)
-	      call_geno(pp, N_GENO);
+	      call_geno(pp, N_GENO, true);
 	    double LS = logsum3(e[s+1][l][0]+pp[0],
 				e[s+1][l][1]+pp[1],
 				e[s+1][l][2]+pp[2]);
@@ -305,7 +308,7 @@ void iter_EM(params *pars, out_data *data) {
       for (uint64_t i = 0; i < pars->n_ind; i++){
 	post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
 	if(pars->call_geno == 2)
-	  call_geno(pp, N_GENO);
+	  call_geno(pp, N_GENO, true);
 
 	num = num + exp(pp[1]) + exp(pp[2])*(2-exp(data->marg_prob[i][s][1]));
 	den = den + 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-exp(data->marg_prob[i][s][1]));
@@ -336,14 +339,14 @@ void iter_EM(params *pars, out_data *data) {
     //pthread_mutex_unlock(&pars->F_lock);
 
     /*  
-	if( pars->verbose >= 7 ) printf("Ind: %d\t%.10f %.10f %.10f\tfa: %f\tindF: %f\tp: %f %f %f\tpp: %f %f %f\tCum_freq: %f (%f/%f)\tCumF: %f (%f/%f)\n",
+	if(pars->verbose >= 7) printf("Ind: %d\t%.10f %.10f %.10f\tfa: %f\tindF: %f\tp: %f %f %f\tpp: %f %f %f\tCum_freq: %f (%f/%f)\tCumF: %f (%f/%f)\n",
 	i+1, chunk_data[s][i*3+0], chunk_data[s][i*3+1], chunk_data[s][i*3+2], \
 	p, F, p0, p1, p2, pp0, pp1, pp2,	\
 	data->site_freq_num[abs_s]/data->site_freq_den[abs_s], data->site_freq_num[abs_s], data->site_freq_den[abs_s], \
 	data->indF_num[i]/data->indF_den[i], data->indF_num[i], data->indF_den[i]);
 	}
       
-	if( pars->verbose >= 6 ) printf("\t\t%lu\t%f (%f / %f) %f\n", abs_s+1, data-s>ite_freq_num[abs_s]/data->site_freq_den[abs_s], data->site_freq_num[abs_s], data->site_freq_den[abs_s], data->site_prob_var[abs_s]);
+	if(pars->verbose >= 6) printf("\t\t%lu\t%f (%f / %f) %f\n", abs_s+1, data-s>ite_freq_num[abs_s]/data->site_freq_den[abs_s], data->site_freq_num[abs_s], data->site_freq_den[abs_s], data->site_prob_var[abs_s]);
 	}
     */
 
@@ -379,13 +382,12 @@ void print_iter(char* out_file, params* pars, out_data* data){
     error(__FUNCTION__, "cannot open iteration file!");
 
   // Print indF
-  for(uint16_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh,"%f\n", data->indF[i]);
+  fprintf(out_fh,"%s\n", join(data->indF, pars->n_ind, "\t"));
   // Print transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh,"%f\t%f\n", data->a[i][0][1], data->a[i][0][1]);
+    fprintf(out_fh,"%f\t%f\n", exp(data->a[i][0][1]), exp(data->a[i][0][1]));
   // Print allele freqs
-  for(uint64_t s = 0; s <= pars->n_sites; s++)
+  for(uint64_t s = 1; s <= pars->n_sites; s++)
     fprintf(out_fh,"%f\n", data->freq[s]);
   // Close filehandle
   fclose(out_fh);

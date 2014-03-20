@@ -12,17 +12,14 @@ all: ngsF-HMM
 parse_args.o: parse_args.cpp ngsF-HMM.hpp
 	$(CXX) $(CFLAGS) $(DFLAGS) -c parse_args.cpp
 
-read_data.o: read_data.cpp ngsF-HMM.hpp
-	$(CXX) $(CFLAGS) $(DFLAGS) -c read_data.cpp
-
 EM.o: EM.cpp ngsF-HMM.hpp
 	$(CXX) $(CFLAGS) $(DFLAGS) -c EM.cpp
 
 shared.o: shared.cpp shared.hpp
 	$(CXX) $(CFLAGS) $(DFLAGS) -c shared.cpp
 
-ngsF-HMM: ngsF-HMM.cpp parse_args.o read_data.o EM.o shared.o
-	$(CXX) $(CFLAGS) $(DFLAGS) ngsF-HMM.cpp parse_args.o read_data.o EM.o shared.o $(LIB) -o ngsF-HMM
+ngsF-HMM: ngsF-HMM.cpp parse_args.o EM.o shared.o
+	$(CXX) $(CFLAGS) $(DFLAGS) ngsF-HMM.cpp parse_args.o EM.o shared.o $(LIB) -o ngsF-HMM
 
 test:
 	@cd examples/; sh ./test.sh 2> /dev/null; cd ../

@@ -20,7 +20,7 @@
 */
 
 #include "ngsF-HMM.hpp"
-
+#include "read_data.cpp"
 
 char const* version = "0.0.1b";
 
@@ -32,7 +32,7 @@ int main (int argc, char** argv) {
   params* pars = new params;
   init_pars(pars);
   parse_cmd_args(argc, argv, pars);
-  if( pars->version ) {
+  if(pars->version) {
     printf("ngsF-HMM v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
     exit(0);
   }
@@ -69,7 +69,7 @@ int main (int argc, char** argv) {
     pars->max_chunk_size = pars->n_sites;
 
   // Calculate total number of chunks
-  pars->n_chunks = ceil( (double) pars->n_sites / (double) pars->max_chunk_size );
+  pars->n_chunks = ceil((double) pars->n_sites / (double) pars->max_chunk_size);
   if(pars->verbose >= 1)
     printf("==> Analysis will be run in %d chunk(s)\n", pars->n_chunks);
 
@@ -84,12 +84,12 @@ int main (int argc, char** argv) {
   ///////////////////////
   // Get file total size
   struct stat st;
-  if( stat(pars->in_geno, &st) != 0 )
+  if(stat(pars->in_geno, &st) != 0)
     error(__FUNCTION__, "cannot check file size!");
-  if( strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0 ){
+  if(strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0){
     printf("==> GZIP input file (never BINARY)\n");
     pars->in_bin = false;
-  }else if( pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO ){
+  }else if(pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO){
     printf("==> BINARY input file (always loglkl)\n");
     pars->in_bin = true;
     pars->in_lkl = true;
@@ -109,13 +109,18 @@ int main (int argc, char** argv) {
   init_output(pars, data);
 
   // Read from GENO file
-  read_geno(pars);
+  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   
-  // Call genotypes
-  if(pars->in_lkl && pars->call_geno == 1)
+  if(pars->in_lkl)
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      for(uint64_t s = 1; s <= pars->n_sites; s++)
-	call_geno(pars->geno_lkl[i][s], N_GENO);
+      for(uint64_t s = 1; s <= pars->n_sites; s++){
+	// Call genotypes
+	if(pars->call_geno == 1)
+	  call_geno(pars->geno_lkl[i][s], N_GENO, pars->in_loglkl);
+	// Convert space
+	if(!pars->in_loglkl)
+	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
+      }
 
   
 

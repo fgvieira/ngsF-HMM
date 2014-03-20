@@ -68,16 +68,23 @@ int array_max_pos(double* array, int size) {
 
 
 
-void call_geno(double* geno, int n_geno) {
-
+void call_geno(double *geno, int n_geno, bool log_scale) {
   int max_pos = array_max_pos(geno, n_geno);
     
   for (int g = 0; g < n_geno; g++)
-    geno[g] = -INFINITY;
+    geno[g] = 0;
+  geno[max_pos] = 1;
 
-  geno[max_pos] = log(1);
+  if(log_scale)
+    conv_space(geno, n_geno, log);
 }
 
+
+
+void conv_space(double *geno, int n_geno, double (*func)(double)) {
+  for (int g = 0; g < n_geno; g++)
+    geno[g] = func(geno[g]);
+}
 
 
 
@@ -120,6 +127,19 @@ double logsum3(double a, double b, double c){
 }
 
 
+
+// Remove trailing newlines from strings
+void chomp(char* str){
+  char* last_char = &str[strlen(str)-1];
+
+  if(strcmp(last_char,"\r") == 0 ||
+     strcmp(last_char,"\n") == 0 ||
+     strcmp(last_char,"\r\n") == 0 )
+    *last_char = '\0';
+}
+
+
+
 // Read data from file and place into array
 int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
   uint64_t cnt = 0;
@@ -136,8 +156,7 @@ int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
     // Read line from file
     gzgets(in_file_fh, buf, buff_size);
     // Remove trailing newline
-    char* p = strchr(buf, '\n');
-    if(p) *p = '\0';
+    chomp(buf);
     // Check if empty
     if(strlen(buf) == 0)
       continue;
@@ -149,7 +168,7 @@ int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
   }
 
   // Copy to final array
-  *ptr = init_char(cnt, buff_size, NULL);
+  *ptr = init_char(cnt, buff_size, '\0');
   for(uint64_t i = 0; i < cnt; i++){
     strcpy(ptr[0][i], tmp[i]);
     free(tmp[i]);
@@ -158,6 +177,26 @@ int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
 
   gzclose(in_file_fh);
   return cnt;
+}
+
+
+// New strtok function to allow for empty ("") separators
+char* _strtok(char** str, const char* sep){
+  size_t pos = 1;
+  char* tmp = strdup(*str);
+
+  if(strcmp(sep, "") != 0)
+    pos = strcspn(*str, sep);
+
+  *str += pos;
+  tmp[pos] = '\0';
+
+  if(strlen(*str) == 0)
+    *str = NULL;
+  else if(strcmp(sep, "") != 0)
+    *str += 1;
+
+  return tmp;
 }
 
 
@@ -170,17 +209,20 @@ split()
 uint64_t split(char* str, const char* sep, int** out){
   uint64_t i = strlen(str);
   int* buf = new int[i];
-  char* end_ptr;
 
   i = 0;
-  char* pch = strtok(str, sep);
-  while(pch != NULL){
+  char* pch;
+  char* end_ptr;
+  while(str != NULL){
+    pch = _strtok(&str, sep);
+    if(strlen(pch) == 0)
+      continue;
+    
     buf[i++] = strtol(pch, &end_ptr, 0);
-    pch = strtok(NULL, sep);
-
-    // Check if a int
+    // Check if an int
     if(*end_ptr)
       i--;
+    free(pch);
   }
 
   *out = new int[i]; // FGV: why the need for *out?!?!!?
@@ -194,17 +236,20 @@ uint64_t split(char* str, const char* sep, int** out){
 uint64_t split(char* str, const char* sep, float** out){
   uint64_t i = strlen(str);
   float* buf = new float[i];
-  char* end_ptr;
 
   i = 0;
-  char* pch = strtok(str, sep);
-  while(pch != NULL){
-    buf[i++] = strtof(pch, &end_ptr);
-    pch = strtok(NULL, sep);
+  char* pch;
+  char* end_ptr;
+  while(str != NULL){
+    pch = _strtok(&str, sep);
+    if(strlen(pch) == 0)
+      continue;
 
+    buf[i++] = strtof(pch, &end_ptr);
     // Check if a float
     if(*end_ptr)
       i--;
+    free(pch);
   }
 
   *out = new float[i];
@@ -218,17 +263,20 @@ uint64_t split(char* str, const char* sep, float** out){
 uint64_t split(char* str, const char* sep, double** out){
   uint64_t i = strlen(str);
   double* buf = new double[i];
-  char* end_ptr;
 
   i = 0;
-  char* pch = strtok(str, sep);
-  while(pch != NULL){
-    buf[i++] = strtod(pch, &end_ptr);
-    pch = strtok(NULL, sep);
+  char* pch;
+  char* end_ptr;
+  while(str != NULL){
+    pch = _strtok(&str, sep);
+    if(strlen(pch) == 0)
+      continue;
 
+    buf[i++] = strtod(pch, &end_ptr);
     // Check if a double
     if(*end_ptr)
       i--;
+    free(pch);
   }
 
   *out = new double[i];
@@ -244,10 +292,8 @@ uint64_t split(char* str, const char* sep, char*** out){
   char** buf = new char*[i];
 
   i = 0;
-  buf[i] = strtok(str, sep);
-
-  while(buf[i] != NULL)
-    buf[++i] = strtok(NULL, sep);
+  while(str != NULL)
+    buf[i++] = _strtok(&str, sep);
 
   *out = new char*[i];
   for(uint64_t cnt = 0; cnt < i; cnt++)
@@ -353,7 +399,7 @@ char* init_char(uint64_t A, const char* init){
   char* ptr = new char[A];
   memset(ptr, '\0', A*sizeof(char));
 
-  if(init != NULL)
+  if(init != NULL && strlen(init) > 0)
     strcpy(ptr, init);
 
   return ptr;
