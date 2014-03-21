@@ -58,17 +58,28 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-b", "--binary"), action="store_true", type="logical", default=FALSE, help="Is input in binary? [%default]"),
                     make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-s", "--n_sites"), action="store", type="integer", default=1000, help="Number of sites [%default]"),
-                    make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to true genotypes (if available) [%default]"),
-                    make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to true path (if available) [%default]"),
+                    make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
+                    make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
-                    make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output prefix [%default]")
+                    make_option(c("-o", "--out_prefix"), action="store", type="character", default=NULL, help="Output prefix [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
 #opt$in_file = "ngsF-HMM/XXX.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$path="ngsF-HMM/sim.PI"; opt$geno="ngsF-HMM/sim.geno.gz"
-#opt$in_file = "indica_allchr.1k.log.gz"; opt$n_ind=13; opt$n_sites=1000; opt$out="XXX"
+#opt$in_file = "indica_allchr.1k.log.gz"; opt$n_ind=13; opt$n_sites=1000; opt$out_prefix="XXX"
 
 ############################ Parsing input arguments ############################
+
+cat('### Input arguments', fill=TRUE)
+cat('# Input file:', opt$in_file, fill=TRUE)
+cat('# Is input file binary?', opt$binary, fill=TRUE)
+cat('# Number indiv:', opt$n_ind, fill=TRUE)
+cat('# Number sites:', opt$n_sites, fill=TRUE)
+cat('# Known genotypes:', opt$geno, fill=TRUE)
+cat('# Known path:', opt$path, fill=TRUE)
+cat('# Subset:', opt$subset, fill=TRUE)
+cat('# Out prefix:', opt$out_prefix, fill=TRUE)
+
 
 if(!is.null(opt$geno) && file.exists(opt$geno)){
   cat("====> Reading geno file...", fill=TRUE)
@@ -105,19 +116,19 @@ if(!is.null(opt$in_file) && file.exists(opt$in_file)){
 
 
 
-if(is.null(opt$out)){
-  opt$out <- opt$in_file
+if(is.null(opt$out_prefix)){
+  opt$out_prefix <- opt$in_file
   # Remove GZip extension
-  opt$out <- sub(".gz", "", opt$out, fixed=TRUE)
+  opt$out_prefix <- sub(".gz", "", opt$out_prefix, fixed=TRUE)
   # Remove extension
-  opt$out <- sub("\\.[^.]*$", "", opt$out, perl=TRUE)
+  opt$out_prefix <- sub("\\.[^.]*$", "", opt$out_prefix, perl=TRUE)
 }
 
 
 
 ############################ Plotting data ############################
 iter <- 0
-pdf(paste(opt$out,"pdf",sep="."), 2*log10(opt$n_sites))
+pdf(paste(opt$out_prefix,"pdf",sep="."), 2*log10(opt$n_sites))
 
 while(iter <- iter + 1) {
   # Reading Lkl line
