@@ -11,8 +11,8 @@ int EM (params *pars, out_data *data) {
 
   uint64_t iter = 0;
   double  max_lkl_epsilon = -INFINITY;
-  double* lkl_epsilon = init_double(pars->n_ind, -INFINITY);
-  double* prev_lkl = init_double(pars->n_ind, -INFINITY);
+  double *lkl_epsilon = init_double(pars->n_ind, -INFINITY);
+  double *prev_lkl = init_double(pars->n_ind, -INFINITY);
   gzFile log_fh;
 
   // Open filehandle for iteration log
@@ -56,7 +56,7 @@ int EM (params *pars, out_data *data) {
     /////////////////////////
     // Dump iteration data //
     /////////////////////////
-    char* buf;
+    char *buf;
     if(pars->log){
       printf("==> Dumping iteration to log file\n");
 
@@ -159,16 +159,16 @@ void iter_EM(params *pars, out_data *data) {
   double inbreed = 0.1;
   double pp[N_GENO];
 
-  double*** a = init_double(pars->n_ind, N_STATES, N_STATES, -INFINITY);
+  double ***a = init_double(pars->n_ind, N_STATES, N_STATES, -INFINITY);
   cpy(a, data->a, pars->n_ind, N_STATES, N_STATES, sizeof(double));
-  double*** e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
+  double ***e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   cpy(e, data->e, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
-  uint64_t** path = init_uint64(pars->n_ind, pars->n_sites+1, 0);
+  uint64_t **path = init_uint64(pars->n_ind, pars->n_sites+1, 0);
   cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(uint64_t));
 
-  double*** Fw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
-  double*** Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
-  double*** Vi = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
+  double ***Fw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
+  double ***Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
+  double ***Vi = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
 
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
@@ -267,7 +267,7 @@ void iter_EM(params *pars, out_data *data) {
   }
   else{
     printf("==> Update transition probabilities\n");
-    double* sPk = init_double(pars->n_sites+1, -INFINITY);
+    double *sPk = init_double(pars->n_sites+1, -INFINITY);
 
     for (uint64_t i = 0; i < pars->n_ind; i++){
       for(uint64_t k = 0; k < N_STATES; k++){
@@ -367,7 +367,7 @@ void iter_EM(params *pars, out_data *data) {
 
 
 
-void post_prob(double* pp, double* lkl, double* prior, uint64_t n_geno){
+void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
   for(uint64_t cnt = 0; cnt < n_geno; cnt++)
     pp[cnt] = lkl[cnt];//+prior[cnt];
 
@@ -380,20 +380,31 @@ void post_prob(double* pp, double* lkl, double* prior, uint64_t n_geno){
 
 
 
-void print_iter(char* out_file, params* pars, out_data* data){
+void print_iter(char *out_file, params *pars, out_data *data){
+  char *buf;
   // Open filehandle to write
-  FILE* out_fh = fopen(out_file, "w");
+  FILE *out_fh = fopen(out_file, "w");
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open iteration file!");
 
   // Print indF
   fprintf(out_fh,"%s\n", join(data->indF, pars->n_ind, "\t"));
+  
   // Print transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
     fprintf(out_fh,"%f\t%f\n", exp(data->a[i][0][1]), exp(data->a[i][0][1]));
+
+  // Print most probable path (Viterbi)
+  for (uint64_t i = 0; i < pars->n_ind; i++){
+    buf = join(data->path[i]+1, pars->n_sites, "");
+    fprintf(out_fh, "%s\n", buf);
+    delete [] buf;
+  }
+  
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     fprintf(out_fh,"%f\n", data->freq[s]);
+  
   // Close filehandle
   fclose(out_fh);
 }
@@ -401,7 +412,7 @@ void print_iter(char* out_file, params* pars, out_data* data){
 
 
 
-int update_e(out_data* data, uint64_t n_sites){
+int update_e(out_data *data, uint64_t n_sites){
   for(uint64_t s = 1; s <= n_sites; s++)
     for(uint64_t F = 0; F < N_STATES; F++){
       double f = data->freq[s];

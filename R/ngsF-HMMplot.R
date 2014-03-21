@@ -67,6 +67,7 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 #opt$in_file = "ngsF-HMM/XXX.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$path="ngsF-HMM/sim.PI"; opt$geno="ngsF-HMM/sim.geno.gz"
 #opt$in_file = "indica_allchr.1k.log.gz"; opt$n_ind=13; opt$n_sites=1000; opt$out="XXX"
+opt$in_file = "XXXX.log.gz"; opt$n_ind=12; opt$n_sites=818257; opt$out="XXXX"
 
 ############################ Parsing input arguments ############################
 
