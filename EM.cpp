@@ -30,8 +30,9 @@ int EM (params *pars, out_data *data) {
     time_t iter_start = time(NULL);
 	  
     // Next Iteration...
+    iter++;
     if(pars->verbose >= 1)
-      printf("\nIteration %lu:\n", ++iter);
+      printf("\nIteration %lu:\n", iter);
 	  
     iter_EM(pars, data);
 
@@ -123,39 +124,6 @@ int EM (params *pars, out_data *data) {
   free_ptr((void*) prev_lkl);
   return 0;
 }
-
-
-/*
-void *run_chunk(void *pth_struct) {
-  pth_params *p = (pth_params *) pth_struct;
-  
-  // Get freq estimate per site
-  EM_iter(p->pars, p->chunk_data, p->chunk_abs_start_pos, p->chunk_size, p->data, p->iter);
-  
-  // Signal semaphores
-  if(sem_post(&p->pars->launch_thread_semaph))
-    printf("WARN: launch thread semaphore post failed!\n");
-  if(sem_post(&p->pars->running_thread_semaph))
-    printf("WARN: running thread semaphore post failed!\n");
-  
-  // Debug
-  if(p->pars->verbose >= 6) {
-    int n_free_threads = 0;
-    sem_getvalue(&p->pars->launch_thread_semaph, &n_free_threads);
-    printf("Thread finished! Still running: %d\n", p->pars->n_threads - n_free_threads);
-  }
-
-  // Free pthread structure memory
-#ifdef _USE_BGZF
-  for(uint64_t s = 0; s < p->pars->max_chunk_size; s++)
-    delete [] p->chunk_data[s];
-#endif
-  delete [] p->chunk_data;
-  delete p;
-
-  pthread_exit(NULL);
-}
-*/
 
 
 
@@ -272,8 +240,7 @@ void iter_EM(params *pars, out_data *data) {
   if(pars->trans_fixed){
     if(pars->verbose >= 1)
       printf("==> Transition probabilities not estimated!\n");
-  }
-  else{
+  }else{
     if(pars->verbose >= 1)
       printf("==> Update transition probabilities\n");
     double *sPk = init_double(pars->n_sites+1, -INFINITY);
@@ -351,21 +318,6 @@ void iter_EM(params *pars, out_data *data) {
     data->indF[i] = exp(indF)/pars->n_sites;
   }
 
-
-    //pthread_mutex_lock(&pars->F_lock);
-    //pthread_mutex_unlock(&pars->F_lock);
-
-    /*  
-	if(pars->verbose >= 7) printf("Ind: %d\t%.10f %.10f %.10f\tfa: %f\tindF: %f\tp: %f %f %f\tpp: %f %f %f\tCum_freq: %f (%f/%f)\tCumF: %f (%f/%f)\n",
-	i+1, chunk_data[s][i*3+0], chunk_data[s][i*3+1], chunk_data[s][i*3+2], \
-	p, F, p0, p1, p2, pp0, pp1, pp2,	\
-	data->site_freq_num[abs_s]/data->site_freq_den[abs_s], data->site_freq_num[abs_s], data->site_freq_den[abs_s], \
-	data->indF_num[i]/data->indF_den[i], data->indF_num[i], data->indF_den[i]);
-	}
-      
-	if(pars->verbose >= 6) printf("\t\t%lu\t%f (%f / %f) %f\n", abs_s+1, data-s>ite_freq_num[abs_s]/data->site_freq_den[abs_s], data->site_freq_num[abs_s], data->site_freq_den[abs_s], data->site_prob_var[abs_s]);
-	}
-    */
 
   free_ptr((void***) a, pars->n_ind, N_STATES);
   free_ptr((void***) e, pars->n_sites+1, N_STATES);

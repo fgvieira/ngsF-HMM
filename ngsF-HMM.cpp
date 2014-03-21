@@ -37,7 +37,7 @@ int main (int argc, char** argv) {
     exit(0);
   }
 
-  if(pars->verbose >= 1) {
+  if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
     printf("\tgeno file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %d\n\tfreqs: %s\n\tfixed freqs: %s\n\ttrans: %s\n\tfixed trans: %s\n\tpath: %s\n\tfixed paths: %s\n\tout prefix: %s\n\tlog: %s\n\tlog binary: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
 	   pars->in_geno, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno, pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log ? "true":"false", pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
@@ -86,6 +86,7 @@ int main (int argc, char** argv) {
   struct stat st;
   if(stat(pars->in_geno, &st) != 0)
     error(__FUNCTION__, "cannot check file size!");
+
   if(strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0){
     if(pars->verbose >= 1)
       printf("==> GZIP input file (never BINARY)\n");
