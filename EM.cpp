@@ -40,10 +40,10 @@ int EM (params *pars, out_data *data) {
     for (uint64_t i = 0; i < pars->n_ind; i++)
       lkl_epsilon[i] = (data->lkl[i] - prev_lkl[i]) / fabs(prev_lkl[i]);
     max_lkl_epsilon = lkl_epsilon[array_max_pos(lkl_epsilon, pars->n_ind)];
-
+    // Save current LKLs
     cpy(prev_lkl, data->lkl, pars->n_ind, sizeof(double));
 
-    if(pars->verbose >= 5)
+    if(pars->verbose >= 2)
       printf("Lkl epsilon: %s\n", join(lkl_epsilon, pars->n_ind, "\t"));
 
     if(pars->verbose >= 1){

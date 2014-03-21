@@ -22,7 +22,7 @@ ngsF-HMM: ngsF-HMM.cpp parse_args.o EM.o shared.o
 	$(CXX) $(CFLAGS) $(DFLAGS) ngsF-HMM.cpp parse_args.o EM.o shared.o $(LIB) -o ngsF-HMM
 
 test:
-	@cd examples/; bash ./test.sh 2> /dev/null; cd ../
+	@cd examples/; bash ./test.sh 2> test.log; cd ../
 
 clean:
-	@rm -f *~ *.o ngsF-HMM examples/testF*
+	@rm -f *~ *.o ngsF-HMM examples/testF* examples/test.log
