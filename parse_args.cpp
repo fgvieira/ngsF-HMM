@@ -282,7 +282,7 @@ int init_output(params* pars, out_data* data) {
   ////////////////////////////////////////
   gzFile in_path_fh;
 
-  data->path = init_uint64(pars->n_ind, pars->n_sites+1, 0);
+  data->path = init_uint(pars->n_ind, pars->n_sites+1, 0);
 
   if( strcmp("r", pars->in_path) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++)

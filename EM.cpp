@@ -30,7 +30,8 @@ int EM (params *pars, out_data *data) {
     time_t iter_start = time(NULL);
 	  
     // Next Iteration...
-    if(pars->verbose >= 1) printf("\nIteration %lu:\n", ++iter);
+    if(pars->verbose >= 1)
+      printf("\nIteration %lu:\n", ++iter);
 	  
     iter_EM(pars, data);
 
@@ -44,7 +45,7 @@ int EM (params *pars, out_data *data) {
     if(pars->verbose >= 5)
       printf("Lkl epsilon: %s\n", join(lkl_epsilon, pars->n_ind, "\t"));
 
-    if(pars->verbose >= 1) {
+    if(pars->verbose >= 1){
       time_t iter_end = time(NULL);
       printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", logsum(data->lkl, pars->n_ind), max_lkl_epsilon, difftime(iter_end, iter_start) );
     }
@@ -58,7 +59,8 @@ int EM (params *pars, out_data *data) {
     /////////////////////////
     char *buf;
     if(pars->log){
-      printf("==> Dumping iteration to log file\n");
+      if(pars->verbose >= 1)
+	printf("==> Dumping iteration to log file\n");
 
       if(pars->log_bin){
 	// Print Lkl
@@ -66,7 +68,7 @@ int EM (params *pars, out_data *data) {
 
 	// Print most probable path (Viterbi)
 	for (uint64_t i = 0; i < pars->n_ind; i++)
-	  gzwrite(log_fh, data->path[i], sizeof(uint64_t)*pars->n_sites);
+	  gzwrite(log_fh, data->path[i]+1, sizeof(uint)*pars->n_sites);
 
 	// Print marginal probs
 	for (uint64_t i = 0; i < pars->n_ind; i++)
@@ -100,9 +102,11 @@ int EM (params *pars, out_data *data) {
       }
     }
 
+    /* Disabled since printing data each iteration takes too long
     printf("==> Printing current iteration parameters\n");
     strcpy(out_prefix, pars->out_prefix);
     print_iter(strcat(out_prefix,".out"), pars, data);
+    */
   }
 
 
@@ -163,8 +167,8 @@ void iter_EM(params *pars, out_data *data) {
   cpy(a, data->a, pars->n_ind, N_STATES, N_STATES, sizeof(double));
   double ***e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   cpy(e, data->e, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
-  uint64_t **path = init_uint64(pars->n_ind, pars->n_sites+1, 0);
-  cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(uint64_t));
+  uint **path = init_uint(pars->n_ind, pars->n_sites+1, 0);
+  cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(uint));
 
   double ***Fw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
   double ***Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
@@ -233,9 +237,11 @@ void iter_EM(params *pars, out_data *data) {
 
     
   if(pars->path_fixed){
-    printf("==> Most probable path not estimated!\n");
+    if(pars->verbose >= 1)
+      printf("==> Most probable path not estimated!\n");
   }else{
-    printf("==> Update most probable path (Viterbi)\n");
+    if(pars->verbose >= 1)
+      printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++){
       // Initialise Forward table
       Vi[i][0][0] = log(1-inbreed);
@@ -255,7 +261,8 @@ void iter_EM(params *pars, out_data *data) {
       }
     }
 
-    printf("> Back-tracking\n");
+    if(pars->verbose >= 1)
+      printf("> Back-tracking\n");
     for (uint64_t i = 0; i < pars->n_ind; i++)
       for (uint64_t s = 1; s <= pars->n_sites; s++)
 	data->path[i][s] = (Vi[i][s][0] > Vi[i][s][1] ? 0 : 1);
@@ -263,10 +270,12 @@ void iter_EM(params *pars, out_data *data) {
     
     
   if(pars->trans_fixed){
-    printf("==> Transition probabilities not estimated!\n");
+    if(pars->verbose >= 1)
+      printf("==> Transition probabilities not estimated!\n");
   }
   else{
-    printf("==> Update transition probabilities\n");
+    if(pars->verbose >= 1)
+      printf("==> Update transition probabilities\n");
     double *sPk = init_double(pars->n_sites+1, -INFINITY);
 
     for (uint64_t i = 0; i < pars->n_ind; i++){
@@ -300,10 +309,11 @@ void iter_EM(params *pars, out_data *data) {
 
 
   if(pars->freq_fixed){
-    printf("==> Alelle frequencies not estimated!\n");
-  }
-  else{
-    printf("==> Update allele frequencies\n");
+    if(pars->verbose >= 1)
+      printf("==> Alelle frequencies not estimated!\n");
+  }else{
+    if(pars->verbose >= 1)
+      printf("==> Update allele frequencies\n");
     for (uint64_t s = 1; s <= pars->n_sites; s++){
       // Expected number minor alleles
       double num = 0;
@@ -326,12 +336,14 @@ void iter_EM(params *pars, out_data *data) {
 
 
 
-  printf("==> Update emission probabilities\n");
+  if(pars->verbose >= 1)
+    printf("==> Update emission probabilities\n");
   update_e(data, pars->n_sites);
 
 
 
-  printf("==> Update inbreeding coefficients\n");
+  if(pars->verbose >= 1)
+    printf("==> Update inbreeding coefficients\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
     double indF = -INFINITY;
     for (uint64_t s = 1; s <= pars->n_sites; s++)

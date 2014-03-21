@@ -87,10 +87,12 @@ int main (int argc, char** argv) {
   if(stat(pars->in_geno, &st) != 0)
     error(__FUNCTION__, "cannot check file size!");
   if(strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0){
-    printf("==> GZIP input file (never BINARY)\n");
+    if(pars->verbose >= 1)
+      printf("==> GZIP input file (never BINARY)\n");
     pars->in_bin = false;
   }else if(pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO){
-    printf("==> BINARY input file (always loglkl)\n");
+    if(pars->verbose >= 1)
+      printf("==> BINARY input file (always loglkl)\n");
     pars->in_bin = true;
     pars->in_lkl = true;
     pars->in_loglkl = true;
@@ -128,11 +130,23 @@ int main (int argc, char** argv) {
   // Analyze Data //
   //////////////////
   EM(pars, data);
-  if(pars->verbose >= 1)
-    printf("\nFinal logLkl: %f\n", logsum(data->lkl,pars->n_ind));
+  if(pars->verbose >= 1){
+    double sum = 0;
+    for(uint64_t i = 0; i < pars->n_ind; i++)
+      sum += data->lkl[i];
+    printf("\nFinal logLkl: %f\n", sum);
+  }
   
 
-  
+
+  /////////////////////////
+  // Print Final Results //
+  /////////////////////////
+  printf("==> Printing final results\n");
+  print_iter(strcat(pars->out_prefix,".out"), pars, data);
+
+
+
   /////////////////
   // Free Memory //
   /////////////////

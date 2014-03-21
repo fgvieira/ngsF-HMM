@@ -67,7 +67,6 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 #opt$in_file = "ngsF-HMM/XXX.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$path="ngsF-HMM/sim.PI"; opt$geno="ngsF-HMM/sim.geno.gz"
 #opt$in_file = "indica_allchr.1k.log.gz"; opt$n_ind=13; opt$n_sites=1000; opt$out="XXX"
-opt$in_file = "XXXX.log.gz"; opt$n_ind=12; opt$n_sites=818257; opt$out="XXXX"
 
 ############################ Parsing input arguments ############################
 
@@ -92,8 +91,8 @@ if(!is.null(opt$subset)){
   subset <- c()
 
 
+cat("====> Opening input file stream...", fill=TRUE)
 if(!is.null(opt$in_file) && file.exists(opt$in_file)){
-  cat("====> Opening input file stream...", fill=TRUE)
   if( opt$binary && file.info(opt$in_file)$size %% 8*opt$n_ind*(1+2*opt$n_sites) != 0 ){
     cat("ERROR: corrupt input file!", fill=TRUE)
     quit("no",-1)
@@ -137,7 +136,7 @@ while(iter <- iter + 1) {
   path <- list()
   if(opt$binary){
     for (j in 1:opt$n_ind)
-      path[[j]] <- readBin(fh, integer(), n=opt$n_sites, size=1)
+      path[[j]] <- readBin(fh, integer(), n=opt$n_sites)
   }else
     path <- lapply(strsplit(readLines(fh, opt$n_ind), ""), as.numeric)
   
@@ -160,7 +159,7 @@ while(iter <- iter + 1) {
   }
   
   # Plotting...
-  cat("====> Plotting iteration:",iter , fill=TRUE)
+  cat("==> Plotting iteration:",iter , fill=TRUE)
   iter_plot(true_path,true_geno,lkl,path,marg_prob)
 }
 

@@ -4,7 +4,7 @@
 bool SIG_COND;
 
 
-void error(const char* func, const char* msg) {
+void error(const char *func, const char *msg) {
   fprintf(stderr, "\n[%s] ERROR: %s\n", func, msg);
   perror("\t");
   exit(-1);
@@ -53,7 +53,7 @@ double check_interv(double value, bool verbose) {
 }
 
 
-int array_max_pos(double* array, int size) {
+int array_max_pos(double *array, int size) {
   int res = 0;
   double max = -INFINITY;
 
@@ -89,7 +89,7 @@ void conv_space(double *geno, int n_geno, double (*func)(double)) {
 
 
 //function does: log(exp(a)+exp(b)) while protecting for underflow
-double logsum(double* a, uint64_t n){
+double logsum(double *a, uint64_t n){
   // Find maximum value
   double sum = 0;
   double M = a[0];
@@ -129,8 +129,8 @@ double logsum3(double a, double b, double c){
 
 
 // Remove trailing newlines from strings
-void chomp(char* str){
-  char* last_char = &str[strlen(str)-1];
+void chomp(char *str){
+  char *last_char = &str[strlen(str)-1];
 
   if(strcmp(last_char,"\r") == 0 ||
      strcmp(last_char,"\n") == 0 ||
@@ -141,10 +141,10 @@ void chomp(char* str){
 
 
 // Read data from file and place into array
-int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
+int64_t read_file(char *in_file, char ***ptr, uint64_t buff_size){
   uint64_t cnt = 0;
   char buf[buff_size];
-  char** tmp = NULL;
+  char **tmp = NULL;
 
   // Open file
   gzFile in_file_fh = gzopen(in_file, "r");
@@ -181,9 +181,9 @@ int64_t read_file(char* in_file, char*** ptr, uint64_t buff_size){
 
 
 // New strtok function to allow for empty ("") separators
-char* _strtok(char** str, const char* sep){
+char *_strtok(char **str, const char *sep){
   size_t pos = 1;
-  char* tmp = strdup(*str);
+  char *tmp = strdup(*str);
 
   if(strcmp(sep, "") != 0)
     pos = strcspn(*str, sep);
@@ -206,13 +206,13 @@ split()
  string (str), splits into 
  array (out) on char (sep)
 ***************************/
-uint64_t split(char* str, const char* sep, int** out){
+uint64_t split(char *str, const char *sep, int **out){
   uint64_t i = strlen(str);
-  int* buf = new int[i];
+  int *buf = new int[i];
 
   i = 0;
-  char* pch;
-  char* end_ptr;
+  char *pch;
+  char *end_ptr;
   while(str != NULL){
     pch = _strtok(&str, sep);
     if(strlen(pch) == 0)
@@ -233,13 +233,13 @@ uint64_t split(char* str, const char* sep, int** out){
 }
 
 
-uint64_t split(char* str, const char* sep, float** out){
+uint64_t split(char *str, const char *sep, float **out){
   uint64_t i = strlen(str);
-  float* buf = new float[i];
+  float *buf = new float[i];
 
   i = 0;
-  char* pch;
-  char* end_ptr;
+  char *pch;
+  char *end_ptr;
   while(str != NULL){
     pch = _strtok(&str, sep);
     if(strlen(pch) == 0)
@@ -260,13 +260,13 @@ uint64_t split(char* str, const char* sep, float** out){
 }
 
 
-uint64_t split(char* str, const char* sep, double** out){
+uint64_t split(char *str, const char *sep, double **out){
   uint64_t i = strlen(str);
-  double* buf = new double[i];
+  double *buf = new double[i];
 
   i = 0;
-  char* pch;
-  char* end_ptr;
+  char *pch;
+  char *end_ptr;
   while(str != NULL){
     pch = _strtok(&str, sep);
     if(strlen(pch) == 0)
@@ -287,9 +287,9 @@ uint64_t split(char* str, const char* sep, double** out){
 }
 
 
-uint64_t split(char* str, const char* sep, char*** out){
+uint64_t split(char *str, const char *sep, char ***out){
   uint64_t i = strlen(str);
-  char** buf = new char*[i];
+  char **buf = new char*[i];
 
   i = 0;
   while(str != NULL)
@@ -305,8 +305,28 @@ uint64_t split(char* str, const char* sep, char*** out){
 
 
 
-char* join(uint64_t* array, uint64_t size, const char* sep){
-  char* buf = new char[size*10000];
+char *join(uint *array, uint64_t size, const char *sep){
+  char *buf = new char[size*10000];
+  
+  sprintf(buf, "%u", array[0]);
+  uint64_t len = strlen(buf);
+
+  for(uint64_t cnt = 1; cnt < size; cnt++){
+    sprintf(buf+len, "%s%u", sep, array[cnt]);
+    len = strlen(buf);
+  }
+  
+  char *str = new char[len+1];
+  strcpy(str, buf);
+  delete [] buf;
+
+  return str;
+}
+
+
+
+char *join(uint64_t *array, uint64_t size, const char *sep){
+  char *buf = new char[size*10000];
   
   sprintf(buf, "%lu", array[0]);
   uint64_t len = strlen(buf);
@@ -316,7 +336,7 @@ char* join(uint64_t* array, uint64_t size, const char* sep){
     len = strlen(buf);
   }
   
-  char* str = new char[len+1];
+  char *str = new char[len+1];
   strcpy(str, buf);
   delete [] buf;
 
@@ -325,8 +345,8 @@ char* join(uint64_t* array, uint64_t size, const char* sep){
 
 
 
-char* join(double* array, uint64_t size, const char* sep){
-  char* buf = new char[size*10000];
+char *join(double *array, uint64_t size, const char *sep){
+  char *buf = new char[size*10000];
   
   sprintf(buf, "%.10f", array[0]);
   uint64_t len = strlen(buf);
@@ -336,7 +356,7 @@ char* join(double* array, uint64_t size, const char* sep){
     len = strlen(buf);
   }
 
-  char* str = new char[len+1];
+  char *str = new char[len+1];
   strcpy(str, buf);
   delete [] buf;
 
@@ -344,9 +364,8 @@ char* join(double* array, uint64_t size, const char* sep){
 }
 
 
-
-uint64_t* init_uint64(uint64_t A, uint64_t init){
-  uint64_t* ptr = new uint64_t[A];
+uint *init_uint(uint64_t A, uint init){
+  uint *ptr = new uint[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
 
@@ -355,8 +374,27 @@ uint64_t* init_uint64(uint64_t A, uint64_t init){
 
 
 
-uint64_t** init_uint64(uint64_t A, uint64_t B, uint64_t init){
-  uint64_t** ptr = new uint64_t*[A];
+uint **init_uint(uint64_t A, uint64_t B, uint init){
+  uint **ptr = new uint*[A];
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_uint(B, init);
+
+  return ptr;
+}
+
+
+uint64_t *init_uint64(uint64_t A, uint64_t init){
+  uint64_t *ptr = new uint64_t[A];
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init;
+
+  return ptr;
+}
+
+
+
+uint64_t **init_uint64(uint64_t A, uint64_t B, uint64_t init){
+  uint64_t **ptr = new uint64_t*[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init_uint64(B, init);
 
@@ -365,8 +403,8 @@ uint64_t** init_uint64(uint64_t A, uint64_t B, uint64_t init){
 
 
 
-double* init_double(uint64_t A, double init){
-  double* ptr = new double[A];
+double *init_double(uint64_t A, double init){
+  double *ptr = new double[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
 
@@ -375,8 +413,8 @@ double* init_double(uint64_t A, double init){
 
 
 
-double** init_double(uint64_t A, uint64_t B, double init){
-  double** ptr = new double*[A];
+double **init_double(uint64_t A, uint64_t B, double init){
+  double **ptr = new double*[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init_double(B, init);
 
@@ -385,8 +423,8 @@ double** init_double(uint64_t A, uint64_t B, double init){
 
 
 
-double*** init_double(uint64_t A, uint64_t B, uint64_t C, double init){
-  double*** ptr = new double**[A];
+double ***init_double(uint64_t A, uint64_t B, uint64_t C, double init){
+  double ***ptr = new double**[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init_double(B, C, init);
 
@@ -395,8 +433,8 @@ double*** init_double(uint64_t A, uint64_t B, uint64_t C, double init){
 
 
 
-char* init_char(uint64_t A, const char* init){
-  char* ptr = new char[A];
+char *init_char(uint64_t A, const char *init){
+  char *ptr = new char[A];
   memset(ptr, '\0', A*sizeof(char));
 
   if(init != NULL && strlen(init) > 0)
@@ -407,8 +445,8 @@ char* init_char(uint64_t A, const char* init){
 
 
 
-char** init_char(uint64_t A, uint64_t B, const char* init){
-  char** ptr = new char*[A];
+char* *init_char(uint64_t A, uint64_t B, const char *init){
+  char **ptr = new char*[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init_char(B, init);
 
@@ -417,13 +455,13 @@ char** init_char(uint64_t A, uint64_t B, const char* init){
 
 
 
-void free_ptr(void* ptr){
+void free_ptr(void *ptr){
   delete [] (char*)ptr;
 }
 
 
 
-void free_ptr(void** ptr, uint64_t A){
+void free_ptr(void **ptr, uint64_t A){
   for(uint64_t a = 0; a < A; a++)
     free_ptr(ptr[a]);
 
@@ -432,7 +470,7 @@ void free_ptr(void** ptr, uint64_t A){
 
 
 
-void free_ptr(void*** ptr, uint64_t A, uint64_t B){
+void free_ptr(void ***ptr, uint64_t A, uint64_t B){
   for(uint64_t a = 0; a < A; a++)
     free_ptr(ptr[a], B);
 
@@ -441,20 +479,20 @@ void free_ptr(void*** ptr, uint64_t A, uint64_t B){
 
 
 
-void cpy(void* dest, void* orig, uint64_t A, uint64_t size){
+void cpy(void *dest, void *orig, uint64_t A, uint64_t size){
   memcpy(dest, orig, A * size);
 }
 
 
 
-void cpy(void* dest, void* orig, uint64_t A, uint64_t B, uint64_t size){
+void cpy(void *dest, void *orig, uint64_t A, uint64_t B, uint64_t size){
   for(uint64_t a = 0; a < A; a++)
     cpy( ((char**)dest)[a], ((char**)orig)[a], B, size);
 }
 
 
 
-void cpy(void* dest, void* orig, uint64_t A, uint64_t B, uint64_t C, uint64_t size){
+void cpy(void *dest, void *orig, uint64_t A, uint64_t B, uint64_t C, uint64_t size){
   for(uint64_t a = 0; a < A; a++)
     cpy( ((char***)dest)[a], ((char***)orig)[a], B, C, size);
 }
