@@ -19,7 +19,10 @@ int EM (params *pars, out_data *data) {
   if(pars->log){
     strcpy(out_prefix, pars->out_prefix);
     if((log_fh = gzopen( strcat(out_prefix,".log.gz"), pars->log_bin ? "wb" : "w")) == NULL)
-      error(__FUNCTION__, "cannot open log file!");
+      error(__FUNCTION__, "cannot open LOG file!");
+
+    if(gzbuffer(log_fh, pars->n_sites + pars->n_ind*10) < 0)
+      error(__FUNCTION__, "cannot increase ZLIB buffer size!");
   }
 
   while((max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
@@ -48,8 +51,8 @@ int EM (params *pars, out_data *data) {
 
     fflush(stdout);
 
-    
-    
+
+
     /////////////////////////
     // Dump iteration data //
     /////////////////////////
@@ -74,13 +77,15 @@ int EM (params *pars, out_data *data) {
       }else{
 	buf = join(data->lkl, pars->n_ind, "\t");
 	// Print Lkl
-	gzprintf(log_fh, "//\t%s\n", buf);
+	if(gzprintf(log_fh, "//\t%s\n", buf) <= 0)
+	  error(__FUNCTION__, "cannot write LKL info to LOG file!");
 	delete [] buf;
 
 	// Print most probable path (Viterbi)
 	for (uint64_t i = 0; i < pars->n_ind; i++){
-	  buf = join(data->path[i], pars->n_sites, "");
-	  gzprintf(log_fh, "%s\n", buf);
+	  buf = join(data->path[i]+1, pars->n_sites, "");
+	  if(gzprintf(log_fh, "%s\n", buf) <= 0)
+	    error(__FUNCTION__, "cannot write PATH info to LOG file!");
 	  delete [] buf;
 	}
 

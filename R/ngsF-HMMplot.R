@@ -92,12 +92,11 @@ if(!is.null(opt$subset)){
 
 
 if(!is.null(opt$in_file) && file.exists(opt$in_file)){
-  cat("====> Reading log file...", fill=TRUE)
+  cat("====> Opening input file stream...", fill=TRUE)
   if( opt$binary && file.info(opt$in_file)$size %% 8*opt$n_ind*(1+2*opt$n_sites) != 0 ){
     cat("ERROR: corrupt input file!", fill=TRUE)
     quit("no",-1)
   }
-  
   fh <- file(opt$in_file, ifelse(opt$binary,"rb","r"))
 }else{
   cat("ERROR: cannot read input file!", fill=TRUE)

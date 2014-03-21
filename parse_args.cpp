@@ -110,6 +110,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       pars->log = true;
       break;
     case 'b':
+      pars->log = true;
       pars->log_bin = true;
       break;
     case 'm':
