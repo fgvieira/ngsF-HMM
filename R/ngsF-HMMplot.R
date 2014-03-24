@@ -3,21 +3,24 @@
 ############################ FUNCTIONS ############################
 iter_plot <- function(true_path,true_geno,lkl,path,marg_prob){
   n = length(lkl)
-  L = length(marg_prob[[1]])
+  L = length(path[[1]])
   
   plots=c(1,1)
   if(n>1) plots=c(ceiling(n/2),2)
   par(mfrow=plots, mar=c(2,2,1,1))
   for (i in 1:n){
-    ## Prob
-    plot(1:L, marg_prob[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
-    # Plot marginal probs
-    lines(1:L, marg_prob[[i]], col="green")
-    # Plot most prob state path
+    ## Plot
+    plot(1:L, path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
+    
+    # Shade most prob state path
     shade_areas(path[[i]], rgb(1,0,0,0.2))
     
     # Add title
     title(main=lkl[[i]], cex.main=0.5)
+    
+    # Plot marginal probs
+    if(length(marg_prob) != 0)
+      lines(1:L, marg_prob[[i]], col="green")
     
     # TRUE genotypes
     if(length(true_geno) != 0)
@@ -58,10 +61,12 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-b", "--binary"), action="store_true", type="logical", default=FALSE, help="Is input in binary? [%default]"),
                     make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-s", "--n_sites"), action="store", type="integer", default=1000, help="Number of sites [%default]"),
+                    make_option(c("-m", "--marg_prob"), action="store_true", type="logical", default=FALSE, help="Plot marginal probabilities? [%default]"),
                     make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
-                    make_option(c("-o", "--out_prefix"), action="store", type="character", default=NULL, help="Output prefix [%default]")
+                    make_option(c("-o", "--out_prefix"), action="store", type="character", default=NULL, help="Output prefix [%default]"),
+                    make_option(c("-q", "--quiet"), action="store_true", type="logical", default=FALSE, help="Print info to STDOUT? [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
@@ -70,39 +75,44 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 ############################ Parsing input arguments ############################
 
-cat('### Input arguments', fill=TRUE)
-cat('# Input file:', opt$in_file, fill=TRUE)
-cat('# Is input file binary?', opt$binary, fill=TRUE)
-cat('# Number indiv:', opt$n_ind, fill=TRUE)
-cat('# Number sites:', opt$n_sites, fill=TRUE)
-cat('# Known genotypes:', opt$geno, fill=TRUE)
-cat('# Known path:', opt$path, fill=TRUE)
-cat('# Subset:', opt$subset, fill=TRUE)
-cat('# Out prefix:', opt$out_prefix, fill=TRUE)
-
+if(!opt$quiet){
+  cat('### Input arguments', fill=TRUE)
+  cat('# Input file:', opt$in_file, fill=TRUE)
+  cat('# Is input file binary?', opt$binary, fill=TRUE)
+  cat('# Number indiv:', opt$n_ind, fill=TRUE)
+  cat('# Number sites:', opt$n_sites, fill=TRUE)
+  cat('# Known genotypes:', opt$geno, fill=TRUE)
+  cat('# Known path:', opt$path, fill=TRUE)
+  cat('# Subset:', opt$subset, fill=TRUE)
+  cat('# Out prefix:', opt$out_prefix, fill=TRUE)
+}
 
 if(!is.null(opt$geno) && file.exists(opt$geno)){
-  cat("====> Reading geno file...", fill=TRUE)
+  if(!opt$quiet)
+    cat("====> Reading geno file...", fill=TRUE)
   true_geno <- as.list(read.table(opt$geno))
 }else
   true_geno <- list()
   
   
 if(!is.null(opt$path) && file.exists(opt$path)){
-  cat("====> Reading true path file...", fill=TRUE)
+  if(!opt$quiet)
+    cat("====> Reading true path file...", fill=TRUE)
   true_path <- as.list(as.data.frame(t(read.fwf(opt$path, rep.int(1, opt$n_sites)))))
 }else
   true_path <- list()
 
 
 if(!is.null(opt$subset)){
-  cat("====> Reading subset info...", fill=TRUE)
-  subset <- as.numeric(strsplit(opt$subset,"[-:]")[[1]])
+  if(!opt$quiet)
+    cat("====> Reading subset info...", fill=TRUE)
+  subset <- as.numeric(strsplit(opt$subset,"[-:/,]")[[1]])
 }else
   subset <- c()
 
 
-cat("====> Opening input file stream...", fill=TRUE)
+if(!opt$quiet)
+  cat("====> Opening input file stream...", fill=TRUE)
 if(!is.null(opt$in_file) && file.exists(opt$in_file)){
   if( opt$binary && file.info(opt$in_file)$size %% 8*opt$n_ind*(1+2*opt$n_sites) != 0 ){
     cat("ERROR: corrupt input file!", fill=TRUE)
@@ -131,6 +141,8 @@ iter <- 0
 pdf(paste(opt$out_prefix,"pdf",sep="."), 2*log10(opt$n_sites))
 
 while(iter <- iter + 1) {
+  if(!opt$quiet)
+    cat("==> Parsing iteration:",iter , fill=TRUE)
   # Reading Lkl line
   if(opt$binary){
     lkl <- readBin(fh, double(), n=opt$n_ind)
@@ -158,19 +170,28 @@ while(iter <- iter + 1) {
       marg_prob[[j]] <- readBin(fh, double(), n=opt$n_sites)
   }else
     marg_prob <- lapply(strsplit(readLines(fh, opt$n_ind), "\t"), as.numeric)
+  if(!opt$marg_prob)
+    marg_prob <- list();
   
-  # If multiple of subset
-  if(length(subset) == 1)
-    if(iter %% subset != 0) next
   
-  # If in the interval subset
-  if(length(subset) > 1) {
+  if(length(subset) == 1){
     if(iter < subset[1]) next
-    if(iter > subset[2]) break
+    if(iter > subset[1]) break
+  }else if(length(subset) == 2){
+    if(is.na(subset[1])){
+      # If multiple of subset
+      if(iter %% subset != 0) next
+    }else{
+      # If in the interval subset
+      if(iter < subset[1]) next
+      if(iter > subset[2]) break
+    }
   }
   
+  
   # Plotting...
-  cat("==> Plotting iteration:",iter , fill=TRUE)
+  if(!opt$quiet)
+    cat("> Plotting...", fill=TRUE)
   iter_plot(true_path,true_geno,lkl,path,marg_prob)
 }
 
