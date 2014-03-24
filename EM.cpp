@@ -47,8 +47,13 @@ int EM (params *pars, out_data *data) {
       printf("Lkl epsilon: %s\n", join(lkl_epsilon, pars->n_ind, "\t"));
 
     if(pars->verbose >= 1){
+      double sum = 0;
       time_t iter_end = time(NULL);
-      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", logsum(data->lkl, pars->n_ind), max_lkl_epsilon, difftime(iter_end, iter_start) );
+
+      for(uint64_t i = 0; i < pars->n_ind; i++)
+	sum += data->lkl[i];
+
+      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", sum, max_lkl_epsilon, difftime(iter_end, iter_start) );
     }
 
     fflush(stdout);
