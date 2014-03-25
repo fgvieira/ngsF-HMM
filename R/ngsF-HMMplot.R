@@ -1,7 +1,7 @@
 
 
 ############################ FUNCTIONS ############################
-iter_plot <- function(true_path,true_geno,lkl,path,marg_prob){
+iter_plot <- function(pos,true_path,true_geno,lkl,path,marg_prob){
   n = length(lkl)
   L = length(path[[1]])
   
@@ -10,29 +10,29 @@ iter_plot <- function(true_path,true_geno,lkl,path,marg_prob){
   par(mfrow=plots, mar=c(2,2,1,1))
   for (i in 1:n){
     ## Plot
-    plot(1:L, path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
+    plot(pos, path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
     
-    # Shade most prob state path
-    shade_areas(path[[i]], rgb(1,0,0,0.2))
+    # Shade most prob state path (RED)
+    shade_areas(path[[i]], pos, rgb(1,0,0,0.2))
     
     # Add title
     title(main=lkl[[i]], cex.main=0.5)
     
     # Plot marginal probs
     if(length(marg_prob) != 0)
-      lines(1:L, marg_prob[[i]], col="green")
+      lines(pos, marg_prob[[i]], col="green")
     
     # TRUE genotypes
     if(length(true_geno) != 0)
-      points(true_geno[[i]]/2, pch=".")
+      points(pos, true_geno[[i]]/2, pch=".", col="cyan")
 
-    # TRUE state path
+    # TRUE path (BLUE)
     if(length(true_path) != 0)
-      shade_areas(true_path[[i]], rgb(0,0,1,0.2))
+      shade_areas(true_path[[i]], pos, rgb(0,0,1,0.2))
   }
 }
 
-shade_areas <- function(area, color){
+shade_areas <- function(area, pos, color){
   x <- rle(area)
   start <- (cumsum(x$lengths)-x$lengths)[x$values==1] + 1
   end <- cumsum(x$lengths)[x$values==1]
@@ -52,7 +52,7 @@ shade_areas <- function(area, color){
     return(-1);
   
   for (i in 1:length(start))
-    polygon(c(start[i],start[i],end[i],end[i]),c(0,1,1,0), border=NA, col=color)
+    polygon(c(pos[start[i]],pos[start[i]],pos[end[i]],pos[end[i]]),c(0,1,1,0), border=NA, col=color)
 }
 
 #####  Parse command-line arguments
@@ -61,6 +61,7 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-b", "--binary"), action="store_true", type="logical", default=FALSE, help="Is input in binary? [%default]"),
                     make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-s", "--n_sites"), action="store", type="integer", default=1000, help="Number of sites [%default]"),
+                    make_option(c("--pos"), action="store", type="character", default=NULL, help="Path to file with site positions [%default]"),
                     make_option(c("-m", "--marg_prob"), action="store_true", type="logical", default=FALSE, help="Plot marginal probabilities? [%default]"),
                     make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
@@ -70,8 +71,8 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-#opt$in_file = "ngsF-HMM/XXX.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$path="ngsF-HMM/sim.PI"; opt$geno="ngsF-HMM/sim.geno.gz"
-#opt$in_file = "indica_allchr.1k.log.gz"; opt$n_ind=13; opt$n_sites=1000; opt$out_prefix="XXX"
+#opt$in_file="ngsF-HMM/XXX.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$path="ngsF-HMM/sim.PI"; opt$geno="ngsF-HMM/sim.geno.gz"
+#opt$in_file="BEST.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$geno="../sim.geno.gz"; opt$path="../sim.path.gz"; opt$out_prefix="XXX"; opt$pos="asda.pos"
 
 ############################ Parsing input arguments ############################
 
@@ -81,26 +82,43 @@ if(!opt$quiet){
   cat('# Is input file binary?', opt$binary, fill=TRUE)
   cat('# Number indiv:', opt$n_ind, fill=TRUE)
   cat('# Number sites:', opt$n_sites, fill=TRUE)
+  cat('# Positions file:', opt$pos, fill=TRUE)
   cat('# Known genotypes:', opt$geno, fill=TRUE)
   cat('# Known path:', opt$path, fill=TRUE)
   cat('# Subset:', opt$subset, fill=TRUE)
   cat('# Out prefix:', opt$out_prefix, fill=TRUE)
 }
 
+
+
 if(!is.null(opt$geno) && file.exists(opt$geno)){
   if(!opt$quiet)
-    cat("====> Reading geno file...", fill=TRUE)
+    cat("====> Reading GENO file...", fill=TRUE)
   true_geno <- as.list(read.table(opt$geno))
+  
+  if(opt$n_ind != length(true_geno) ||
+     opt$n_sites != length(true_geno[[1]])){
+    cat("ERROR: number of indiv/sites and GENO file do not match!", fill=TRUE)
+    quit("no",-1)
+  }
 }else
   true_geno <- list()
   
   
+
 if(!is.null(opt$path) && file.exists(opt$path)){
   if(!opt$quiet)
-    cat("====> Reading true path file...", fill=TRUE)
+    cat("====> Reading PATH file...", fill=TRUE)
   true_path <- as.list(as.data.frame(t(read.fwf(opt$path, rep.int(1, opt$n_sites)))))
+  
+  if(opt$n_ind != length(true_path) ||
+     opt$n_sites != length(true_path[[1]])){
+    cat("ERROR: number of indiv/sites and PATH file do not match!", fill=TRUE)
+    quit("no",-1)
+  }
 }else
   true_path <- list()
+
 
 
 if(!is.null(opt$subset)){
@@ -111,6 +129,20 @@ if(!is.null(opt$subset)){
   subset <- c()
 
 
+
+if(!is.null(opt$pos) && file.exists(opt$pos)){
+  if(!opt$quiet)
+    cat("====> Reading positions file...", fill=TRUE)
+  pos <- as.numeric(readLines(opt$pos))
+  
+  if(opt$n_sites != length(pos)){
+    cat("ERROR: number of sites and positions file do not match!", fill=TRUE)
+    quit("no",-1)
+  }
+}
+ 
+
+  
 if(!opt$quiet)
   cat("====> Opening input file stream...", fill=TRUE)
 if(!is.null(opt$in_file) && file.exists(opt$in_file)){
@@ -133,8 +165,6 @@ if(is.null(opt$out_prefix)){
   # Remove extension
   opt$out_prefix <- sub("\\.[^.]*$", "", opt$out_prefix, perl=TRUE)
 }
-
-
 
 ############################ Plotting data ############################
 iter <- 0
@@ -192,7 +222,7 @@ while(iter <- iter + 1) {
   # Plotting...
   if(!opt$quiet)
     cat("> Plotting...", fill=TRUE)
-  iter_plot(true_path,true_geno,lkl,path,marg_prob)
+  iter_plot(pos,true_path,true_geno,lkl,path,marg_prob)
 }
 
 close(fh)
