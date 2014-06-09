@@ -6,6 +6,7 @@
 #include <math.h>
 #include <zlib.h>
 #include <signal.h>
+#include <gsl/gsl_rng.h>
 
 using namespace std;
 
@@ -14,6 +15,7 @@ void handler(int);
 void catch_SIG();
 double check_interv(double, bool);
 int array_max_pos(double*, int);
+double draw_rnd(gsl_rng*, uint64_t, uint64_t);
 void call_geno(double*, int, bool);
 void conv_space(double*, int, double (*func)(double));
 double logsum(double*, uint64_t);

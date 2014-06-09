@@ -68,6 +68,13 @@ int array_max_pos(double *array, int size) {
 
 
 
+double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
+  return( min + gsl_rng_uniform(r) * (max - min) );
+}
+
+
+
+
 void call_geno(double *geno, int n_geno, bool log_scale) {
   int max_pos = array_max_pos(geno, n_geno);
     
