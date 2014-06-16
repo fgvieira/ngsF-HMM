@@ -33,7 +33,8 @@ int EM (params *pars, out_data *data) {
     iter++;
     if(pars->verbose >= 1)
       printf("\nIteration %lu:\n", iter);
-	  
+
+    // Run next EM iteration	  
     iter_EM(pars, data);
 
     // Check convergence criteria
@@ -47,12 +48,12 @@ int EM (params *pars, out_data *data) {
       printf("Lkl epsilon: %s\n", join(lkl_epsilon, pars->n_ind, "\t"));
 
     if(pars->verbose >= 1){
+      // Get total lkl
       double sum = 0;
-      time_t iter_end = time(NULL);
-
       for(uint64_t i = 0; i < pars->n_ind; i++)
 	sum += data->lkl[i];
 
+      time_t iter_end = time(NULL);
       printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", sum, max_lkl_epsilon, difftime(iter_end, iter_start) );
     }
 
@@ -355,6 +356,12 @@ void print_iter(char *out_file, params *pars, out_data *data){
   FILE *out_fh = fopen(out_file, "w");
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open iteration file!");
+
+  // Print total Lkl
+  double sum = 0;
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    sum += data->lkl[i];
+  fprintf(out_fh,"%.10f\n", sum);
 
   // Print indF
   fprintf(out_fh,"%s\n", join(data->indF, pars->n_ind, "\t"));
