@@ -313,7 +313,7 @@ uint64_t split(char *str, const char *sep, char ***out){
 
 
 char *join(uint *array, uint64_t size, const char *sep){
-  char *buf = new char[size*10000];
+  char *buf = new char[size*20];
   
   sprintf(buf, "%u", array[0]);
   uint64_t len = strlen(buf);
@@ -333,7 +333,7 @@ char *join(uint *array, uint64_t size, const char *sep){
 
 
 char *join(uint64_t *array, uint64_t size, const char *sep){
-  char *buf = new char[size*10000];
+  char *buf = new char[size*20];
   
   sprintf(buf, "%lu", array[0]);
   uint64_t len = strlen(buf);
@@ -353,7 +353,7 @@ char *join(uint64_t *array, uint64_t size, const char *sep){
 
 
 char *join(double *array, uint64_t size, const char *sep){
-  char *buf = new char[size*10000];
+  char *buf = new char[size*20];
   
   sprintf(buf, "%.10f", array[0]);
   uint64_t len = strlen(buf);
