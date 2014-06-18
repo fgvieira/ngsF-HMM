@@ -2,7 +2,7 @@
 
 
 bool SIG_COND;
-
+int really_kill = 3;
 
 void error(const char *func, const char *msg) {
   fprintf(stderr, "\n[%s] ERROR: %s\n", func, msg);
@@ -13,7 +13,15 @@ void error(const char *func, const char *msg) {
 
 void handler(int s) {
   if(SIG_COND)
-    fprintf(stderr,"\n\"%s\" signal caught! Will try to exit nicely (no more threads are created, we will wait for the current threads to finish)\n", strsignal(s));
+    fprintf(stderr,"\n\"%s\" signal caught! Will try to exit nicely (no more threads are created but we will wait for the current threads to finish).\n", strsignal(s));
+
+  if(--really_kill != 3)
+    fprintf(stderr,"\t-> If you really want to force ANGSD to exit uncleanly Ctr+C %d more times\n", really_kill);
+  fflush(stderr);
+
+  if(!really_kill)
+    exit(0);
+
   SIG_COND = false;
 }
 
@@ -27,10 +35,10 @@ void catch_SIG(){
 
   //sigaction(SIGKILL, &sa, 0);
   sigaction(SIGTERM, &sa, 0);
-  sigaction(SIGINT, &sa, 0);
   sigaction(SIGQUIT, &sa, 0);
-  sigaction(SIGABRT, &sa, 0);
+  //sigaction(SIGABRT, &sa, 0);
   sigaction(SIGPIPE, &sa, 0);
+  sigaction(SIGINT, &sa, 0);
 }
 
 
@@ -185,6 +193,7 @@ int64_t read_file(char *in_file, char ***ptr, uint64_t buff_size){
   gzclose(in_file_fh);
   return cnt;
 }
+
 
 
 // New strtok function to allow for empty ("") separators
@@ -436,6 +445,18 @@ double ***init_double(uint64_t A, uint64_t B, uint64_t C, double init){
     ptr[a] = init_double(B, C, init);
 
   return ptr;
+}
+
+
+
+// Concat str but duplicates the first one
+char *strdcat(char *str1, const char *str2){
+  uint64_t length = strlen(str1) + strlen(str2) + 1;
+
+  char *str = init_char(length, str1);
+  strcat(str, str2);
+
+  return(str);
 }
 
 

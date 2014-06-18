@@ -170,9 +170,9 @@ int init_output(params* pars, out_data* data) {
   gsl_rng_set(r, pars->seed);
 
 
-  ////////////////////////////////////////
-  // Set TRANSITION initial values ...
-  ////////////////////////////////////////
+  ///////////////////////////////////
+  // Set TRANSITION initial values //
+  ///////////////////////////////////
   double trans_rng_max = 1;
   double trans_rng_min = 0;
   gzFile in_trans_fh;
@@ -198,6 +198,7 @@ int init_output(params* pars, out_data* data) {
 
       if( i > pars->n_ind || split(buf, (const char*) " ,-\t", &t) != 2)
 	error(__FUNCTION__, "wrong TRANS file format!");
+
       data->a[i][0][1] = min(max(t[0], trans_rng_min), trans_rng_max);
       data->a[i][0][0] = 1 - data->a[i][0][1];
       data->a[i][1][0] = min(max(t[1], trans_rng_min), trans_rng_max);
@@ -229,9 +230,9 @@ int init_output(params* pars, out_data* data) {
 
 
 
-  ////////////////////////////////////////
-  // Set FREQ initial values...
-  ////////////////////////////////////////
+  /////////////////////////////
+  // Set FREQ initial values //
+  /////////////////////////////
   double freq_rng_max = 0.49;
   double freq_rng_min = 0.01;
   gzFile in_freq_fh;
@@ -255,6 +256,7 @@ int init_output(params* pars, out_data* data) {
 
       if( s > pars->n_sites || split(buf, (const char*) " ,-\t", &t) != 1)
         error(__FUNCTION__, "wrong FREQ file format!");
+
       data->freq[s] = min(max(t[0], freq_rng_min), freq_rng_max);
       s++;
       delete [] t;
@@ -268,18 +270,18 @@ int init_output(params* pars, out_data* data) {
 
 
 
-  ////////////////////////////////////////
-  // Set EMISSION initial values ...
-  ////////////////////////////////////////
+  ///////////////////////////////////////////////
+  // Set EMISSION probabilities initial values //
+  ///////////////////////////////////////////////
   data->e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   // Update emission probs based on allele freqs
   update_e(data, pars->n_sites);
   
 
 
-  ////////////////////////////////////////
-  // Set PATH initial values ...
-  ////////////////////////////////////////
+  /////////////////////////////
+  // Set PATH initial values //
+  /////////////////////////////
   gzFile in_path_fh;
 
   data->path = init_uint(pars->n_ind, pars->n_sites+1, 0);
@@ -301,6 +303,7 @@ int init_output(params* pars, out_data* data) {
       int* t = NULL;
       if(i >= pars->n_ind || split(buf, (const char*) "", &t) != pars->n_sites)
         error(__FUNCTION__, "wrong PATH file format!");
+
       for(uint64_t s = 0; s < pars->n_sites; s++)
 	data->path[i][s] = t[s] > 0.5 ? 1 : 0;
       i++;
@@ -316,9 +319,9 @@ int init_output(params* pars, out_data* data) {
 
 
 
-  ////////////////////////////////////////
-  // Initialize Marginal Probabilities
-  ////////////////////////////////////////
+  ///////////////////////////////////////
+  // Initialize Marginal Probabilities //
+  ///////////////////////////////////////
   data->marg_prob = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
   // Initialize site 0 to invalid value
   for (uint64_t i = 0; i < pars->n_ind; i++)
@@ -327,9 +330,9 @@ int init_output(params* pars, out_data* data) {
 
 
 
-  ////////////////////////////////////////
-  // Initialize indF and lkl variables
-  ////////////////////////////////////////
+  ///////////////////////////////////////
+  // Initialize indF and lkl variables //
+  ///////////////////////////////////////
   data->indF = init_double(pars->n_ind, 0);
   data->lkl = init_double(pars->n_ind, -INFINITY);
 

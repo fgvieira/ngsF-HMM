@@ -7,8 +7,6 @@ int EM (params *pars, out_data *data) {
   SIG_COND = true;
   catch_SIG();
 
-  char out_prefix[1000];
-
   uint64_t iter = 0;
   double  max_lkl_epsilon = -INFINITY;
   double *lkl_epsilon = init_double(pars->n_ind, -INFINITY);
@@ -17,12 +15,13 @@ int EM (params *pars, out_data *data) {
 
   // Open filehandle for iteration log
   if(pars->log){
-    strcpy(out_prefix, pars->out_prefix);
-    if((log_fh = gzopen( strcat(out_prefix,".log.gz"), pars->log_bin ? "wb" : "w")) == NULL)
+    char *tmp_out = strdcat(pars->out_prefix, ".log.gz");
+    if((log_fh = gzopen(tmp_out, pars->log_bin ? "wb" : "w")) == NULL)
       error(__FUNCTION__, "cannot open LOG file!");
 
     if(gzbuffer(log_fh, pars->n_sites + pars->n_ind*10) < 0)
       error(__FUNCTION__, "cannot increase ZLIB buffer size!");
+    delete [] tmp_out;
   }
 
   while((max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
@@ -109,11 +108,9 @@ int EM (params *pars, out_data *data) {
       }
     }
 
-    /* Disabled since printing data each iteration takes too long
+    // Disabled since printing data each iteration takes too long
     printf("==> Printing current iteration parameters\n");
-    strcpy(out_prefix, pars->out_prefix);
-    print_iter(strcat(out_prefix,".out"), pars, data);
-    */
+    print_iter(pars->out_prefix, pars, data);
   }
 
 
@@ -350,12 +347,15 @@ void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
 
 
 
-void print_iter(char *out_file, params *pars, out_data *data){
-  char *buf;
-  // Open filehandle to write
-  FILE *out_fh = fopen(out_file, "w");
+void print_iter(char *out_prefix, params *pars, out_data *data){
+  char *tmp_out;
+  FILE *out_fh;
+
+  // Open filehandle to "indF" file
+  tmp_out = strdcat(out_prefix, ".indF");
+  out_fh = fopen(tmp_out, "w");
   if(out_fh == NULL)
-    error(__FUNCTION__, "cannot open iteration file!");
+    error(__FUNCTION__, "cannot open \"indF\" output file!");
 
   // Print total Lkl
   double sum = 0;
@@ -364,25 +364,58 @@ void print_iter(char *out_file, params *pars, out_data *data){
   fprintf(out_fh,"%.10f\n", sum);
 
   // Print indF
-  fprintf(out_fh,"%s\n", join(data->indF, pars->n_ind, "\t"));
+  fprintf(out_fh,"%s\n", join(data->indF, pars->n_ind, "\n"));
   
   // Print transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
     fprintf(out_fh,"%f\t%f\n", exp(data->a[i][0][1]), exp(data->a[i][0][1]));
 
+  // Print allele freqs
+  for(uint64_t s = 1; s <= pars->n_sites; s++)
+    fprintf(out_fh,"%f\n", data->freq[s]);
+
+  // Close "indF" filehandle
+  fclose(out_fh);
+  delete [] tmp_out;
+
+  /////////////////////////////////////////////////
+
+  // Open filehandle to "viterbi" file
+  tmp_out = strdcat(out_prefix, ".viterbi");
+  out_fh = fopen(tmp_out, "wb");
+  if(out_fh == NULL)
+    error(__FUNCTION__, "cannot open \"viterbi\" output file!");
+  
   // Print most probable path (Viterbi)
-  for (uint64_t i = 0; i < pars->n_ind; i++){
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    fwrite(data->path[i], sizeof(uint), pars->n_sites, out_fh);
+
+  // Close "viterbi" filehandle
+  fclose(out_fh);
+  delete [] tmp_out;
+
+  /////////////////////////////////////////////////
+
+  // Print viterbi path in text mode
+  /*
+  char *buf;
+  // Open filehandle to "viterbi.txt" file
+  tmp_out = strdcat(out_prefix, ".viterbi.txt");
+  out_fh = fopen(tmp_out, "w");
+  if(out_fh == NULL)
+    error(__FUNCTION__, "cannot open \"viterbi.txt\" output file!");
+
+  // Print most probable path (Viterbi)
+  for(uint64_t i = 0; i < pars->n_ind; i++){
     buf = join(data->path[i]+1, pars->n_sites, "");
     fprintf(out_fh, "%s\n", buf);
     delete [] buf;
   }
   
-  // Print allele freqs
-  for(uint64_t s = 1; s <= pars->n_sites; s++)
-    fprintf(out_fh,"%f\n", data->freq[s]);
-  
-  // Close filehandle
+  // Close "viterbi.txt" filehandle
   fclose(out_fh);
+  delete [] tmp_out;
+  */
 }
 
 

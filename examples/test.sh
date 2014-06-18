@@ -78,8 +78,8 @@ N_SITES=$((`zcat testF.beagle.gz | wc -l`-1))
 
 
 ##### Get genotypes' posterior probability with inbreeding prior
-head -n 1 testF.out | tr "\t" "\n" > testF.indF
-$ANGSD/angsd -sim1 $SIM_DATA/testF.glf.gz -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -indF testF.indF -doGeno 32 -doSaf 2 -out testF.indF
+head -n $((N_IND+1)) testF.indF | tail -n $N_IND > /tmp/testF.indF
+$ANGSD/angsd -sim1 $SIM_DATA/testF.glf.gz -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -indF /tmp/testF.indF -doGeno 32 -doSaf 2 -out testF.indF
 
 
 

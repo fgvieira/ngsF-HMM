@@ -37,6 +37,7 @@ uint64_t **init_uint64(uint64_t, uint64_t, uint64_t);
 double *init_double(uint64_t, double);
 double **init_double(uint64_t, uint64_t, double);
 double ***init_double(uint64_t, uint64_t, uint64_t, double);
+char *strdcat(char*, const char*);
 char *init_char(uint64_t, const char*);
 char **init_char(uint64_t, uint64_t, const char*);
 void free_ptr(void*);

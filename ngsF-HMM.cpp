@@ -145,7 +145,7 @@ int main (int argc, char** argv) {
   /////////////////////////
   if(pars->verbose >= 1)
     printf("==> Printing final results\n");
-  print_iter(strcat(pars->out_prefix,".out"), pars, data);
+  print_iter(pars->out_prefix, pars, data);
 
 
 
