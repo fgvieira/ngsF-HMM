@@ -110,7 +110,7 @@ rm -f *.arg
 md5sum testF* | sort -k 2,2 > /tmp/test.md5
 if diff /tmp/test.md5 test.md5 > /dev/null
 then
-    echo "ngsF: All tests OK!"
+    echo "ngsF-HMM: All tests OK!"
 else
-    echo "ngsF: test(s) failed!"
+    echo "ngsF-HMM: test(s) failed!"
 fi

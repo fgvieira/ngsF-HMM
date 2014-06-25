@@ -321,7 +321,7 @@ uint64_t split(char *str, const char *sep, char ***out){
 
 
 
-char *join(uint *array, uint64_t size, const char *sep){
+char *join(unsigned short int *array, uint64_t size, const char *sep){
   char *buf = new char[size*20];
   
   sprintf(buf, "%u", array[0]);
@@ -380,8 +380,8 @@ char *join(double *array, uint64_t size, const char *sep){
 }
 
 
-uint *init_uint(uint64_t A, uint init){
-  uint *ptr = new uint[A];
+unsigned short int *init_usint(uint64_t A, unsigned short int init){
+  unsigned short int *ptr = new unsigned short int[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
 
@@ -390,10 +390,10 @@ uint *init_uint(uint64_t A, uint init){
 
 
 
-uint **init_uint(uint64_t A, uint64_t B, uint init){
-  uint **ptr = new uint*[A];
+unsigned short int **init_usint(uint64_t A, uint64_t B, unsigned short int init){
+  unsigned short int **ptr = new unsigned short int*[A];
   for(uint64_t a = 0; a < A; a++)
-    ptr[a] = init_uint(B, init);
+    ptr[a] = init_usint(B, init);
 
   return ptr;
 }

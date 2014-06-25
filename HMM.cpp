@@ -1,7 +1,7 @@
 
 #include "ngsF-HMM.hpp"
 
-int forward(double **data, double **Fw, double start, double ***e, double **a, uint *path, uint64_t length){
+int forward(double **data, double **Fw, double start, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
 
   Fw[0][0] = log(1-start);
@@ -22,7 +22,7 @@ int forward(double **data, double **Fw, double start, double ***e, double **a, u
 }
 
 
-int backward(double **data, double **Bw, double start, double ***e, double **a, uint *path, uint64_t length){
+int backward(double **data, double **Bw, double start, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
 
   // Initialise Backward table
@@ -46,7 +46,7 @@ int backward(double **data, double **Bw, double start, double ***e, double **a, 
 
 
 
-int viterbi(double **data, double **Vi, double start, double ***e, double **a, uint *path, uint64_t length){
+int viterbi(double **data, double **Vi, double start, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
 
   // Initialise Forward table
@@ -68,7 +68,7 @@ int viterbi(double **data, double **Vi, double start, double ***e, double **a, u
 }
 
 
-int trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, double **a, uint *path, uint64_t length){
+int trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
   double sPk[length+1];
   
@@ -96,3 +96,33 @@ int trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, 
 
   return 0;
 }
+
+
+/*
+// UNTESTED!!!!!
+int emission(double ***new_e, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
+  double pp[N_GENO];
+  double sPk[length+1];
+
+  for(uint64_t k = 0; k < N_STATES; k++){
+    // Get P(k)
+    for (uint64_t s = 1; s <= length; s++)
+      sPk[s] = Fw[s][k] + Bw[s][k];
+    // Sum all site_Pk, skipping site 0 and last
+    double Pk = logsum(sPk+1, length-1);
+
+    for (uint64_t s = 1; s <= length; s++){
+      post_prob(pp, data[s], e[s][path[s]], N_GENO);
+
+      for(uint64_t g = 0; g < N_GENO; g++)
+	Fw[s][k]+Bw[s][k]+pp[g]-Pk;
+	new_e[s][k][g] = logsum(new_e[s][k][g], );
+    }
+  }
+
+  for (uint64_t s = 1; s <= length; s++)
+    new_e[s] /= length;
+
+  return 0;
+}
+*/
