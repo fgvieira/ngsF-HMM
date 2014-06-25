@@ -1,4 +1,5 @@
 
+#include "HMM.cpp"
 #include "ngsF-HMM.hpp"
 
 
@@ -145,57 +146,29 @@ void iter_EM(params *pars, out_data *data) {
   double ***Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
   double ***Vi = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
 
+
+  // Forward recursion
+  time_t fwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
-  for (uint64_t i = 0; i < pars->n_ind; i++){
-    // Initialise Forward table
-    Fw[i][0][0] = log(1-inbreed);
-    Fw[i][0][1] = log(inbreed);
-
-    for (uint64_t s = 1; s <= pars->n_sites; s++){
-      post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
-      if(pars->call_geno == 2) 
-	call_geno(pp, N_GENO, true);
-
-      for(uint64_t l = 0; l < N_STATES; l++){
-	// logsum(k==0,k==1)
-	Fw[i][s][l] = logsum2(Fw[i][s-1][0] + a[i][0][l],
-			      Fw[i][s-1][1] + a[i][1][l]);
-	Fw[i][s][l] += logsum3(e[s][l][0]+pp[0], e[s][l][1]+pp[1], e[s][l][2]+pp[2]);
-      }
-    }
-  }
+  for (uint64_t i = 0; i < pars->n_ind; i++)
+    forward(pars->geno_lkl[i], Fw[i], inbreed, e, a[i], path[i], pars->n_sites);
     
-
+  // Backward recursion
+  time_t bwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
-  for (uint64_t i = 0; i < pars->n_ind; i++){
-    // Initialise Backward table
-    Bw[i][pars->n_sites][0] = log(1);
-    Bw[i][pars->n_sites][1] = log(1);
+  for (uint64_t i = 0; i < pars->n_ind; i++)
+    backward(pars->geno_lkl[i], Bw[i], inbreed, e, a[i], path[i], pars->n_sites);
 
-    for (uint64_t s = pars->n_sites; s > 0; s--){ 
-      post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
-      if(pars->call_geno == 2) 
-	call_geno(pp, N_GENO, true);
-
-      double LS_0 = logsum3(e[s][0][0]+pp[0], e[s][0][1]+pp[1], e[s][0][2]+pp[2]);
-      double LS_1 = logsum3(e[s][1][0]+pp[0], e[s][1][1]+pp[1], e[s][1][2]+pp[2]);
-	
-      for(uint64_t k = 0; k < N_STATES; k++)
-	// logsum(l==0,l==1)
-	Bw[i][s-1][k] = logsum2(a[i][k][0] + LS_0 + Bw[i][s][0],
-				a[i][k][1] + LS_1 + Bw[i][s][1]);
-    }
-  }
   if(pars->verbose >= 1)
-    printf("==> Backward Recursion termination\n");
+    printf("> Backward Recursion termination\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t k = 0; k < N_STATES; k++)
       Bw[i][0][k] += Fw[i][0][k];
 
-
-
+  // Marginal probabilities
+  time_t mp_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Marginal probabilities\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
@@ -204,33 +177,17 @@ void iter_EM(params *pars, out_data *data) {
       for(uint64_t k = 0; k < N_STATES; k++)
 	data->marg_prob[i][s][k] = Bw[i][s][k] + Fw[i][s][k] - data->lkl[i];
   }
-    
-
-    
+  
+  // Viterbi
+  time_t path_t = time(NULL);
   if(pars->path_fixed){
     if(pars->verbose >= 1)
       printf("==> Most probable path not estimated!\n");
   }else{
     if(pars->verbose >= 1)
       printf("==> Update most probable path (Viterbi)\n");
-    for (uint64_t i = 0; i < pars->n_ind; i++){
-      // Initialise Forward table
-      Vi[i][0][0] = log(1-inbreed);
-      Vi[i][0][1] = log(inbreed);
-	
-      for (uint64_t s = 1; s <= pars->n_sites; s++){
-	post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
-	if(pars->call_geno == 2)
-	  call_geno(pp, N_GENO, true);
-
-	for(uint64_t l = 0; l < N_STATES; l++){
-	  // max(k==0,k==1)
-	  Vi[i][s][l] = max(Vi[i][s-1][0] + a[i][0][l], 
-			    Vi[i][s-1][1] + a[i][1][l]);
-	  Vi[i][s][l] += logsum3(e[s][l][0]+pp[0], e[s][l][1]+pp[1], e[s][l][2]+pp[2]);
-	}
-      }
-    }
+    for (uint64_t i = 0; i < pars->n_ind; i++)
+      viterbi(pars->geno_lkl[i], Vi[i], inbreed, e, a[i], path[i], pars->n_sites);
 
     if(pars->verbose >= 1)
       printf("> Back-tracking\n");
@@ -238,46 +195,22 @@ void iter_EM(params *pars, out_data *data) {
       for (uint64_t s = 1; s <= pars->n_sites; s++)
 	data->path[i][s] = (Vi[i][s][0] > Vi[i][s][1] ? 0 : 1);
   }
-    
-    
+  
+  // Estimate transition probabilities
+  time_t trans_t = time(NULL);
   if(pars->trans_fixed){
     if(pars->verbose >= 1)
       printf("==> Transition probabilities not estimated!\n");
   }else{
     if(pars->verbose >= 1)
       printf("==> Update transition probabilities\n");
-    double *sPk = init_double(pars->n_sites+1, -INFINITY);
 
-    for (uint64_t i = 0; i < pars->n_ind; i++){
-      for(uint64_t k = 0; k < N_STATES; k++){
-	// Get P(k)
-	for (uint64_t s = 1; s <= pars->n_sites; s++)
-	  sPk[s] = Fw[i][s][k] + Bw[i][s][k];
-	// Sum all site_Pk, skipping site 0 and last
-	double Pk = logsum(sPk+1, pars->n_sites-1);
-
-	for(uint64_t l = 0; l < N_STATES; l++){
-	  double tmp_a = -INFINITY;
-	  for (uint64_t s = 1; s < pars->n_sites; s++){
-	    post_prob(pp, pars->geno_lkl[i][s+1], e[s+1][path[i][s+1]], N_GENO);
-	    if(pars->call_geno == 2)
-	      call_geno(pp, N_GENO, true);
-	    double LS = logsum3(e[s+1][l][0]+pp[0],
-				e[s+1][l][1]+pp[1],
-				e[s+1][l][2]+pp[2]);
-	    tmp_a = logsum2(tmp_a, 
-			    Fw[i][s][k] + a[i][k][l] + LS + Bw[i][s+1][l] - Pk);
-	  }
-	  data->a[i][k][l] = tmp_a;
-	}
-      }
-    }
-
-    delete [] sPk;
+    for (uint64_t i = 0; i < pars->n_ind; i++)
+      trans(data->a[i], pars->geno_lkl[i], Fw[i], Bw[i], e, a[i], path[i], pars->n_sites);
   }
 
-
-
+  // Estimate allele frequencies
+  time_t freqs_t = time(NULL);
   if(pars->freq_fixed){
     if(pars->verbose >= 1)
       printf("==> Alelle frequencies not estimated!\n");
@@ -304,14 +237,14 @@ void iter_EM(params *pars, out_data *data) {
     }
   }
 
-
-
+  // Update emission probabilities
+  time_t emission_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Update emission probabilities\n");
   update_e(data, pars->n_sites);
 
-
-
+  // Calculate inbreeding coefficients
+  time_t F_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Update inbreeding coefficients\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
@@ -321,6 +254,17 @@ void iter_EM(params *pars, out_data *data) {
     data->indF[i] = exp(indF)/pars->n_sites;
   }
 
+  time_t end_t = time(NULL);
+  printf("\nFw: %.1f\nBw: %.1f\nMP: %.1f\npath: %.1f\ntrans: %.1f\nfreqs: %.1f\nemission: %.1f\nF: %.1f\n", 
+	 difftime(bwd_t,fwd_t), 
+	 difftime(mp_t,bwd_t), 
+	 difftime(path_t,mp_t), 
+	 difftime(trans_t,path_t), 
+	 difftime(freqs_t,trans_t), 
+	 difftime(emission_t,freqs_t), 
+	 difftime(F_t,emission_t), 
+	 difftime(end_t,F_t)
+	 );
 
   free_ptr((void***) a, pars->n_ind, N_STATES);
   free_ptr((void***) e, pars->n_sites+1, N_STATES);

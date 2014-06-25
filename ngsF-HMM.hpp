@@ -15,6 +15,7 @@ const uint64_t N_STATES = 2;
 const uint64_t N_GENO = 3;
 const uint64_t BUFF_LEN = 100000;
 
+#define path_pos(seq, pos) ((seq)[(pos)/8] >> (1-(pos)%8) & 0xf)
 
 // Struct to store all input arguments //GZIP
 typedef struct {
@@ -53,13 +54,13 @@ typedef struct {
 
 // Output data
 typedef struct {
-  double*** a;
-  double* freq;
-  double*** e;
-  uint** path;
-  double*** marg_prob;
-  double* indF;
-  double* lkl;
+  double ***a;
+  double *freq;
+  double ***e;
+  uint **path;
+  double ***marg_prob;
+  double *indF;
+  double *lkl;
 } out_data;
 
 
