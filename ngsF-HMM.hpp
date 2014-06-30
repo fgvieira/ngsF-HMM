@@ -31,7 +31,7 @@ typedef struct {
   char *in_path;
   bool path_fixed;
   char *out_prefix;
-  bool log;
+  unsigned int log;
   bool log_bin;
   uint min_iters;
   uint max_iters;
@@ -70,7 +70,7 @@ typedef struct {
 
 // parse_args.cpp
 void init_pars(params* );
-int parse_cmd_args(int, char**, params*);
+void parse_cmd_args(params*, int, char**);
 
 // read_data.cpp
 int init_output(params*, out_data*);

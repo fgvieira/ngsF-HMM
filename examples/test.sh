@@ -35,22 +35,22 @@ do
     fi
     
     ID=TRUE
-    ../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans $TRANS --trans_fixed --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans $TRANS --trans_fixed --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=BEST
-    ../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --trans $TRANS --path sim.path.gz --out testF-HMM.$ID.$TYPE --log
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --trans $TRANS --path sim.path.gz --out testF-HMM.$ID.$TYPE --log 1
 
     ID=freq_fixed
-    ../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans 0.1,0.1 --path 0 --out testF-HMM.$ID.$TYPE --log
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans 0.1,0.1 --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=trans_fixed
-    ../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $TRANS --trans_fixed --path 0 --out testF-HMM.$ID.$TYPE --log
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $TRANS --trans_fixed --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=path_fixed
-    ../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=normal
-    ../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF-HMM.$ID.$TYPE --log
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
 
     #echo "===== Plot ====="
@@ -64,22 +64,22 @@ done >&2
 
 ##### Get genotype likelihoods
 N_IND=20
-$ANGSD/angsd -sim1 $SIM_DATA/testF.glf.gz -nInd $N_IND -doMajorMinor 1 -doGlf 2 -doMaf -1 -SNP_pval 1e-4 -out testF
-$ANGSD/angsd -sim1 $SIM_DATA/testF.glf.gz -nInd $N_IND -doMajorMinor 1 -doGlf 3 -doMaf -1 -SNP_pval 1e-4 -out testF
+$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doGlf 2 -doMaf -1 -SNP_pval 1e-4 -out testF
+$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doGlf 3 -doMaf -1 -SNP_pval 1e-4 -out testF
 gunzip testF.glf.gz
 
 
 
 ##### Estimate F
 N_SITES=$((`zcat testF.beagle.gz | wc -l`-1))
-../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF --log >&2
-../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF_bin --log >&2
+../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF_bin --log 1 >&2
 
 
 
 ##### Get genotypes' posterior probability with inbreeding prior
 head -n $((N_IND+1)) testF.indF | tail -n $N_IND > /tmp/testF.indF
-$ANGSD/angsd -sim1 $SIM_DATA/testF.glf.gz -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -indF /tmp/testF.indF -doGeno 32 -doSaf 2 -out testF.indF
+$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -indF /tmp/testF.indF -doGeno 32 -doSaf 2 -anc $SIM_DATA/testAF.ANC.fas -out testF.indF
 
 
 

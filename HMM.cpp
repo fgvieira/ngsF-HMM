@@ -43,8 +43,6 @@ void threadpool_add_task(threadpool_t *thread_pool, int type, double **new_a, do
   p->length = length;
 
   // Add task to thread pool
-  //thread_slave((void*) p);
-
   int ret = threadpool_add(thread_pool, thread_slave, (void*) p, 0);
   if(ret == -1)
     error(__FUNCTION__, "invalid thread pool!");

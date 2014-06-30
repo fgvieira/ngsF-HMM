@@ -24,6 +24,7 @@ int EM (params *pars, out_data *data) {
     delete [] tmp_out;
   }
 
+  // Loop through all iterations
   while((max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
 	  
     time_t iter_start = time(NULL);
@@ -33,7 +34,7 @@ int EM (params *pars, out_data *data) {
     if(pars->verbose >= 1)
       printf("\nIteration %lu:\n", iter);
 
-    // Run next EM iteration	  
+    // Run next EM iteration
     iter_EM(pars, data);
 
     // Check convergence criteria
@@ -64,7 +65,7 @@ int EM (params *pars, out_data *data) {
     // Dump iteration data //
     /////////////////////////
     char *buf;
-    if(pars->log){
+    if(pars->log && (iter == 1 || iter % pars->log == 0)){
       if(pars->verbose >= 1)
 	printf("==> Dumping iteration to log file\n");
 
@@ -110,7 +111,7 @@ int EM (params *pars, out_data *data) {
 
     // Disabled since printing data each iteration takes too long
     printf("==> Printing current iteration parameters\n");
-    //print_iter(pars->out_prefix, pars, data);
+    print_iter(pars->out_prefix, pars, data);
   }
 
 

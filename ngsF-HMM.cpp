@@ -31,34 +31,13 @@ int main (int argc, char** argv) {
   /////////////////////
   params* pars = new params;
   init_pars(pars);
-  parse_cmd_args(argc, argv, pars);
+  parse_cmd_args(pars, argc, argv);
+
   if(pars->version) {
     printf("ngsF-HMM v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
     exit(0);
   }
 
-  if(pars->verbose >= 1){
-    printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %d\n\tfreq: %s\n\tfreq_fixed: %s\n\ttrans: %s\n\ttrans_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %s\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno, pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log ? "true":"false", pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
-  }
-  if(pars->verbose >= 4)
-    printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
-  
-
-
-  /////////////////////
-  // Check Arguments //
-  /////////////////////
-  if(pars->in_geno == NULL)
-    error(__FUNCTION__, "Genotype input file (-geno) missing!");
-  if(pars->out_prefix == NULL)
-    error(__FUNCTION__, "Output prefix (-out_prefix) missing!");
-  if(pars->n_ind == 0)
-    error(__FUNCTION__, "Number of individuals (-n_ind) missing!");
-  if(pars->n_sites == 0)
-    error(__FUNCTION__, "Number of sites (-n_sites) missing!");
-  
   
   
   ///////////////////////
@@ -81,7 +60,7 @@ int main (int argc, char** argv) {
     pars->in_loglkl = true;
   }else
     error(__FUNCTION__, "invalid/corrupt genotype input file!");
-  
+
 
 
   ////////////////////////////
