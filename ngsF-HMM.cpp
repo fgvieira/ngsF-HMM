@@ -39,8 +39,8 @@ int main (int argc, char** argv) {
 
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %d\n\tfreqs: %s\n\tfixed freqs: %s\n\ttrans: %s\n\tfixed trans: %s\n\tpath: %s\n\tfixed paths: %s\n\tout prefix: %s\n\tlog: %s\n\tlog binary: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tthreads: %d\n\tchunk size: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-	   pars->in_geno, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno, pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log ? "true":"false", pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->max_chunk_size, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %d\n\tfreq: %s\n\tfreq_fixed: %s\n\ttrans: %s\n\ttrans_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %s\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+	   pars->in_geno, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno, pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log ? "true":"false", pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if(pars->verbose >= 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -61,24 +61,6 @@ int main (int argc, char** argv) {
   
   
   
-  ///////////////////////
-  // Adjust Parameters //
-  ///////////////////////
-  // Adjust max_chunk_size in case of fewer sites
-  if(pars->max_chunk_size > pars->n_sites)
-    pars->max_chunk_size = pars->n_sites;
-
-  // Calculate total number of chunks
-  pars->n_chunks = ceil((double) pars->n_sites / (double) pars->max_chunk_size);
-  if(pars->verbose >= 1)
-    printf("==> Analysis will be run in %d chunk(s)\n", pars->n_chunks);
-
-  // Adjust thread number to chunks
-  if(pars->n_chunks < pars->n_threads)
-    pars->n_threads = pars->n_chunks;
-
-
-
   ///////////////////////
   // Check input files //
   ///////////////////////
@@ -105,15 +87,18 @@ int main (int argc, char** argv) {
   ////////////////////////////
   // Prepare initial values //
   ////////////////////////////
-  // Declare variables for results //
-  out_data* data = new out_data;
+  // Create thread pool
+  if( (pars->thread_pool = threadpool_create(pars->n_threads, pars->n_ind, 0)) == NULL )
+    error(__FUNCTION__, "failed to create thread pool!");
 
-  // Initialize output
+  // Declare and initialize output variables
+  out_data* data = new out_data;
   init_output(pars, data);
 
-  // Read from GENO file
+  // Read data from GENO file
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   
+  // If input not called genotypes, check whether to call genotypes and/or convert to log-space
   if(pars->in_lkl)
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++){
@@ -154,6 +139,12 @@ int main (int argc, char** argv) {
   /////////////////
   if(pars->verbose >= 1)
     printf("Freeing memory...\n");
+
+  // thread pool
+  threadpool_wait(pars->thread_pool);
+  if(threadpool_destroy(pars->thread_pool, threadpool_graceful) != 0)
+    error(__FUNCTION__, "cannot free thread pool!");
+
   // data struct
   free_ptr((void***) data->a, pars->n_ind, N_STATES);
   free_ptr((void*) data->freq);
@@ -163,6 +154,7 @@ int main (int argc, char** argv) {
   free_ptr((void*) data->indF);
   free_ptr((void*) data->lkl);
   delete data;
+
   // pars struct
   //free_ptr((void*) pars->in_geno);
   free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);

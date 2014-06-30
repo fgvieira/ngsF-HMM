@@ -24,11 +24,10 @@ void init_pars(params *pars) {
   pars->max_iters = 1500;
   pars->min_epsilon = 1e-5;
   pars->n_threads = 1;
-  pars->n_chunks = 0;
-  pars->max_chunk_size = 10000;
   pars->version = false;
   pars->verbose = 1;
   pars->seed = time(NULL);
+  pars->thread_pool = NULL;
 }
 
 
@@ -56,7 +55,6 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       {"max_iters", required_argument, NULL, 'M'},
       {"min_epsilon", required_argument, NULL, 'e'},
       {"n_threads", required_argument, NULL, 'x'},
-      {"chunk_size", required_argument, NULL, 'c'},
       {"version", no_argument, NULL, 'v'},
       {"verbose", required_argument, NULL, 'V'},
       {"seed", required_argument, NULL, 'S'},
@@ -64,7 +62,7 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:lLn:s:G:f:Ft:Tp:Po:Xbm:M:e:x:c:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:lLn:s:G:f:Ft:Tp:Po:Xbm:M:e:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -124,9 +122,6 @@ int parse_cmd_args(int argc, char** argv, params* pars) {
       break;
     case 'x':
       pars->n_threads = atoi(optarg);
-      break;
-    case 'c':
-      pars->max_chunk_size = atoi(optarg);
       break;
     case 'v':
       pars->version = true;

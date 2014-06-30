@@ -4,9 +4,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <zlib.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <gsl/gsl_rng.h>
+
+#include "threadpool.h"
 
 using namespace std;
 

@@ -1,10 +1,5 @@
 #pragma once
 
-#include <semaphore.h>
-#include <pthread.h>
-#include <sys/stat.h>
-#include <gsl/gsl_rng.h>
-
 #include "shared.hpp"
 
 using namespace std;
@@ -21,36 +16,31 @@ const uint64_t BUFF_LEN = 100000;
 
 // Struct to store all input arguments //GZIP
 typedef struct {
-  char* in_geno;
+  char *in_geno;
   bool in_bin;
   bool in_lkl;
   bool in_loglkl;
-  double*** geno_lkl;
+  double ***geno_lkl;
   uint64_t n_ind;
   uint64_t n_sites;
   int call_geno;
-  char* in_freq;
+  char *in_freq;
   bool freq_fixed;
-  char* in_trans;
+  char *in_trans;
   bool trans_fixed;
-  char* in_path;
+  char *in_path;
   bool path_fixed;
-  char* out_prefix;
+  char *out_prefix;
   bool log;
   bool log_bin;
   uint min_iters;
   uint max_iters;
   double min_epsilon;
   uint n_threads;
-  uint n_chunks;
-  uint max_chunk_size;
   bool version;
   uint verbose;
   uint seed;
-  
-  sem_t launch_thread_semaph;
-  sem_t running_thread_semaph;
-  pthread_mutex_t F_lock;
+  threadpool_t *thread_pool;
 } params;
 
 

@@ -9,17 +9,20 @@ LIB = -lgsl -lgslcblas -lz -lpthread
 all: ngsF-HMM
 
 
-parse_args.o: parse_args.cpp ngsF-HMM.hpp
+parse_args: parse_args.cpp ngsF-HMM.hpp
 	$(CXX) $(CFLAGS) $(DFLAGS) -c parse_args.cpp
 
-EM.o: EM.cpp ngsF-HMM.hpp
+threadpool: threadpool.c threadpool.h
+	$(CXX) $(CFLAGS) $(DFLAGS) -c threadpool.c
+
+EM: EM.cpp ngsF-HMM.hpp
 	$(CXX) $(CFLAGS) $(DFLAGS) -c EM.cpp
 
-shared.o: shared.cpp shared.hpp
+shared: shared.cpp shared.hpp
 	$(CXX) $(CFLAGS) $(DFLAGS) -c shared.cpp
 
-ngsF-HMM: ngsF-HMM.cpp parse_args.o EM.o shared.o
-	$(CXX) $(CFLAGS) $(DFLAGS) ngsF-HMM.cpp parse_args.o EM.o shared.o $(LIB) -o ngsF-HMM
+ngsF-HMM: ngsF-HMM.cpp parse_args threadpool EM shared
+	$(CXX) $(CFLAGS) $(DFLAGS) ngsF-HMM.cpp parse_args.o threadpool.o EM.o shared.o $(LIB) -o ngsF-HMM
 
 test:
 	@cd examples/; bash ./test.sh 2> test.log; cd ../

@@ -1,11 +1,82 @@
 
 #include "ngsF-HMM.hpp"
 
-int forward(double **data, double **Fw, double start, double ***e, double **a, unsigned short int *path, uint64_t length){
-  double pp[N_GENO];
+// General structure for launching threads
+struct pth_struct{
+  int type;
+  double **new_a;
+  double **data;
+  double **Fw;
+  double **Bw;
+  double **Vi;
+  double ***e;
+  double **a;
+  unsigned short int *path;
+  uint64_t length;
+};
 
-  Fw[0][0] = log(1-start);
-  Fw[0][1] = log(start);
+
+
+// Function prototypes
+void threadpool_add_task(int type, double **new_a, double **data, double **Fw, double **Bw, double **Vi, double ***e, double **a, unsigned short int *path, uint64_t length);
+void thread_slave(void *ptr);
+void forward(double **data, double **Fw, double ***e, double **a, unsigned short int *path, uint64_t length);
+void backward(double **data, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length);
+void viterbi(double **data, double **Vi, double ***e, double **a, unsigned short int *path, uint64_t length);
+void trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length);
+
+
+
+// General thread functions
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **new_a, double **data, double **Fw, double **Bw, double **Vi, double ***e, double **a, unsigned short int *path, uint64_t length){
+  pth_struct *p = new pth_struct;
+
+  p->type = type;
+  p->new_a = new_a;
+  p->data = data;
+  p->Fw = Fw;
+  p->Bw = Bw;
+  p->Vi = Vi;
+  p->e = e;
+  p->a = a;
+  p->path = path;
+  p->length = length;
+
+  // Add task to thread pool
+  //thread_slave((void*) p);
+
+  int ret = threadpool_add(thread_pool, thread_slave, (void*) p, 0);
+  if(ret == -1)
+    error(__FUNCTION__, "invalid thread pool!");
+  else if(ret == -2)
+    error(__FUNCTION__, "thread pool lock failure!");
+  else if(ret == -3)
+    error(__FUNCTION__, "queue full!");
+  else if(ret == -4)
+    error(__FUNCTION__, "thread pool is shutting down!");
+  else if(ret == -5)
+    error(__FUNCTION__, "thread failure!");
+
+}
+
+void thread_slave(void *ptr){
+  pth_struct* p = (pth_struct*) ptr;
+
+  if(p->type == 1)
+    forward(p->data, p->Fw, p->e, p->a, p->path, p->length);
+  if(p->type == 2)
+    backward(p->data, p->Bw, p->e, p->a, p->path, p->length);
+  if(p->type == 3)
+    viterbi(p->data, p->Vi, p->e, p->a, p->path, p->length);
+  if(p->type == 4)
+    trans(p->new_a, p->data, p->Fw, p->Bw, p->e, p->a, p->path, p->length);
+}
+
+
+
+// Forward functions
+void forward(double **data, double **Fw, double ***e, double **a, unsigned short int *path, uint64_t length){
+  double pp[N_GENO];
 
   for (uint64_t s = 1; s <= length; s++){
     post_prob(pp, data[s], e[s][path[s]], N_GENO);
@@ -17,17 +88,11 @@ int forward(double **data, double **Fw, double start, double ***e, double **a, u
       Fw[s][l] += logsum3(e[s][l][0]+pp[0], e[s][l][1]+pp[1], e[s][l][2]+pp[2]);
     }
   }
-
-  return 0;
 }
 
 
-int backward(double **data, double **Bw, double start, double ***e, double **a, unsigned short int *path, uint64_t length){
+void backward(double **data, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
-
-  // Initialise Backward table
-  Bw[length][0] = log(1);
-  Bw[length][1] = log(1);
 
   for (uint64_t s = length; s > 0; s--){
     post_prob(pp, data[s], e[s][path[s]], N_GENO);
@@ -40,18 +105,12 @@ int backward(double **data, double **Bw, double start, double ***e, double **a, 
       Bw[s-1][k] = logsum2(a[k][0] + LS_0 + Bw[s][0],
 			   a[k][1] + LS_1 + Bw[s][1]);
   }
-
-  return 0;
 }
 
 
 
-int viterbi(double **data, double **Vi, double start, double ***e, double **a, unsigned short int *path, uint64_t length){
+void viterbi(double **data, double **Vi, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
-
-  // Initialise Forward table
-  Vi[0][0] = log(1-start);
-  Vi[0][1] = log(start);
 
   for (uint64_t s = 1; s <= length; s++){
     post_prob(pp, data[s], e[s][path[s]], N_GENO);
@@ -63,12 +122,10 @@ int viterbi(double **data, double **Vi, double start, double ***e, double **a, u
       Vi[s][l] += logsum3(e[s][l][0]+pp[0], e[s][l][1]+pp[1], e[s][l][2]+pp[2]);
     }
   }
-
-  return 0;
 }
 
 
-int trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
+void trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
   double sPk[length+1];
   
@@ -93,14 +150,12 @@ int trans(double **new_a, double **data, double **Fw, double **Bw, double ***e, 
       new_a[k][l] = tmp_a;
     }
   }
-
-  return 0;
 }
 
 
 /*
 // UNTESTED!!!!!
-int emission(double ***new_e, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
+void emission(double ***new_e, double **data, double **Fw, double **Bw, double ***e, double **a, unsigned short int *path, uint64_t length){
   double pp[N_GENO];
   double sPk[length+1];
 
@@ -122,7 +177,5 @@ int emission(double ***new_e, double **data, double **Fw, double **Bw, double **
 
   for (uint64_t s = 1; s <= length; s++)
     new_e[s] /= length;
-
-  return 0;
 }
 */
