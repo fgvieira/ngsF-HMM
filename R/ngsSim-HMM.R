@@ -183,7 +183,7 @@ geno_lkl <- geno
 for (j in 1:opt$n_ind) geno_lkl[[j]] = getLikes(geno[[j]],depth[j],opt$error,T,F)
 
 # Print
-fh <- gzfile(paste(opt$out,"geno_lkl.gz",sep="."), "w")
+fh <- gzfile(paste(opt$out,"glf.gz",sep="."), "w")
 for (i in 1:opt$n_sites) {
   for (j in 1:opt$n_ind)
     writeLines(as.character(geno_lkl[[j]][,i]), fh, "\t")

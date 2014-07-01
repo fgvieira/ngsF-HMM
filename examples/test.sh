@@ -28,10 +28,10 @@ do
     
     FILE="testF-HMM.SIM.geno.gz"
     if [[ $TYPE == "GL" ]]; then
-	FILE="testF-HMM.SIM.geno_lkl.gz --loglkl"
+	FILE="testF-HMM.SIM.glf.gz --loglkl"
     fi
     if [[ $TYPE == "GL_CG" ]]; then
-	FILE="testF-HMM.SIM.geno_lkl.gz --loglkl --call_geno 1"
+	FILE="testF-HMM.SIM.glf.gz --loglkl --call_geno 1"
     fi
     
     ID=TRUE

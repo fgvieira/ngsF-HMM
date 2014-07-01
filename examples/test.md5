@@ -40,7 +40,7 @@ ce93fcbb1469ce79db177baf2615024e  testF-HMM.normal.GL.viterbi
 36379384fe9f4af1e5124887dd536232  testF-HMM.path_fixed.TG.log.gz
 0019d23bef56a136a1891211d7007f6f  testF-HMM.path_fixed.TG.viterbi
 c79fa1b038a677475f6d8d12befaddf9  testF-HMM.SIM.geno.gz
-ea2c4ceab6beb0c59bffda8ed9a19495  testF-HMM.SIM.geno_lkl.gz
+ea2c4ceab6beb0c59bffda8ed9a19495  testF-HMM.SIM.glf.gz
 11d82f90954073dd5b28503f129d0960  testF-HMM.SIM.path.gz
 a994fcd881ec2676ba35d599f36d8047  testF-HMM.trans_fixed.GL_CG.indF
 bc9a7fce41f6e4131d719cb675296c25  testF-HMM.trans_fixed.GL_CG.log.gz
