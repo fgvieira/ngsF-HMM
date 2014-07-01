@@ -49,7 +49,7 @@ typedef struct {
   double ***a;
   double *freq;
   double ***e;
-  unsigned short int **path;
+  char **path;
   double ***marg_prob;
   double *indF;
   double *lkl;

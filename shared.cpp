@@ -322,10 +322,11 @@ uint64_t split(char *str, const char *sep, char ***out){
 
 
 char *join(unsigned short int *array, uint64_t size, const char *sep){
-  char *buf = new char[size*20];
-  
+  char *buf = new char[size*10];
+  uint64_t len = 0;
+
   sprintf(buf, "%u", array[0]);
-  uint64_t len = strlen(buf);
+  len = strlen(buf);
 
   for(uint64_t cnt = 1; cnt < size; cnt++){
     sprintf(buf+len, "%s%u", sep, array[cnt]);
@@ -342,10 +343,11 @@ char *join(unsigned short int *array, uint64_t size, const char *sep){
 
 
 char *join(uint64_t *array, uint64_t size, const char *sep){
-  char *buf = new char[size*20];
-  
+  char *buf = new char[size*25];
+  uint64_t len = 0;
+
   sprintf(buf, "%lu", array[0]);
-  uint64_t len = strlen(buf);
+  len = strlen(buf);
 
   for(uint64_t cnt = 1; cnt < size; cnt++){
     sprintf(buf+len, "%s%lu", sep, array[cnt]);
@@ -362,10 +364,11 @@ char *join(uint64_t *array, uint64_t size, const char *sep){
 
 
 char *join(double *array, uint64_t size, const char *sep){
-  char *buf = new char[size*20];
-  
+  char *buf = new char[size*25];
+  uint64_t len = 0;
+
   sprintf(buf, "%.10f", array[0]);
-  uint64_t len = strlen(buf);
+  len = strlen(buf);
 
   for(uint64_t cnt = 1; cnt < size; cnt++){
     sprintf(buf+len, "%s%.10f", sep, array[cnt]);
@@ -378,6 +381,27 @@ char *join(double *array, uint64_t size, const char *sep){
 
   return str;
 }
+
+
+char *join(char *array, uint64_t size, const char *sep){
+  char *buf = new char[size*5];
+  uint64_t len = 0;
+
+  sprintf(buf, "%d", array[0]);
+  len = strlen(buf);
+
+  for(uint64_t cnt = 1; cnt < size; cnt++){
+    sprintf(buf+len, "%s%d", sep, array[cnt]);
+    len = strlen(buf);
+  }
+
+  char *str = new char[len+1];
+  strcpy(str, buf);
+  delete [] buf;
+
+  return str;
+}
+
 
 
 unsigned short int *init_usint(uint64_t A, unsigned short int init){

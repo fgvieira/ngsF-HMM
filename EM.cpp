@@ -75,7 +75,7 @@ int EM (params *pars, out_data *data) {
 
 	// Print most probable path (Viterbi)
 	for (uint64_t i = 0; i < pars->n_ind; i++)
-	  gzwrite(log_fh, data->path[i]+1, sizeof(unsigned short int)*pars->n_sites);
+	  gzwrite(log_fh, data->path[i]+1, sizeof(char)*pars->n_sites);
 
 	// Print marginal probs
 	for (uint64_t i = 0; i < pars->n_ind; i++)
@@ -93,6 +93,11 @@ int EM (params *pars, out_data *data) {
 	// Print most probable path (Viterbi)
 	for (uint64_t i = 0; i < pars->n_ind; i++){
 	  buf = join(data->path[i]+1, pars->n_sites, "");
+	  /*
+	  buf = init_char(pars->n_sites+1, '\0');
+	  for(uint64_t s = 1; s <= pars->n_sites; s++)
+	    sprintf(&buf[s-1], "%d", data->path[i][s]);
+	  */
 	  if(gzprintf(log_fh, "%s\n", buf) <= 0)
 	    error(__FUNCTION__, "cannot write PATH info to LOG file!");
 	  delete [] buf;
@@ -138,8 +143,8 @@ void iter_EM(params *pars, out_data *data) {
   cpy(a, data->a, pars->n_ind, N_STATES, N_STATES, sizeof(double));
   double ***e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   cpy(e, data->e, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
-  unsigned short int **path = init_usint(pars->n_ind, pars->n_sites+1, 0);
-  cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(unsigned short int));
+  char **path = init_char(pars->n_ind, pars->n_sites+1, 0);
+  cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(char));
 
   double ***Fw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
   double ***Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
@@ -241,7 +246,7 @@ void iter_EM(params *pars, out_data *data) {
       double den = 0;
 
       for (uint64_t i = 0; i < pars->n_ind; i++){
-	post_prob(pp, pars->geno_lkl[i][s], e[s][path[i][s]], N_GENO);
+	post_prob(pp, pars->geno_lkl[i][s], e[s][(int) path[i][s]], N_GENO);
 	if(pars->call_geno == 2)
 	  call_geno(pp, N_GENO, true);
 
@@ -341,7 +346,6 @@ void print_iter(char *out_prefix, params *pars, out_data *data){
   delete [] tmp_out;
 
   /////////////////////////////////////////////////
-
   // Open filehandle to "viterbi" file
   tmp_out = strdcat(out_prefix, ".viterbi");
   out_fh = fopen(tmp_out, "wb");
@@ -350,16 +354,15 @@ void print_iter(char *out_prefix, params *pars, out_data *data){
   
   // Print most probable path (Viterbi)
   for(uint64_t i = 0; i < pars->n_ind; i++)
-    fwrite(data->path[i]+1, sizeof(unsigned short int), pars->n_sites, out_fh);
+    fwrite(data->path[i]+1, sizeof(char), pars->n_sites, out_fh);
 
   // Close "viterbi" filehandle
   fclose(out_fh);
   delete [] tmp_out;
 
   /////////////////////////////////////////////////
-
   // Print viterbi path in text mode
-  /*
+  /*  
   char *buf;
   // Open filehandle to "viterbi.txt" file
   tmp_out = strdcat(out_prefix, ".viterbi.txt");
