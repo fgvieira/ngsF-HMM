@@ -7,10 +7,10 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
   uint64_t n_geno = (in_probs ? N_GENO : 1);
   double *t;
   double *ptr;
-  char *buf = init_char(BUFF_LEN, '\0');
+  char *buf = init_ptr(BUFF_LEN, (const char*) '\0');
 
   // Allocate memory
-  double ***geno = init_double(n_ind, n_sites+1, N_GENO, -INFINITY);
+  double ***geno = init_ptr(n_ind, n_sites+1, N_GENO, -INFINITY);
   
   // Open GENO file
   gzFile in_geno_fh = gzopen(in_geno, in_bin ? "rb" : "r");

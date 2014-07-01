@@ -183,7 +183,7 @@ int64_t read_file(char *in_file, char ***ptr, uint64_t buff_size){
   }
 
   // Copy to final array
-  *ptr = init_char(cnt, buff_size, '\0');
+  *ptr = init_ptr(cnt, buff_size, (const char*) '\0');
   for(uint64_t i = 0; i < cnt; i++){
     strcpy(ptr[0][i], tmp[i]);
     free(tmp[i]);
@@ -404,7 +404,7 @@ char *join(char *array, uint64_t size, const char *sep){
 
 
 
-unsigned short int *init_usint(uint64_t A, unsigned short int init){
+unsigned short int *init_ptr(uint64_t A, unsigned short int init){
   unsigned short int *ptr = new unsigned short int[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
@@ -414,16 +414,16 @@ unsigned short int *init_usint(uint64_t A, unsigned short int init){
 
 
 
-unsigned short int **init_usint(uint64_t A, uint64_t B, unsigned short int init){
+unsigned short int **init_ptr(uint64_t A, uint64_t B, unsigned short int init){
   unsigned short int **ptr = new unsigned short int*[A];
   for(uint64_t a = 0; a < A; a++)
-    ptr[a] = init_usint(B, init);
+    ptr[a] = init_ptr(B, init);
 
   return ptr;
 }
 
 
-uint64_t *init_uint64(uint64_t A, uint64_t init){
+uint64_t *init_ptr(uint64_t A, uint64_t init){
   uint64_t *ptr = new uint64_t[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
@@ -433,17 +433,17 @@ uint64_t *init_uint64(uint64_t A, uint64_t init){
 
 
 
-uint64_t **init_uint64(uint64_t A, uint64_t B, uint64_t init){
+uint64_t **init_ptr(uint64_t A, uint64_t B, uint64_t init){
   uint64_t **ptr = new uint64_t*[A];
   for(uint64_t a = 0; a < A; a++)
-    ptr[a] = init_uint64(B, init);
+    ptr[a] = init_ptr(B, init);
 
   return ptr;
 }
 
 
 
-double *init_double(uint64_t A, double init){
+double *init_ptr(uint64_t A, double init){
   double *ptr = new double[A];
   for(uint64_t a = 0; a < A; a++)
     ptr[a] = init;
@@ -453,20 +453,20 @@ double *init_double(uint64_t A, double init){
 
 
 
-double **init_double(uint64_t A, uint64_t B, double init){
+double **init_ptr(uint64_t A, uint64_t B, double init){
   double **ptr = new double*[A];
   for(uint64_t a = 0; a < A; a++)
-    ptr[a] = init_double(B, init);
+    ptr[a] = init_ptr(B, init);
 
   return ptr;
 }
 
 
 
-double ***init_double(uint64_t A, uint64_t B, uint64_t C, double init){
+double ***init_ptr(uint64_t A, uint64_t B, uint64_t C, double init){
   double ***ptr = new double**[A];
   for(uint64_t a = 0; a < A; a++)
-    ptr[a] = init_double(B, C, init);
+    ptr[a] = init_ptr(B, C, init);
 
   return ptr;
 }
@@ -477,7 +477,7 @@ double ***init_double(uint64_t A, uint64_t B, uint64_t C, double init){
 char *strdcat(char *str1, const char *str2){
   uint64_t length = strlen(str1) + strlen(str2) + 1;
 
-  char *str = init_char(length, str1);
+  char *str = init_ptr(length, str1);
   strcat(str, str2);
 
   return(str);
@@ -485,7 +485,7 @@ char *strdcat(char *str1, const char *str2){
 
 
 
-char *init_char(uint64_t A, const char *init){
+char *init_ptr(uint64_t A, const char *init){
   char *ptr = new char[A];
   memset(ptr, '\0', A*sizeof(char));
 
@@ -497,10 +497,10 @@ char *init_char(uint64_t A, const char *init){
 
 
 
-char* *init_char(uint64_t A, uint64_t B, const char *init){
+char **init_ptr(uint64_t A, uint64_t B, const char *init){
   char **ptr = new char*[A];
   for(uint64_t a = 0; a < A; a++)
-    ptr[a] = init_char(B, init);
+    ptr[a] = init_ptr(B, init);
 
   return ptr;
 }

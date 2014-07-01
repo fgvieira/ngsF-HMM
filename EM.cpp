@@ -9,8 +9,8 @@ int EM (params *pars, out_data *data) {
 
   uint64_t iter = 0;
   double  max_lkl_epsilon = -INFINITY;
-  double *lkl_epsilon = init_double(pars->n_ind, -INFINITY);
-  double *prev_lkl = init_double(pars->n_ind, -INFINITY);
+  double *lkl_epsilon = init_ptr(pars->n_ind, -INFINITY);
+  double *prev_lkl = init_ptr(pars->n_ind, -INFINITY);
   gzFile log_fh;
 
   // Open filehandle for iteration log
@@ -94,7 +94,7 @@ int EM (params *pars, out_data *data) {
 	for (uint64_t i = 0; i < pars->n_ind; i++){
 	  buf = join(data->path[i]+1, pars->n_sites, "");
 	  /*
-	  buf = init_char(pars->n_sites+1, '\0');
+	  buf = init_ptr(pars->n_sites+1, '\0');
 	  for(uint64_t s = 1; s <= pars->n_sites; s++)
 	    sprintf(&buf[s-1], "%d", data->path[i][s]);
 	  */
@@ -139,16 +139,16 @@ int EM (params *pars, out_data *data) {
 void iter_EM(params *pars, out_data *data) {
   double inbreed = 0.1;
 
-  double ***a = init_double(pars->n_ind, N_STATES, N_STATES, -INFINITY);
+  double ***a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
   cpy(a, data->a, pars->n_ind, N_STATES, N_STATES, sizeof(double));
-  double ***e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
+  double ***e = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   cpy(e, data->e, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
-  char **path = init_char(pars->n_ind, pars->n_sites+1, 0);
+  char **path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
   cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(char));
 
-  double ***Fw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
-  double ***Bw = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
-  double ***Vi = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
+  double ***Fw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
+  double ***Bw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
+  double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
 
 
   // Forward recursion

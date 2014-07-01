@@ -37,16 +37,16 @@ char *join(uint64_t*, uint64_t, const char*);
 char *join(double*, uint64_t, const char*);
 char *join(char*, uint64_t, const char*);
 
-unsigned short int *init_usint(uint64_t, unsigned short int);
-unsigned short int **init_usint(uint64_t, uint64_t, unsigned short int);
-uint64_t *init_uint64(uint64_t, uint64_t);
-uint64_t **init_uint64(uint64_t, uint64_t, uint64_t);
-double *init_double(uint64_t, double);
-double **init_double(uint64_t, uint64_t, double);
-double ***init_double(uint64_t, uint64_t, uint64_t, double);
+unsigned short int *init_ptr(uint64_t, unsigned short int);
+unsigned short int **init_ptr(uint64_t, uint64_t, unsigned short int);
+uint64_t *init_ptr(uint64_t, uint64_t);
+uint64_t **init_ptr(uint64_t, uint64_t, uint64_t);
+double *init_ptr(uint64_t, double);
+double **init_ptr(uint64_t, uint64_t, double);
+double ***init_ptr(uint64_t, uint64_t, uint64_t, double);
 char *strdcat(char*, const char*);
-char *init_char(uint64_t, const char*);
-char **init_char(uint64_t, uint64_t, const char*);
+char *init_ptr(uint64_t, const char*);
+char **init_ptr(uint64_t, uint64_t, const char*);
 
 void free_ptr(void*);
 void free_ptr(void**, uint64_t);

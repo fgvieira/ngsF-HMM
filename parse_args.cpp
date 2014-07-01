@@ -196,7 +196,7 @@ int init_output(params* pars, out_data* data) {
   double trans_rng_min = 0;
   gzFile in_trans_fh;
 
-  data->a = init_double(pars->n_ind, N_STATES, N_STATES, -INFINITY);
+  data->a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
 
   if( strcmp("r", pars->in_trans) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++){
@@ -256,7 +256,7 @@ int init_output(params* pars, out_data* data) {
   double freq_rng_min = 0.01;
   gzFile in_freq_fh;
 
-  data->freq = init_double(pars->n_sites+1, freq_rng_min);
+  data->freq = init_ptr(pars->n_sites+1, freq_rng_min);
   // Initialize site 0 to invalid value
   data->freq[0] = -1;
 
@@ -292,7 +292,7 @@ int init_output(params* pars, out_data* data) {
   ///////////////////////////////////////////////
   // Set EMISSION probabilities initial values //
   ///////////////////////////////////////////////
-  data->e = init_double(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
+  data->e = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   // Update emission probs based on allele freqs
   update_e(data, pars->n_sites);
   
@@ -303,7 +303,7 @@ int init_output(params* pars, out_data* data) {
   /////////////////////////////
   gzFile in_path_fh;
 
-  data->path = init_char(pars->n_ind, pars->n_sites+1, 0);
+  data->path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
 
   if( strcmp("r", pars->in_path) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++)
@@ -341,7 +341,7 @@ int init_output(params* pars, out_data* data) {
   ///////////////////////////////////////
   // Initialize Marginal Probabilities //
   ///////////////////////////////////////
-  data->marg_prob = init_double(pars->n_ind, pars->n_sites+1, N_STATES, 0);
+  data->marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
   // Initialize site 0 to invalid value
   for (uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t k = 0; k < N_STATES; k++)
@@ -352,8 +352,8 @@ int init_output(params* pars, out_data* data) {
   ///////////////////////////////////////
   // Initialize indF and lkl variables //
   ///////////////////////////////////////
-  data->indF = init_double(pars->n_ind, 0);
-  data->lkl = init_double(pars->n_ind, -INFINITY);
+  data->indF = init_ptr(pars->n_ind, 0.0);
+  data->lkl = init_ptr(pars->n_ind, -INFINITY);
 
 
 
