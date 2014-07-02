@@ -192,8 +192,8 @@ int init_output(params* pars, out_data* data) {
   ///////////////////////////////////
   // Set TRANSITION initial values //
   ///////////////////////////////////
-  double trans_rng_max = 1;
-  double trans_rng_min = 0;
+  double trans_rng_min = 0.01;
+  double trans_rng_max = 1 - trans_rng_min;
   gzFile in_trans_fh;
 
   data->a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
@@ -252,8 +252,8 @@ int init_output(params* pars, out_data* data) {
   /////////////////////////////
   // Set FREQ initial values //
   /////////////////////////////
-  double freq_rng_max = 0.49;
-  double freq_rng_min = 0.01;
+  double freq_rng_min = 0.1;
+  double freq_rng_max = 0.5 - freq_rng_min;
   gzFile in_freq_fh;
 
   data->freq = init_ptr(pars->n_sites+1, freq_rng_min);

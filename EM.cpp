@@ -115,7 +115,8 @@ int EM (params *pars, out_data *data) {
     }
 
     // Disabled since printing data each iteration takes too long
-    printf("==> Printing current iteration parameters\n");
+    if(pars->verbose >= 1)    
+      printf("==> Printing current iteration parameters\n");
     print_iter(pars->out_prefix, pars, data);
   }
 
@@ -137,8 +138,6 @@ int EM (params *pars, out_data *data) {
 
 
 void iter_EM(params *pars, out_data *data) {
-  double inbreed = 0.1;
-
   double ***a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
   cpy(a, data->a, pars->n_ind, N_STATES, N_STATES, sizeof(double));
   double ***e = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
@@ -156,8 +155,8 @@ void iter_EM(params *pars, out_data *data) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++) {
-    Fw[i][0][0] = log(1-inbreed);
-    Fw[i][0][1] = log(inbreed);
+    Fw[i][0][0] = log(1-data->indF[i]);
+    Fw[i][0][1] = log(data->indF[i]);
 
     threadpool_add_task(pars->thread_pool, 1, NULL, pars->geno_lkl[i], Fw[i], NULL, NULL, e, a[i], path[i], pars->n_sites);
   }
@@ -201,8 +200,8 @@ void iter_EM(params *pars, out_data *data) {
     if(pars->verbose >= 1)
       printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++){
-      Vi[i][0][0] = log(1-inbreed);
-      Vi[i][0][1] = log(inbreed);
+      Vi[i][0][0] = log(1-data->indF[i]);
+      Vi[i][0][1] = log(data->indF[i]);
 
       threadpool_add_task(pars->thread_pool, 3, NULL, pars->geno_lkl[i], NULL, NULL, Vi[i], e, a[i], path[i], pars->n_sites);
     }
@@ -270,14 +269,17 @@ void iter_EM(params *pars, out_data *data) {
   if(pars->verbose >= 1)
     printf("==> Update inbreeding coefficients\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
+    /*
     double indF = -INFINITY;
     for (uint64_t s = 1; s <= pars->n_sites; s++)
       indF = logsum2(indF, data->marg_prob[i][s][1]);
     data->indF[i] = exp(indF)/pars->n_sites;
+    */
+    data->indF[i] = exp(data->a[i][0][1] - logsum2(data->a[i][0][1], data->a[i][1][0]));
   }
 
   time_t end_t = time(NULL);
-  if(pars->verbose >= 5)
+  if(pars->verbose >= 3)
     printf("\nFw: %.1f\nBw: %.1f\nMP: %.1f\npath: %.1f\ntrans: %.1f\nfreqs: %.1f\nemission: %.1f\nF: %.1f\n", 
 	   difftime(bwd_t,fwd_t), 
 	   difftime(mp_t,bwd_t), 
@@ -335,7 +337,7 @@ void print_iter(char *out_prefix, params *pars, out_data *data){
   
   // Print transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh,"%f\t%f\n", exp(data->a[i][0][1]), exp(data->a[i][0][1]));
+    fprintf(out_fh,"%f\t%f\n", exp(data->a[i][0][1]), exp(data->a[i][1][0]));
 
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)

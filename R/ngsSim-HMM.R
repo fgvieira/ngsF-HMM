@@ -118,15 +118,15 @@ if(file.exists(opt$depth)){
 ############################ Generate data ############################
 set.seed(opt$seed)
 ### Parameters
-inbreed=0.5
 n_states=2
 
 
 
 ############ Populating TRUE transition probabilities
 cat("====> Initializing transition probabilities...",fill=TRUE)
-a=list()
-for (j in 1:opt$n_ind) a[[j]]=matrix(c(1-alpha[j],alpha[j],beta[j],1-beta[j]),ncol=n_states,byrow=T,dimnames=list(c("nIBD","IBD"),c("nIBD","IBD")));
+a = list()
+for (j in 1:opt$n_ind)
+  a[[j]] = matrix(c(1-alpha[j],alpha[j],beta[j],1-beta[j]),ncol=n_states,byrow=T,dimnames=list(c("nIBD","IBD"),c("nIBD","IBD")))
 
 
 
@@ -134,12 +134,12 @@ for (j in 1:opt$n_ind) a[[j]]=matrix(c(1-alpha[j],alpha[j],beta[j],1-beta[j]),nc
 cat("====> Initializing emission probabilities...",fill=TRUE)
 e = list()
 for (i in 1:opt$n_sites) {
-  e[[i]]=matrix(nrow=n_states,ncol=3,dimnames=list(c("nIBD","IBD"),c("AA","Aa","aa")))
+  e[[i]] = matrix(nrow=n_states,ncol=3,dimnames=list(c("nIBD","IBD"),c("AA","Aa","aa")))
   for (k in 1:2){
     f=freq[i]
-    e[[i]][k,1]=(1-f)^2+(1-f)*f*(k-1)
-    e[[i]][k,2]=2*(1-f)*f-2*(1-f)*f*(k-1)
-    e[[i]][k,3]=f^2+(1-f)*f*(k-1)
+    e[[i]][k,1] = (1-f)^2+(1-f)*f*(k-1)
+    e[[i]][k,2] = 2*(1-f)*f-2*(1-f)*f*(k-1)
+    e[[i]][k,3] = f^2+(1-f)*f*(k-1)
   }
 }
 
@@ -147,12 +147,16 @@ for (i in 1:opt$n_sites) {
 
 ############ Generating TRUE (hidden) path
 cat("====> Generating true path...",fill=TRUE)
-path=list();
+path = list();
 for (j in 1:opt$n_ind) path[[j]] = numeric(opt$n_sites)
 
-for (j in 1:opt$n_ind)
+for (j in 1:opt$n_ind){
+  initial_F = a[[j]][1,2] / (a[[j]][1,2] + a[[j]][2,1])
+  path[[j]][1] = sample(0:1,size=1,prob=c(1-initial_F,initial_F))
+  
   for (i in 2:opt$n_sites)
-    path[[j]][i]=sample(0:1,size=1,prob=a[[j]][path[[j]][i-1]+1,])
+    path[[j]][i] = sample(0:1,size=1,prob=a[[j]][path[[j]][i-1]+1,])
+}
 
 # Print
 fh <- gzfile(paste(opt$out,"path.gz",sep="."), "w")
