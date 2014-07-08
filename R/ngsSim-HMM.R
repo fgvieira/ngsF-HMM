@@ -36,8 +36,9 @@ getLikes<-function(x,depth=5,error=0.01,norm=TRUE,loglikeR=FALSE){
 library(optparse)
 option_list <- list(make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-l", "--n_sites"), action="store", type="integer", default=1000, help="Number of independent sites [%default]"),
+                    make_option(c("-F", "--indF"), action="store", type="character", default="0", help="Per-individual inbreeding coefficients [%default]"),
                     make_option(c("-f", "--freq"), action="store", type="character", default="0.1", help="Allele frequencies [%default]"),
-                    make_option(c("-t", "--trans"), action="store", type="character", default="0.01-0.01", help="Transition probabilities [%default]"),
+                    make_option(c("-t", "--trans"), action="store", type="numeric", default=0.01, help="Transition probabilities [%default]"),
                     make_option(c("-d", "--depth"), action="store", type="character", default="5", help="Sequencing depth [%default]"),
                     make_option(c("-e", "--error"), action="store", type="numeric", default=0.01, help="Error rate [%default]"),
                     make_option(c("-s", "--seed"), action="store", type="integer", default=12345, help="Seed for random number generator [%default]"),
@@ -47,31 +48,22 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 ############################ Parsing input arguments ############################
 
-### trans
-alpha = beta = c()
-cat("====> Parsing initial transition parameters...",fill=TRUE)
-if(file.exists(opt$trans)){
-  cat("==> Reading values from file:",opt$trans,fill=TRUE)
-  trans <- strsplit(readLines(opt$trans),"[-, \t]")
-  if(opt$n_ind != length(trans)){
-    cat("ERROR: number of individuals and trans file do not match", fill=TRUE)
+### indF
+indF = c()
+cat("====> Parsing per-individual indF...",fill=TRUE)
+if(file.exists(opt$indF)){
+  cat("==> Reading values from file:",opt$indF,fill=TRUE)
+  indF <- as.numeric(readLines(opt$indF))
+  if(opt$n_ind != length(indF)){
+    cat("ERROR: number of individuals and indF file do not match", fill=TRUE)
     quit("no",-1)
   }
-  
-  for (j in 1:opt$n_ind){
-    alpha[j] <- as.numeric(trans[[j]][1])
-    beta[j] <- as.numeric(trans[[j]][2])
-  }
-}else if(opt$trans == "r"){
+}else if(opt$indF == "r"){
   cat("==> Using random values",fill=TRUE)
-  alpha <- runif(opt$n_ind)
-  beta <- runif(opt$n_ind)
-}else {
-  cat("==> Setting to fixed value:",opt$trans,fill=TRUE)
-  for (j in 1:opt$n_ind){
-    alpha[j] <- as.numeric(strsplit(opt$trans,"[-,\t]")[[1]][1])
-    beta[j] <- as.numeric(strsplit(opt$trans,"[-,\t]")[[1]][2])
-  }
+  indF <- runif(opt$n_ind)
+}else{
+  cat("==> Setting to fixed value:",as.numeric(opt$indF),fill=TRUE)
+  for (i in 1:opt$n_ind) indF[i] <- as.numeric(opt$indF)
 }
 
 
@@ -97,7 +89,7 @@ if(file.exists(opt$freq)){
 
 ### depth
 depth = c()
-cat("====> Parsing per-site depth...",fill=TRUE)
+cat("====> Parsing per-individual depth...",fill=TRUE)
 if(file.exists(opt$depth)){
   cat("==> Reading values from file:",opt$depth,fill=TRUE)
   depth <- as.numeric(readLines(opt$depth))
@@ -126,7 +118,7 @@ n_states=2
 cat("====> Initializing transition probabilities...",fill=TRUE)
 a = list()
 for (j in 1:opt$n_ind)
-  a[[j]] = matrix(c(1-alpha[j],alpha[j],beta[j],1-beta[j]),ncol=n_states,byrow=T,dimnames=list(c("nIBD","IBD"),c("nIBD","IBD")))
+  a[[j]] = matrix(c(1-opt$trans*indF[j],opt$trans*indF[j],(1-indF[j])*opt$trans,1-(1-indF[j])*opt$trans),ncol=n_states,byrow=T,dimnames=list(c("nIBD","IBD"),c("nIBD","IBD")))
 
 
 
@@ -151,17 +143,21 @@ path = list();
 for (j in 1:opt$n_ind) path[[j]] = numeric(opt$n_sites)
 
 for (j in 1:opt$n_ind){
-  initial_F = a[[j]][1,2] / (a[[j]][1,2] + a[[j]][2,1])
-  path[[j]][1] = sample(0:1,size=1,prob=c(1-initial_F,initial_F))
+  path[[j]][1] = sample(0:1,size=1,prob=c(1-indF[[j]],indF[[j]]))
   
   for (i in 2:opt$n_sites)
     path[[j]][i] = sample(0:1,size=1,prob=a[[j]][path[[j]][i-1]+1,])
 }
 
 # Print
-fh <- gzfile(paste(opt$out,"path.gz",sep="."), "w")
-write.table(t(as.data.frame(path)), fh, quote=FALSE, sep="", row.names=FALSE, col.names=FALSE)
-close(fh)
+path_out <- paste(opt$out,"path.gz",sep=".")
+if(!is.na(file.info(path_out)[,"size"])){
+  warning("WARN: PATH file already exists. Skipping...");
+} else {
+  fh <- gzfile(path_out, "w", compression=9)
+  write.table(t(as.data.frame(path)), fh, quote=FALSE, sep="", row.names=FALSE, col.names=FALSE)
+  close(fh)
+}
 
 
 
@@ -175,9 +171,14 @@ for (j in 1:opt$n_ind)
     geno[[j]][i]=sample(0:2,size=1,prob=e[[i]][path[[j]][i]+1,])
 
 # Print
-fh <- gzfile(paste(opt$out,"geno.gz",sep="."), "w")
-write.table(geno, fh, quote=FALSE, sep="\t", row.names=FALSE, col.names=FALSE)
-close(fh)
+seq_out <- paste(opt$out,"geno.gz",sep=".")
+if(!is.na(file.info(seq_out)[,"size"])){
+  warning("WARN: SEQ file already exists. Skipping...");
+} else {
+  fh <- gzfile(seq_out, "w", compression=9)
+  write.table(geno, fh, quote=FALSE, sep="\t", row.names=FALSE, col.names=FALSE)
+  close(fh)
+}
 
 
 
@@ -187,10 +188,15 @@ geno_lkl <- geno
 for (j in 1:opt$n_ind) geno_lkl[[j]] = getLikes(geno[[j]],depth[j],opt$error,T,F)
 
 # Print
-fh <- gzfile(paste(opt$out,"glf.gz",sep="."), "w")
-for (i in 1:opt$n_sites) {
-  for (j in 1:opt$n_ind)
-    writeLines(as.character(geno_lkl[[j]][,i]), fh, "\t")
-  write("", fh)
+lkl_out <- paste(opt$out,"glf.gz",sep=".")
+if(!is.na(file.info(lkl_out)[,"size"])){
+  warning("WARN: LKL file already exists. Skipping...");
+} else {
+  fh <- gzfile(lkl_out, "w", compression=9)
+  for (i in 1:opt$n_sites) {
+    for (j in 1:opt$n_ind)
+      writeLines(as.character(geno_lkl[[j]][,i]), fh, "\t")
+    write("", fh)
+  }
+  close(fh)
 }
-close(fh)

@@ -329,12 +329,9 @@ void print_iter(char *out_prefix, params *pars, out_data *data){
     sum += data->lkl[i];
   fprintf(out_fh,"%.10f\n", sum);
 
-  // Print indF
-  fprintf(out_fh,"%s\n", join(data->indF, pars->n_ind, "\n"));
-  
-  // Print transition prob
+  // Print ind F and transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh,"%f\t%f\n", exp(data->a[i][0][1]), exp(data->a[i][1][0]));
+    fprintf(out_fh,"%.10f\t%f\n", data->indF[i], exp(data->a[i][0][1]) / data->indF[i]);
 
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)

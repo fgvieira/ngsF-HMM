@@ -10,16 +10,17 @@ rm -f testF*
 N_IND=10
 N_SITES=10000
 FREQ=0.2
-TRANS=0.005,0.005
+INDF=0.5
+TRANS=0.01
 SEED=12345
 
 ##### Simulate data from HMM
 echo "========== Simulating data ==========" >&2
 DEPTH=2
 ERROR=0.01
-Rscript ../R/ngsSim-HMM.R --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --trans $TRANS --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
+Rscript ../R/ngsSim-HMM.R --n_ind $N_IND --n_sites $N_SITES --indF $INDF --freq $FREQ --trans $TRANS --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
 
-
+TRANS=0.005-0.005
 
 ##### Infer F
 for TYPE in TG GL GL_CG
@@ -78,7 +79,7 @@ N_SITES=$((`zcat testF.beagle.gz | wc -l`-1))
 
 
 ##### Get genotypes' posterior probability with inbreeding prior
-head -n $((N_IND+1)) testF.indF | tail -n $N_IND > /tmp/testF.indF
+head -n $((N_IND+1)) testF.indF | tail -n $N_IND | cut -f 1 > /tmp/testF.indF
 $ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf -1 -indF /tmp/testF.indF -doGeno 32 -doSaf 2 -anc $SIM_DATA/testAF.ANC.fas -out testF.indF
 
 
