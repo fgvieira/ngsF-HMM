@@ -23,7 +23,7 @@ typedef struct {
   double ***geno_lkl;
   uint64_t n_ind;
   uint64_t n_sites;
-  int call_geno;
+  bool call_geno;
   char *in_freq;
   bool freq_fixed;
   char *in_trans;
@@ -48,7 +48,7 @@ typedef struct {
 typedef struct {
   double ***a;
   double *freq;
-  double ***e;
+  double ***prior;
   char **path;
   double ***marg_prob;
   double *indF;
@@ -83,4 +83,4 @@ void *run_chunk(void*);
 void iter_EM(params*, out_data*);
 void post_prob(double*, double*, double*, uint64_t);
 void print_iter(char*, params*, out_data*);
-int update_e(out_data*, uint64_t);
+int update_priors(out_data*, uint64_t);

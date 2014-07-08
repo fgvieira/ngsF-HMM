@@ -82,11 +82,13 @@ int main (int argc, char** argv) {
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++){
 	// Call genotypes
-	if(pars->call_geno == 1)
+	if(pars->call_geno)
 	  call_geno(pars->geno_lkl[i][s], N_GENO, pars->in_loglkl);
 	// Convert space
 	if(!pars->in_loglkl)
 	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
+	// Normalize GL
+	//post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
 
   
@@ -127,7 +129,7 @@ int main (int argc, char** argv) {
   // data struct
   free_ptr((void***) data->a, pars->n_ind, N_STATES);
   free_ptr((void*) data->freq);
-  free_ptr((void***) data->e, pars->n_sites+1, N_STATES);
+  free_ptr((void***) data->prior, pars->n_sites+1, N_STATES);
   free_ptr((void**) data->path, pars->n_ind);
   free_ptr((void***) data->marg_prob, pars->n_ind, pars->n_sites+1);
   free_ptr((void*) data->indF);

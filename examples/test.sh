@@ -31,7 +31,7 @@ do
 	FILE="testF-HMM.SIM.glf.gz --loglkl"
     fi
     if [[ $TYPE == "GL_CG" ]]; then
-	FILE="testF-HMM.SIM.glf.gz --loglkl --call_geno 1"
+	FILE="testF-HMM.SIM.glf.gz --loglkl --call_geno"
     fi
     
     ID=TRUE

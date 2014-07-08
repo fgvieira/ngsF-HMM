@@ -140,8 +140,8 @@ int EM (params *pars, out_data *data) {
 void iter_EM(params *pars, out_data *data) {
   double ***a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
   cpy(a, data->a, pars->n_ind, N_STATES, N_STATES, sizeof(double));
-  double ***e = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
-  cpy(e, data->e, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
+  double ***prior = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
+  cpy(prior, data->prior, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
   char **path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
   cpy(path, data->path, pars->n_ind, pars->n_sites+1, sizeof(char));
 
@@ -158,7 +158,7 @@ void iter_EM(params *pars, out_data *data) {
     Fw[i][0][0] = log(1-data->indF[i]);
     Fw[i][0][1] = log(data->indF[i]);
 
-    threadpool_add_task(pars->thread_pool, 1, NULL, pars->geno_lkl[i], Fw[i], NULL, NULL, e, a[i], path[i], pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, NULL, pars->geno_lkl[i], Fw[i], NULL, NULL, prior, a[i], path[i], pars->n_sites);
   }
   threadpool_wait(pars->thread_pool);
     
@@ -170,7 +170,7 @@ void iter_EM(params *pars, out_data *data) {
     Bw[i][pars->n_sites][0] = log(1);
     Bw[i][pars->n_sites][1] = log(1);
 
-    threadpool_add_task(pars->thread_pool, 2, NULL, pars->geno_lkl[i], NULL, Bw[i], NULL, e, a[i], path[i], pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, NULL, pars->geno_lkl[i], NULL, Bw[i], NULL, prior, a[i], path[i], pars->n_sites);
   }
   threadpool_wait(pars->thread_pool);
 
@@ -203,7 +203,7 @@ void iter_EM(params *pars, out_data *data) {
       Vi[i][0][0] = log(1-data->indF[i]);
       Vi[i][0][1] = log(data->indF[i]);
 
-      threadpool_add_task(pars->thread_pool, 3, NULL, pars->geno_lkl[i], NULL, NULL, Vi[i], e, a[i], path[i], pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 3, NULL, pars->geno_lkl[i], NULL, NULL, Vi[i], prior, a[i], path[i], pars->n_sites);
     }
     threadpool_wait(pars->thread_pool);
 
@@ -224,7 +224,7 @@ void iter_EM(params *pars, out_data *data) {
       printf("==> Update transition probabilities\n");
 
     for (uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, data->a[i], pars->geno_lkl[i], Fw[i], Bw[i], NULL, e, a[i], path[i], pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 4, data->a[i], pars->geno_lkl[i], Fw[i], Bw[i], NULL, prior, a[i], path[i], pars->n_sites);
   }
   threadpool_wait(pars->thread_pool);
 
@@ -245,9 +245,8 @@ void iter_EM(params *pars, out_data *data) {
       double den = 0;
 
       for (uint64_t i = 0; i < pars->n_ind; i++){
-	post_prob(pp, pars->geno_lkl[i][s], e[s][(int) path[i][s]], N_GENO);
-	if(pars->call_geno == 2)
-	  call_geno(pp, N_GENO, true);
+	//post_prob(pp, pars->geno_lkl[i][s], prior[s][(int) path[i][s]], N_GENO);
+	post_prob(pp, pars->geno_lkl[i][s], NULL, N_GENO);
 
 	num = num + exp(pp[1]) + exp(pp[2])*(2-exp(data->marg_prob[i][s][1]));
 	den = den + 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-exp(data->marg_prob[i][s][1]));
@@ -262,21 +261,16 @@ void iter_EM(params *pars, out_data *data) {
   time_t emission_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Update emission probabilities\n");
-  update_e(data, pars->n_sites);
+  update_priors(data, pars->n_sites);
 
   // Calculate inbreeding coefficients
   time_t F_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Update inbreeding coefficients\n");
-  for (uint64_t i = 0; i < pars->n_ind; i++){
-    /*
-    double indF = -INFINITY;
-    for (uint64_t s = 1; s <= pars->n_sites; s++)
-      indF = logsum2(indF, data->marg_prob[i][s][1]);
-    data->indF[i] = exp(indF)/pars->n_sites;
-    */
+  for (uint64_t i = 0; i < pars->n_ind; i++)
     data->indF[i] = exp(data->a[i][0][1] - logsum2(data->a[i][0][1], data->a[i][1][0]));
-  }
+
+
 
   time_t end_t = time(NULL);
   if(pars->verbose >= 3)
@@ -292,7 +286,7 @@ void iter_EM(params *pars, out_data *data) {
 	   );
 
   free_ptr((void***) a, pars->n_ind, N_STATES);
-  free_ptr((void***) e, pars->n_sites+1, N_STATES);
+  free_ptr((void***) prior, pars->n_sites+1, N_STATES);
   free_ptr((void**) path, pars->n_ind);
 
   free_ptr((void***) Fw, pars->n_ind, pars->n_sites+1);
@@ -304,8 +298,11 @@ void iter_EM(params *pars, out_data *data) {
 
 
 void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
-  for(uint64_t cnt = 0; cnt < n_geno; cnt++)
-    pp[cnt] = lkl[cnt];//+prior[cnt];
+  for(uint64_t cnt = 0; cnt < n_geno; cnt++){
+    pp[cnt] = lkl[cnt];
+    if(prior != NULL)
+      pp[cnt] += prior[cnt];
+  }
 
   double norm = logsum(pp, n_geno);
 
@@ -388,13 +385,13 @@ void print_iter(char *out_prefix, params *pars, out_data *data){
 
 
 
-int update_e(out_data *data, uint64_t n_sites){
+int update_priors(out_data *data, uint64_t n_sites){
   for(uint64_t s = 1; s <= n_sites; s++)
     for(uint64_t F = 0; F < N_STATES; F++){
       double f = data->freq[s];
-      data->e[s][F][0] = log(pow(1-f,2)+(1-f)*f*F);
-      data->e[s][F][1] = log(2*(1-f)*f-2*(1-f)*f*F);
-      data->e[s][F][2] = log(pow(f,2)+(1-f)*f*F);
+      data->prior[s][F][0] = log(pow(1-f,2)+(1-f)*f*F);
+      data->prior[s][F][1] = log(2*(1-f)*f-2*(1-f)*f*F);
+      data->prior[s][F][2] = log(pow(f,2)+(1-f)*f*F);
     }
 
   return 0;
