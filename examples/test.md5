@@ -1,13 +1,13 @@
 34f2431e49ca42173df5d28fe27a8bb5  testF.beagle.gz
-448be9e9e45a9b3e382165a69488d46d  testF_bin.indF
-7276d82263624582f9deca11a4a8a341  testF_bin.log.gz
+418f8f3530a4c904c17d3de655469d64  testF_bin.indF
+8479e2f3233dc7f374c3b704dbe1c1fd  testF_bin.log.gz
 38793b978287d5ff5da2f5d361c6a20c  testF_bin.viterbi
 e805a3d7f028ab1343dc016891e935bd  testF.glf
 b05b86062794f77d089d65d2dda5a9eb  testF-HMM.BEST.GL_CG.indF
 5499912b7990a3729890b77f9ce1154d  testF-HMM.BEST.GL_CG.log.gz
 e6f9ea23e485f19c78e17339022630c3  testF-HMM.BEST.GL_CG.viterbi
-52eac3c7b02596e83242528697b27333  testF-HMM.BEST.GL.indF
-e46be8967c47f85c52c0860ac2a67e90  testF-HMM.BEST.GL.log.gz
+a6fa349620328626fb51b318adf54bf4  testF-HMM.BEST.GL.indF
+bf61002087b8971026816b35d684c8a1  testF-HMM.BEST.GL.log.gz
 b0654fc0d760ee86364be93a14af42c3  testF-HMM.BEST.GL.viterbi
 dd9e5ac595c155bc4d210d7dd4edf7b4  testF-HMM.BEST.TG.indF
 c4c2b3905f4e8f2c0ed6305762795d36  testF-HMM.BEST.TG.log.gz
@@ -24,8 +24,8 @@ a2f79ecbef5bab2ecb55eb5b4ad7b646  testF-HMM.freq_fixed.TG.log.gz
 f1b2f24ff905d8f230b57bad270b17b5  testF-HMM.normal.GL_CG.indF
 983656ba3b38b0e812667f62feaae708  testF-HMM.normal.GL_CG.log.gz
 6b1adf0b54e7c6a13cd5c787b34c51b1  testF-HMM.normal.GL_CG.viterbi
-cab53a7bad2d6be62471b64f947967b2  testF-HMM.normal.GL.indF
-1f89829d697ab52704ebd7393074bd05  testF-HMM.normal.GL.log.gz
+1bf17ed863802cd85914321f877b9878  testF-HMM.normal.GL.indF
+12811f557c26f6cddc75ec966cb5a716  testF-HMM.normal.GL.log.gz
 46229a930d5c27bc4798dcb02a2586a9  testF-HMM.normal.GL.viterbi
 84cb79be5c655b32554e3439f2331de5  testF-HMM.normal.TG.indF
 d7ea99c2aff74776ad52b298ae114fb8  testF-HMM.normal.TG.log.gz
@@ -33,8 +33,8 @@ d7ea99c2aff74776ad52b298ae114fb8  testF-HMM.normal.TG.log.gz
 f1b2f24ff905d8f230b57bad270b17b5  testF-HMM.path_fixed.GL_CG.indF
 9e2229e70f674a93fe1279884bcb8711  testF-HMM.path_fixed.GL_CG.log.gz
 0019d23bef56a136a1891211d7007f6f  testF-HMM.path_fixed.GL_CG.viterbi
-cab53a7bad2d6be62471b64f947967b2  testF-HMM.path_fixed.GL.indF
-31d68cf14caf798aa748ec1690b681fb  testF-HMM.path_fixed.GL.log.gz
+1bf17ed863802cd85914321f877b9878  testF-HMM.path_fixed.GL.indF
+53a584f0899f5dfad3f8cf33b153d4fd  testF-HMM.path_fixed.GL.log.gz
 0019d23bef56a136a1891211d7007f6f  testF-HMM.path_fixed.GL.viterbi
 84cb79be5c655b32554e3439f2331de5  testF-HMM.path_fixed.TG.indF
 af049bcbb2ee6555e7a010f488388cc4  testF-HMM.path_fixed.TG.log.gz
@@ -45,8 +45,8 @@ af049bcbb2ee6555e7a010f488388cc4  testF-HMM.path_fixed.TG.log.gz
 4f324a31d4a0065f9b98ccf0f8e84a30  testF-HMM.trans_fixed.GL_CG.indF
 d27124b008803eb51b76a0c0cb0e7429  testF-HMM.trans_fixed.GL_CG.log.gz
 4780435b2d9b327b12436ab5ece18285  testF-HMM.trans_fixed.GL_CG.viterbi
-c48001065145cadfcd77fae978f2e73d  testF-HMM.trans_fixed.GL.indF
-aeb337f751b222b3915e79ca979ee514  testF-HMM.trans_fixed.GL.log.gz
+0cc1cf13682943d3e736a05189c976b4  testF-HMM.trans_fixed.GL.indF
+32f93c81c0e3d6bd27cd77292316d531  testF-HMM.trans_fixed.GL.log.gz
 7838f65c24388866ccbac2850bcc3595  testF-HMM.trans_fixed.GL.viterbi
 13dfd073395b5f15a447f25e332dacec  testF-HMM.trans_fixed.TG.indF
 b1389b9fb4734e8c847d77ffb7283b5e  testF-HMM.trans_fixed.TG.log.gz
@@ -60,7 +60,7 @@ b1389b9fb4734e8c847d77ffb7283b5e  testF-HMM.trans_fixed.TG.log.gz
 5e675f762b93a944eeee7d76d4585056  testF-HMM.TRUE.TG.indF
 c6b2bcb74ee50730eb7df03a203d833f  testF-HMM.TRUE.TG.log.gz
 0019d23bef56a136a1891211d7007f6f  testF-HMM.TRUE.TG.viterbi
-a4c312c95fc29afdc9dc812c5a77e52d  testF.indF
+cdc23e330fa2557d421c726e8e3d3cbc  testF.indF
 df85fc0e0a09f75e74dffebe17671e7f  testF.indF.covar
 eb4b94d8294660ae0830c424d061cb8e  testF.indF.fold-saf_sum
 22c0a07e6d7ba9d651fa5de2ceeb8449  testF.indF.geno
@@ -68,5 +68,5 @@ eb4b94d8294660ae0830c424d061cb8e  testF.indF.fold-saf_sum
 d6e34941757e73755c73b2e314f867da  testF.indF.saf.pos.gz
 d0162af2ce103acbc30623c74cc4cc21  testF.indF.saf_sum
 600da29079db94a9d2ecf4257bde75c9  testF.indF.stat
-580907ed3edda4cca63c9191b67ee0b5  testF.log.gz
+c536302efeb50c0fdbcb470b58f1e509  testF.log.gz
 38793b978287d5ff5da2f5d361c6a20c  testF.viterbi

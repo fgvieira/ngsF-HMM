@@ -93,11 +93,6 @@ int EM (params *pars, out_data *data) {
 	// Print most probable path (Viterbi)
 	for (uint64_t i = 0; i < pars->n_ind; i++){
 	  buf = join(data->path[i]+1, pars->n_sites, "");
-	  /*
-	  buf = init_ptr(pars->n_sites+1, '\0');
-	  for(uint64_t s = 1; s <= pars->n_sites; s++)
-	    sprintf(&buf[s-1], "%d", data->path[i][s]);
-	  */
 	  if(gzprintf(log_fh, "%s\n", buf) <= 0)
 	    error(__FUNCTION__, "cannot write PATH info to LOG file!");
 	  delete [] buf;
@@ -329,9 +324,9 @@ void print_iter(char *out_prefix, params *pars, out_data *data){
     sum += data->lkl[i];
   fprintf(out_fh,"%.10f\n", sum);
 
-  // Print ind F and transition prob
+  // Print indF and transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh,"%.10f\t%f\n", data->indF[i], exp(data->a[i][0][1]) / data->indF[i]);
+    fprintf(out_fh,"%.10f\t%f\n", data->indF[i], exp(data->a[i][0][1])/data->indF[i]);
 
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)

@@ -67,6 +67,3 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
   delete [] buf;
   return geno;
 }
-
-
-// normalize GL!?!!?

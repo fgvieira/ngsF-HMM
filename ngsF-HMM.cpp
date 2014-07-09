@@ -88,7 +88,7 @@ int main (int argc, char** argv) {
 	if(!pars->in_loglkl)
 	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
 	// Normalize GL
-	//post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
+	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
 
   

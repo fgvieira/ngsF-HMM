@@ -74,28 +74,19 @@ void thread_slave(void *ptr){
 
 // Forward functions
 void forward(double **data, double **Fw, double ***prior, double **a, char *path, uint64_t length){
-  double pp[N_GENO];
-
-  for (uint64_t s = 1; s <= length; s++){
-    post_prob(pp, data[s], NULL, N_GENO);
-
+  for (uint64_t s = 1; s <= length; s++)
     for(uint64_t l = 0; l < N_STATES; l++){
-      double e_l = logsum3(prior[s][l][0]+pp[0], prior[s][l][1]+pp[1], prior[s][l][2]+pp[2]);
+      double e_l = logsum3(data[s][0]+prior[s][l][0], data[s][1]+prior[s][l][1], data[s][2]+prior[s][l][2]);
       // logsum(k==0,k==1)
       Fw[s][l] = logsum2(Fw[s-1][0] + a[0][l], Fw[s-1][1] + a[1][l]) + e_l;
     }
-  }
 }
 
 
 void backward(double **data, double **Bw, double ***prior, double **a, char *path, uint64_t length){
-  double pp[N_GENO];
-
   for (uint64_t s = length; s > 0; s--){
-    post_prob(pp, data[s], NULL, N_GENO);
-
-    double e_nIBD = logsum3(prior[s][0][0]+pp[0], prior[s][0][1]+pp[1], prior[s][0][2]+pp[2]);
-    double e_IBD  = logsum3(prior[s][1][0]+pp[0], prior[s][1][1]+pp[1], prior[s][1][2]+pp[2]);
+    double e_nIBD = logsum3(data[s][0]+prior[s][0][0], data[s][1]+prior[s][0][1], data[s][2]+prior[s][0][2]);
+    double e_IBD  = logsum3(data[s][0]+prior[s][1][0], data[s][1]+prior[s][1][1], data[s][2]+prior[s][1][2]);
 
     for(uint64_t k = 0; k < N_STATES; k++)
       // logsum(l==0,l==1)
@@ -107,22 +98,16 @@ void backward(double **data, double **Bw, double ***prior, double **a, char *pat
 
 
 void viterbi(double **data, double **Vi, double ***prior, double **a, char *path, uint64_t length){
-  double pp[N_GENO];
-
-  for (uint64_t s = 1; s <= length; s++){
-    post_prob(pp, data[s], NULL, N_GENO);
-
+  for (uint64_t s = 1; s <= length; s++)
     for(uint64_t l = 0; l < N_STATES; l++){
-      double e_l = logsum3(prior[s][l][0]+pp[0], prior[s][l][1]+pp[1], prior[s][l][2]+pp[2]);
+      double e_l = logsum3(data[s][0]+prior[s][l][0], data[s][1]+prior[s][l][1], data[s][2]+prior[s][l][2]);
       // max(k==0,k==1)
       Vi[s][l] = max(Vi[s-1][0] + a[0][l], Vi[s-1][1] + a[1][l]) + e_l;
     }
-  }
 }
 
 
 void trans(double **new_a, double **data, double **Fw, double **Bw, double ***prior, double **a, char *path, uint64_t length){
-  double pp[N_GENO];
   double sPk[length+1];
   
   for(uint64_t k = 0; k < N_STATES; k++){
@@ -135,9 +120,7 @@ void trans(double **new_a, double **data, double **Fw, double **Bw, double ***pr
     for(uint64_t l = 0; l < N_STATES; l++){
       double tmp_a = -INFINITY;
       for (uint64_t s = 1; s < length; s++){
-	post_prob(pp, data[s+1], NULL, N_GENO);
-
-	double e_l = logsum3(prior[s+1][l][0]+pp[0], prior[s+1][l][1]+pp[1], prior[s+1][l][2]+pp[2]);
+	double e_l = logsum3(data[s+1][0]+prior[s+1][l][0], data[s+1][1]+prior[s+1][l][1], data[s+1][2]+prior[s+1][l][2]);
 	tmp_a = logsum2(tmp_a,
 			Fw[s][k] + a[k][l] + e_l + Bw[s+1][l] - Pk);
       }
