@@ -240,13 +240,13 @@ void iter_EM(params *pars, out_data *data) {
       double den = 0;
 
       for (uint64_t i = 0; i < pars->n_ind; i++){
-	//post_prob(pp, pars->geno_lkl[i][s], prior[s][(int) path[i][s]], N_GENO);
-	post_prob(pp, pars->geno_lkl[i][s], NULL, N_GENO);
+	post_prob(pp, pars->geno_lkl[i][s], prior[s][(int) path[i][s]], N_GENO);
 
-	num = num + exp(pp[1]) + exp(pp[2])*(2-exp(data->marg_prob[i][s][1]));
-	den = den + 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-exp(data->marg_prob[i][s][1]));
+	double F = exp(data->marg_prob[i][s][1]);
+	num += exp(pp[1]) + exp(pp[2])*(2-F);
+	den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-F);
 	if(pars->verbose >= 8)
-	  printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; marg: %f\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), exp(data->marg_prob[i][s][1]));
+	  printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; marg: %f\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), F);
       }
       data->freq[s] = num/den;
     }
