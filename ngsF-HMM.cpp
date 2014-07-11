@@ -76,6 +76,11 @@ int main (int argc, char** argv) {
 
   // Read data from GENO file
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
+  // Read position distances from file
+  if(pars->in_pos)
+    pars->pos_dist = read_pos(pars->in_pos, pars->n_ind, pars->n_sites);
+  else
+    pars->pos_dist = init_ptr(pars->n_sites+1, INF);
   
   // If input not called genotypes, check whether to call genotypes and/or convert to log-space
   if(pars->in_lkl)

@@ -4,12 +4,14 @@
 
 void init_pars(params *pars) {
   pars->in_geno = NULL;
+  pars->in_pos = NULL;
   pars->in_bin = false;
   pars->in_lkl = false;
   pars->in_loglkl = false;
-  pars->geno_lkl = NULL;
   pars->n_ind = 0;
   pars->n_sites = 0;
+  pars->geno_lkl = NULL;
+  pars->pos_dist = NULL;
   pars->call_geno = false;
   pars->in_freq = NULL;
   pars->freq_fixed = false;
@@ -37,6 +39,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   static struct option long_options[] =
     {
       {"geno", required_argument, NULL, 'g'},
+      {"pos", required_argument, NULL, 'Z'},
       {"lkl", no_argument, NULL, 'l'},
       {"loglkl", no_argument, NULL, 'L'},
       {"n_ind", required_argument, NULL, 'n'},
@@ -62,10 +65,13 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:lLn:s:Gf:Ft:Tp:Po:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Ft:Tp:Po:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
+      break;
+    case 'Z':
+      pars->in_pos = optarg;
       break;
     case 'l':
       pars->in_lkl = true;
@@ -171,8 +177,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   // Print arguments to STDOUT
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\ttrans: %s\n\ttrans_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-           pars->in_geno, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log, pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\ttrans: %s\n\ttrans_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+           pars->in_geno, pars->in_pos, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log, pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if(pars->verbose >= 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -196,13 +202,16 @@ int init_output(params* pars, out_data* data) {
   double trans_rng_max = 1 - trans_rng_min;
   gzFile in_trans_fh;
 
+  data->indF = init_ptr(pars->n_ind, 0.0);
   data->a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
 
   if( strcmp("r", pars->in_trans) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++){
-      data->a[i][0][1] = trans_rng_min + gsl_rng_uniform(r) * (trans_rng_max - trans_rng_min);
+      data->indF[i] = trans_rng_min + gsl_rng_uniform(r) * (trans_rng_max - trans_rng_min);
+      double trans = trans_rng_min + gsl_rng_uniform(r) * (trans_rng_max - trans_rng_min);      
+      data->a[i][0][1] = min(max(trans*data->indF[i], trans_rng_min), trans_rng_max);
       data->a[i][0][0] = 1 - data->a[i][0][1];
-      data->a[i][1][0] = trans_rng_min + gsl_rng_uniform(r) * (trans_rng_max - trans_rng_min);
+      data->a[i][1][0] = min(max(trans*(1-data->indF[i]), trans_rng_min), trans_rng_max);
       data->a[i][1][1] = 1 - data->a[i][1][0];
     }
   
@@ -218,9 +227,10 @@ int init_output(params* pars, out_data* data) {
       if( i > pars->n_ind || split(buf, (const char*) " ,-\t", &t) != 2)
 	error(__FUNCTION__, "wrong TRANS file format!");
 
-      data->a[i][0][1] = min(max(t[0], trans_rng_min), trans_rng_max);
+      data->indF[i] = t[0];
+      data->a[i][0][1] = min(max(t[1]*data->indF[i], trans_rng_min), trans_rng_max);
       data->a[i][0][0] = 1 - data->a[i][0][1];
-      data->a[i][1][0] = min(max(t[1], trans_rng_min), trans_rng_max);
+      data->a[i][1][0] = min(max(t[1]*(1-data->indF[i]), trans_rng_min), trans_rng_max);
       data->a[i][1][1] = 1 - data->a[i][1][0];
       i++;
 
@@ -234,9 +244,10 @@ int init_output(params* pars, out_data* data) {
       error(__FUNCTION__, "wrong TRANS parameters format!");
 
     for(uint64_t i = 0; i < pars->n_ind; i++){
-      data->a[i][0][1] = min(max(t[0], trans_rng_min), trans_rng_max);
+      data->indF[i] = t[0];
+      data->a[i][0][1] = min(max(t[1]*data->indF[i], trans_rng_min), trans_rng_max);
       data->a[i][0][0] = 1 - data->a[i][0][1];
-      data->a[i][1][0] = min(max(t[1], trans_rng_min), trans_rng_max);
+      data->a[i][1][0] = min(max(t[1]*(1-data->indF[i]), trans_rng_min), trans_rng_max);
       data->a[i][1][1] = 1 - data->a[i][1][0];
     }
     delete [] t;
@@ -244,8 +255,9 @@ int init_output(params* pars, out_data* data) {
   // Convert transition probs to log-scale
   for (uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t k = 0; k < N_STATES; k++)
-      for(uint64_t l = 0; l < N_STATES; l++)
-	data->a[i][k][l] = log(data->a[i][k][l]);
+      conv_space(data->a[i][k], N_STATES, log);
+  //for(uint64_t l = 0; l < N_STATES; l++)
+  //data->a[i][k][l] = log(data->a[i][k][l]);
 
 
 
@@ -349,10 +361,9 @@ int init_output(params* pars, out_data* data) {
 
 
 
-  ///////////////////////////////////////
-  // Initialize indF and lkl variables //
-  ///////////////////////////////////////
-  data->indF = init_ptr(pars->n_ind, 0.0);
+  //////////////////////////
+  // Initialize Lkl array //
+  //////////////////////////
   data->lkl = init_ptr(pars->n_ind, -INFINITY);
 
 

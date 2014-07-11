@@ -72,7 +72,7 @@ void thread_slave(void *ptr){
 
 
 
-// Forward functions
+// Forward function
 void forward(double **data, double **Fw, double ***prior, double **a, char *path, uint64_t length){
   for (uint64_t s = 1; s <= length; s++)
     for(uint64_t l = 0; l < N_STATES; l++){
@@ -83,6 +83,8 @@ void forward(double **data, double **Fw, double ***prior, double **a, char *path
 }
 
 
+
+// Backward function
 void backward(double **data, double **Bw, double ***prior, double **a, char *path, uint64_t length){
   for (uint64_t s = length; s > 0; s--){
     double e_nIBD = logsum3(data[s][0]+prior[s][0][0], data[s][1]+prior[s][0][1], data[s][2]+prior[s][0][2]);
@@ -97,6 +99,7 @@ void backward(double **data, double **Bw, double ***prior, double **a, char *pat
 
 
 
+// Viterbi function
 void viterbi(double **data, double **Vi, double ***prior, double **a, char *path, uint64_t length){
   for (uint64_t s = 1; s <= length; s++)
     for(uint64_t l = 0; l < N_STATES; l++){
@@ -107,6 +110,8 @@ void viterbi(double **data, double **Vi, double ***prior, double **a, char *path
 }
 
 
+
+// Update transition probabilities
 void trans(double **new_a, double **data, double **Fw, double **Bw, double ***prior, double **a, char *path, uint64_t length){
   double sPk[length+1];
   

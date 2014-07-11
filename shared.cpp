@@ -199,7 +199,7 @@ int64_t read_file(char *in_file, char ***ptr, uint64_t buff_size){
 // New strtok function to allow for empty ("") separators
 char *_strtok(char **str, const char *sep){
   size_t pos = 1;
-  char *tmp = strdup(*str);
+  char *tmp = strdcat(*str, "");
 
   if(strcmp(sep, "") != 0)
     pos = strcspn(*str, sep);
@@ -238,6 +238,7 @@ uint64_t split(char *str, const char *sep, int **out){
     // Check if an int
     if(*end_ptr)
       i--;
+
     free(pch);
   }
 
@@ -262,9 +263,10 @@ uint64_t split(char *str, const char *sep, float **out){
       continue;
 
     buf[i++] = strtof(pch, &end_ptr);
-    // Check if a float
+    // Check if float
     if(*end_ptr)
       i--;
+
     free(pch);
   }
 
@@ -289,9 +291,10 @@ uint64_t split(char *str, const char *sep, double **out){
       continue;
 
     buf[i++] = strtod(pch, &end_ptr);
-    // Check if a double
+    // Check if double
     if(*end_ptr)
       i--;
+
     free(pch);
   }
 
@@ -312,8 +315,7 @@ uint64_t split(char *str, const char *sep, char ***out){
     buf[i++] = _strtok(&str, sep);
 
   *out = new char*[i];
-  for(uint64_t cnt = 0; cnt < i; cnt++)
-    *out[i] = buf[i];
+  memcpy(*out, buf, i*sizeof(char*));
 
   delete [] buf;
   return(i);

@@ -20,7 +20,7 @@ DEPTH=2
 ERROR=0.01
 Rscript ../R/ngsSim-HMM.R --n_ind $N_IND --n_sites $N_SITES --indF $INDF --freq $FREQ --trans $TRANS --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
 
-TRANS=0.005-0.005
+
 
 ##### Infer F
 for TYPE in TG GL GL_CG
@@ -36,22 +36,22 @@ do
     fi
     
     ID=TRUE
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans $TRANS --trans_fixed --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans $INDF,$TRANS --trans_fixed --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=BEST
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --trans $TRANS --path sim.path.gz --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --trans $INDF,$TRANS --path sim.path.gz --out testF-HMM.$ID.$TYPE --log 1
 
     ID=freq_fixed
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans 0.1,0.1 --path 0 --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --freq_fixed --trans $INDF,0.2 --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=trans_fixed
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $TRANS --trans_fixed --path 0 --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $INDF,$TRANS --trans_fixed --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=path_fixed
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $INDF,0.2 --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=normal
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $INDF,0.2 --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
 
     #echo "===== Plot ====="
@@ -73,8 +73,8 @@ gunzip testF.glf.gz
 
 ##### Estimate F
 N_SITES=$((`zcat testF.beagle.gz | wc -l`-1))
-../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF --log 1 >&2
-../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF_bin --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $INDF,0.2 --path 0 --out testF --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans $INDF,0.2 --path 0 --out testF_bin --log 1 >&2
 
 
 
