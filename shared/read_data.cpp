@@ -1,4 +1,6 @@
-#include "shared.hpp"
+
+#include "read_data.hpp"
+#include "gen_func.hpp"
 
 // Reads both called genotypes (1 field per site and indiv), genotype lkls or genotype post probs (3 fields per site and indiv)
 double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, uint64_t n_sites){
@@ -10,7 +12,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
   char *buf = init_ptr(BUFF_LEN, (const char*) '\0');
 
   // Allocate memory
-  double ***geno = init_ptr(n_ind, n_sites+1, N_GENO, -INFINITY);
+  double ***geno = init_ptr(n_ind, n_sites+1, N_GENO, -INF);
   
   // Open GENO file
   gzFile in_geno_fh = gzopen(in_geno, in_bin ? "rb" : "r");
@@ -73,7 +75,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 
 
 
-uint64_t* read_pos(char *in_pos, uint64_t n_ind, uint64_t n_sites){
+double* read_pos(char *in_pos, uint64_t n_ind, uint64_t n_sites){
   uint64_t n_fields;
   char **t;
   char *buf = init_ptr(BUFF_LEN, (const char*) '\0');
@@ -82,7 +84,7 @@ uint64_t* read_pos(char *in_pos, uint64_t n_ind, uint64_t n_sites){
   uint64_t prev_pos = 0;
 
   // Allocate memory
-  uint64_t *pos_dist = init_ptr(n_sites+1, INF);
+  double *pos_dist = init_ptr(n_sites+1, INFINITY);
 
   // Open file
   gzFile in_pos_fh = gzopen(in_pos, "r");
@@ -110,9 +112,9 @@ uint64_t* read_pos(char *in_pos, uint64_t n_ind, uint64_t n_sites){
       error(__FUNCTION__, "wrong POS file format!");
 
     if(strcmp(prev_chr, t[0]) == 0 || strlen(prev_chr) == 0)
-      pos_dist[s] = strtoul(t[1], NULL, 0) - prev_pos - 1;
+      pos_dist[s] = strtod(t[1], NULL) - prev_pos;
     else {
-      pos_dist[s] = INF;
+      pos_dist[s] = INFINITY;
       strcpy(prev_chr, t[0]);
     }
     prev_pos = strtoul(t[1], NULL, 0);

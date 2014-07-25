@@ -1,8 +1,14 @@
-#include "shared.hpp"
+#include "gen_func.hpp"
 
 
 bool SIG_COND;
 int really_kill = 3;
+
+
+void warn(const char *func, const char *msg) {
+  fprintf(stderr, "\n[%s] WARN: %s\n", func, msg);
+}
+
 
 void error(const char *func, const char *msg) {
   fprintf(stderr, "\n[%s] ERROR: %s\n", func, msg);
@@ -83,22 +89,23 @@ double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
 
 
 
-void call_geno(double *geno, int n_geno, bool log_scale) {
+void call_geno(double *geno, int n_geno) {
   int max_pos = array_max_pos(geno, n_geno);
     
   for (int g = 0; g < n_geno; g++)
-    geno[g] = 0;
-  geno[max_pos] = 1;
-
-  if(log_scale)
-    conv_space(geno, n_geno, log);
+    geno[g] = -INF;
+  geno[max_pos] = log(1);
 }
 
 
 
 void conv_space(double *geno, int n_geno, double (*func)(double)) {
-  for (int g = 0; g < n_geno; g++)
+  for (int g = 0; g < n_geno; g++) {
     geno[g] = func(geno[g]);
+
+    if(geno[g] == -INFINITY)
+      geno[g] = -INF;
+  }
 }
 
 
@@ -475,6 +482,16 @@ double ***init_ptr(uint64_t A, uint64_t B, uint64_t C, double init){
 
 
 
+double ****init_ptr(uint64_t A, uint64_t B, uint64_t C, uint64_t D, double init){
+  double ****ptr = new double***[A];
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_ptr(B, C, D, init);
+
+  return ptr;
+}
+
+
+
 // Concat str but duplicates the first one
 char *strdcat(char *str1, const char *str2){
   uint64_t length = strlen(str1) + strlen(str2) + 1;
@@ -533,6 +550,15 @@ void free_ptr(void ***ptr, uint64_t A, uint64_t B){
 
 
 
+void free_ptr(void ****ptr, uint64_t A, uint64_t B, uint64_t C){
+  for(uint64_t a = 0; a < A; a++)
+    free_ptr(ptr[a], B, C);
+
+  free_ptr(ptr);
+}
+
+
+
 void cpy(void *dest, void *orig, uint64_t A, uint64_t size){
   memcpy(dest, orig, A * size);
 }
@@ -549,4 +575,11 @@ void cpy(void *dest, void *orig, uint64_t A, uint64_t B, uint64_t size){
 void cpy(void *dest, void *orig, uint64_t A, uint64_t B, uint64_t C, uint64_t size){
   for(uint64_t a = 0; a < A; a++)
     cpy( ((char***)dest)[a], ((char***)orig)[a], B, C, size);
+}
+
+
+
+void cpy(void *dest, void *orig, uint64_t A, uint64_t B, uint64_t C, uint64_t D, uint64_t size){
+  for(uint64_t a = 0; a < A; a++)
+    cpy( ((char***)dest)[a], ((char***)orig)[a], B, C, D, size);
 }

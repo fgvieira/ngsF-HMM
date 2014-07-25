@@ -33,10 +33,10 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `-n_ind INT`: Sample size (number of individuals).
 * `-n_sites INT`: Total number of sites.
 * `-call_geno`: Call genotypes before running analyses.
-* `-freqs DOUBLE or CHAR`: Initial frequency values. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
+* `-freqs DOUBLE or CHAR`: Initial frequency values. Can be defined by user as a DOUBLE, (r)andom, or read from a FILE.
 * `-fixed_freqs`: Allele frequencies are fixed (will not be optimized).
-* `-trans DOUBLE or CHAR`: Initial state transition probabilities. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
-* `-fixed_trans`: State transition probabilities are fixed (will not be optimized).
+* `-indF DOUBLE-DOUBLE or CHAR`: Initial inbreeding and transition probability values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
+* `-fixed_indF`: Inbreeding and transition probability values are fixed (will not be optimized).
 * `-path DOUBLE or CHAR`: Initial state paths. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
 * `-fixed_path`: State paths are fixed (will not be optimized).
 * `-out_prefix CHAR`: Prefix for output files.

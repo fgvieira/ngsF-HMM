@@ -20,7 +20,6 @@
 */
 
 #include "ngsF-HMM.hpp"
-#include "read_data.cpp"
 
 char const* version = "0.0.1b";
 
@@ -50,7 +49,7 @@ int main (int argc, char** argv) {
 
   if(strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0){
     if(pars->verbose >= 1)
-      printf("==> GZIP input file (never BINARY)\n");
+      printf("==> GZIP input file (not BINARY)\n");
     pars->in_bin = false;
   }else if(pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO){
     if(pars->verbose >= 1)
@@ -63,49 +62,62 @@ int main (int argc, char** argv) {
 
 
 
-  ////////////////////////////
-  // Prepare initial values //
-  ////////////////////////////
-  // Create thread pool
-  if( (pars->thread_pool = threadpool_create(pars->n_threads, pars->n_ind, 0)) == NULL )
-    error(__FUNCTION__, "failed to create thread pool!");
-
-  // Declare and initialize output variables
-  out_data* data = new out_data;
-  init_output(pars, data);
-
+  /////////////////////
+  // Read input data //
+  /////////////////////
+  if(pars->verbose >= 1)
+    printf("> Reading from file...\n");
   // Read data from GENO file
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   // Read position distances from file
+  if(pars->verbose >= 1)
+    printf("==> Getting distance between sites\n");
   if(pars->in_pos)
     pars->pos_dist = read_pos(pars->in_pos, pars->n_ind, pars->n_sites);
   else
-    pars->pos_dist = init_ptr(pars->n_sites+1, INF);
+    pars->pos_dist = init_ptr(pars->n_sites+1, INFINITY);
+
+  // Convert position distances to Mb
+  for(uint64_t s = 1; s <= pars->n_sites; s++)
+    pars->pos_dist[s] /= 1e6;
   
-  // If input not called genotypes, check whether to call genotypes and/or convert to log-space
+  // If input is not genotypes, check whether to call genotypes and/or convert to log-space
   if(pars->in_lkl)
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++){
-	// Call genotypes
 	if(pars->call_geno)
-	  call_geno(pars->geno_lkl[i][s], N_GENO, pars->in_loglkl);
-	// Convert space
-	if(!pars->in_loglkl)
+	  // Call genotypes
+	  call_geno(pars->geno_lkl[i][s], N_GENO);
+	else if(!pars->in_loglkl)
+	  // Convert space
 	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
+
 	// Normalize GL
 	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
 
-  
+
+
+  /////////////////////////////////////////////
+  // Declare and initialize output variables //
+  /////////////////////////////////////////////
+  init_output(pars);
+
+
 
   //////////////////
   // Analyze Data //
   //////////////////
-  EM(pars, data);
+  // Create thread pool
+  if( (pars->thread_pool = threadpool_create(pars->n_threads, pars->n_ind, 0)) == NULL )
+    error(__FUNCTION__, "failed to create thread pool!");
+
+  // Run EM!
+  EM(pars);
   if(pars->verbose >= 1){
     double sum = 0;
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      sum += data->lkl[i];
+      sum += pars->lkl[i];
     printf("\nFinal logLkl: %f\n", sum);
   }
   
@@ -116,7 +128,7 @@ int main (int argc, char** argv) {
   /////////////////////////
   if(pars->verbose >= 1)
     printf("==> Printing final results\n");
-  print_iter(pars->out_prefix, pars, data);
+  print_iter(pars->out_prefix, pars);
 
 
 
@@ -131,19 +143,15 @@ int main (int argc, char** argv) {
   if(threadpool_destroy(pars->thread_pool, threadpool_graceful) != 0)
     error(__FUNCTION__, "cannot free thread pool!");
 
-  // data struct
-  free_ptr((void***) data->a, pars->n_ind, N_STATES);
-  free_ptr((void*) data->freq);
-  free_ptr((void***) data->prior, pars->n_sites+1, N_STATES);
-  free_ptr((void**) data->path, pars->n_ind);
-  free_ptr((void***) data->marg_prob, pars->n_ind, pars->n_sites+1);
-  free_ptr((void*) data->indF);
-  free_ptr((void*) data->lkl);
-  delete data;
-
   // pars struct
   //free_ptr((void*) pars->in_geno);
   free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
+  free_ptr((void*) pars->freq);
+  free_ptr((void***) pars->prior, pars->n_sites+1, N_STATES);
+  free_ptr((void**) pars->path, pars->n_ind);
+  free_ptr((void***) pars->marg_prob, pars->n_ind, pars->n_sites+1);
+  free_ptr((void*) pars->indF);
+  free_ptr((void*) pars->lkl);
 
   if(pars->verbose >= 1)
     printf("Done!\n");

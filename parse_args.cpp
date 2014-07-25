@@ -15,8 +15,8 @@ void init_pars(params *pars) {
   pars->call_geno = false;
   pars->in_freq = NULL;
   pars->freq_fixed = false;
-  pars->in_trans = NULL;
-  pars->trans_fixed = false;
+  pars->in_indF = NULL;
+  pars->indF_fixed = false;
   pars->in_path = NULL;
   pars->path_fixed = false;
   pars->out_prefix = NULL;
@@ -47,8 +47,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"call_geno", no_argument, NULL, 'G'},
       {"freq", required_argument, NULL, 'f'},      
       {"freq_fixed", no_argument, NULL, 'F'},
-      {"trans", required_argument, NULL, 't'},
-      {"trans_fixed", no_argument, NULL, 'T'},
+      {"indF", required_argument, NULL, 'i'},
+      {"indF_fixed", no_argument, NULL, 'I'},
       {"path", required_argument, NULL, 'p'},
       {"path_fixed", no_argument, NULL, 'P'},
       {"out", required_argument, NULL, 'o'},
@@ -65,7 +65,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Ft:Tp:Po:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Fi:Ip:Po:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -95,11 +95,11 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     case 'F':
       pars->freq_fixed = true;
       break;
-    case 't':
-      pars->in_trans = optarg;
+    case 'i':
+      pars->in_indF = optarg;
       break;
-    case 'T':
-      pars->trans_fixed = true;
+    case 'I':
+      pars->indF_fixed = true;
       break;
     case 'p':
       pars->in_path = optarg;
@@ -149,10 +149,10 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     pars->in_freq[0] = 'r';
     pars->in_freq[1] = '\0';
   }
-  if(pars->in_trans == NULL) {
-    pars->in_trans = new char[2];
-    pars->in_trans[0] = 'r';
-    pars->in_trans[1] = '\0';
+  if(pars->in_indF == NULL) {
+    pars->in_indF = new char[2];
+    pars->in_indF[0] = 'r';
+    pars->in_indF[1] = '\0';
   }
   if(pars->in_path == NULL) {
     pars->in_path = new char[2];
@@ -177,8 +177,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   // Print arguments to STDOUT
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\ttrans: %s\n\ttrans_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-           pars->in_geno, pars->in_pos, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_trans, pars->trans_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log, pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+           pars->in_geno, pars->in_pos, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_indF, pars->indF_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log, pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if(pars->verbose >= 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -188,7 +188,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 
 
 
-int init_output(params* pars, out_data* data) {
+int init_output(params* pars) {
   char* buf = new char[BUFF_LEN];
   double* t;
   gsl_rng* r = gsl_rng_alloc(gsl_rng_taus);
@@ -196,28 +196,24 @@ int init_output(params* pars, out_data* data) {
 
 
   ///////////////////////////////////
-  // Set TRANSITION initial values //
+  // Set INBREEDING initial values //
   ///////////////////////////////////
-  double trans_rng_min = 0.01;
-  double trans_rng_max = 1 - trans_rng_min;
-  gzFile in_trans_fh;
+  double indF_rng_min = 0.01;
+  double indF_rng_max = 1 - indF_rng_min;
+  gzFile in_indF_fh;
 
-  data->indF = init_ptr(pars->n_ind, 0.0);
-  data->a = init_ptr(pars->n_ind, N_STATES, N_STATES, -INFINITY);
+  pars->indF = init_ptr(pars->n_ind, 0.0);
+  pars->aa = init_ptr(pars->n_ind, 0.0);
 
-  if( strcmp("r", pars->in_trans) == 0 )
+  if( strcmp("r", pars->in_indF) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++){
-      data->indF[i] = trans_rng_min + gsl_rng_uniform(r) * (trans_rng_max - trans_rng_min);
-      double trans = trans_rng_min + gsl_rng_uniform(r) * (trans_rng_max - trans_rng_min);      
-      data->a[i][0][1] = min(max(trans*data->indF[i], trans_rng_min), trans_rng_max);
-      data->a[i][0][0] = 1 - data->a[i][0][1];
-      data->a[i][1][0] = min(max(trans*(1-data->indF[i]), trans_rng_min), trans_rng_max);
-      data->a[i][1][1] = 1 - data->a[i][1][0];
+      pars->indF[i] = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);
+      pars->aa[i]   = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);      
     }
   
-  else if( (in_trans_fh = gzopen(pars->in_trans, "r")) != NULL ){
+  else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
     uint64_t i = 0;
-    while( gzgets(in_trans_fh, buf, BUFF_LEN) != NULL ){
+    while( gzgets(in_indF_fh, buf, BUFF_LEN) != NULL ){
       // Remove trailing newline
       chomp(buf);
       // Check if empty
@@ -225,39 +221,27 @@ int init_output(params* pars, out_data* data) {
 	continue;
 
       if( i > pars->n_ind || split(buf, (const char*) " ,-\t", &t) != 2)
-	error(__FUNCTION__, "wrong TRANS file format!");
+	error(__FUNCTION__, "wrong INDF file format!");
 
-      data->indF[i] = t[0];
-      data->a[i][0][1] = min(max(t[1]*data->indF[i], trans_rng_min), trans_rng_max);
-      data->a[i][0][0] = 1 - data->a[i][0][1];
-      data->a[i][1][0] = min(max(t[1]*(1-data->indF[i]), trans_rng_min), trans_rng_max);
-      data->a[i][1][1] = 1 - data->a[i][1][0];
+      pars->indF[i] = min(max(t[0], indF_rng_min), indF_rng_max);
+      pars->aa[i]   = min(max(t[1], indF_rng_min), indF_rng_max);
       i++;
 
       delete [] t;
     }
-    gzclose(in_trans_fh);
+    gzclose(in_indF_fh);
   }
 
   else{
-    if( split(pars->in_trans, (const char*) ",-", &t) != 2 )
-      error(__FUNCTION__, "wrong TRANS parameters format!");
+    if( split(pars->in_indF, (const char*) ",-", &t) != 2 )
+      error(__FUNCTION__, "wrong INDF parameters format!");
 
     for(uint64_t i = 0; i < pars->n_ind; i++){
-      data->indF[i] = t[0];
-      data->a[i][0][1] = min(max(t[1]*data->indF[i], trans_rng_min), trans_rng_max);
-      data->a[i][0][0] = 1 - data->a[i][0][1];
-      data->a[i][1][0] = min(max(t[1]*(1-data->indF[i]), trans_rng_min), trans_rng_max);
-      data->a[i][1][1] = 1 - data->a[i][1][0];
+      pars->indF[i] = min(max(t[0], indF_rng_min), indF_rng_max);
+      pars->aa[i]   = min(max(t[1], indF_rng_min), indF_rng_max);
     }
     delete [] t;
   }
-  // Convert transition probs to log-scale
-  for (uint64_t i = 0; i < pars->n_ind; i++)
-    for(uint64_t k = 0; k < N_STATES; k++)
-      conv_space(data->a[i][k], N_STATES, log);
-  //for(uint64_t l = 0; l < N_STATES; l++)
-  //data->a[i][k][l] = log(data->a[i][k][l]);
 
 
 
@@ -268,13 +252,13 @@ int init_output(params* pars, out_data* data) {
   double freq_rng_max = 0.5 - freq_rng_min;
   gzFile in_freq_fh;
 
-  data->freq = init_ptr(pars->n_sites+1, freq_rng_min);
+  pars->freq = init_ptr(pars->n_sites+1, freq_rng_min);
   // Initialize site 0 to invalid value
-  data->freq[0] = -1;
+  pars->freq[0] = -1;
 
   if( strcmp("r", pars->in_freq) == 0 )
     for(uint64_t s = 1; s <= pars->n_sites; s++)
-      data->freq[s] = freq_rng_min + gsl_rng_uniform(r) * (freq_rng_max - freq_rng_min);
+      pars->freq[s] = freq_rng_min + gsl_rng_uniform(r) * (freq_rng_max - freq_rng_min);
 
   else if( (in_freq_fh = gzopen(pars->in_freq, "r")) != NULL ){
     uint64_t s = 1;
@@ -288,7 +272,7 @@ int init_output(params* pars, out_data* data) {
       if( s > pars->n_sites || split(buf, (const char*) " ,-\t", &t) != 1)
         error(__FUNCTION__, "wrong FREQ file format!");
 
-      data->freq[s] = min(max(t[0], freq_rng_min), freq_rng_max);
+      pars->freq[s] = min(max(t[0], freq_rng_min), freq_rng_max);
       s++;
       delete [] t;
     } 
@@ -297,16 +281,16 @@ int init_output(params* pars, out_data* data) {
 
   else
     for(uint64_t s = 1; s <= pars->n_sites; s++)
-      data->freq[s] = min(max(atof(pars->in_freq), freq_rng_min), freq_rng_max);
+      pars->freq[s] = min(max(atof(pars->in_freq), freq_rng_min), freq_rng_max);
 
 
 
   ///////////////////////////////////////////////
   // Set EMISSION probabilities initial values //
   ///////////////////////////////////////////////
-  data->prior = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
+  pars->prior = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
   // Update emission probs based on allele freqs
-  update_priors(data, pars->n_sites);
+  update_priors(pars->prior, pars->freq, pars->n_sites);
   
 
 
@@ -315,12 +299,12 @@ int init_output(params* pars, out_data* data) {
   /////////////////////////////
   gzFile in_path_fh;
 
-  data->path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
+  pars->path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
 
   if( strcmp("r", pars->in_path) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++)
-	data->path[i][s] = gsl_rng_uniform(r) > 0.5 ? 1 : 0;
+	pars->path[i][s] = gsl_rng_uniform(r) > 0.5 ? 1 : 0;
 
   else if( (in_path_fh = gzopen(pars->in_path, "r")) != NULL ){
     uint64_t i = 0;
@@ -336,7 +320,7 @@ int init_output(params* pars, out_data* data) {
         error(__FUNCTION__, "wrong PATH file format!");
 
       for(uint64_t s = 0; s < pars->n_sites; s++)
-	data->path[i][s] = t[s] > 0.5 ? 1 : 0;
+	pars->path[i][s] = t[s] > 0.5 ? 1 : 0;
       i++;
       delete [] t;
     }
@@ -346,25 +330,25 @@ int init_output(params* pars, out_data* data) {
   else
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++)
-	data->path[i][s] = atoi(pars->in_path) > 0.5 ? 1 : 0;
+	pars->path[i][s] = atoi(pars->in_path) > 0.5 ? 1 : 0;
 
 
 
   ///////////////////////////////////////
   // Initialize Marginal Probabilities //
   ///////////////////////////////////////
-  data->marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
+  pars->marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
   // Initialize site 0 to invalid value
   for (uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t k = 0; k < N_STATES; k++)
-      data->marg_prob[i][0][k] = -1;
+      pars->marg_prob[i][0][k] = -1;
 
 
 
   //////////////////////////
   // Initialize Lkl array //
   //////////////////////////
-  data->lkl = init_ptr(pars->n_ind, -INFINITY);
+  pars->lkl = init_ptr(pars->n_ind, -INFINITY);
 
 
 

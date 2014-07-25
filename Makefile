@@ -1,28 +1,31 @@
 CC=gcc
 CXX=g++
 
-CFLAGS = -g -Wall
-#CFLAGS = -O3 -Wall
+CFLAGS = -g -Wall -I./shared
+#CFLAGS = -O3 -Wall -I./shared
 DFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 LIB = -lgsl -lgslcblas -lz -lpthread
 
-all: ngsF-HMM
+SHARED_LIB = gen_func.cpp read_data.cpp threadpool.c bfgs.cpp
 
 
-parse_args: parse_args.cpp ngsF-HMM.hpp
+
+all: $(SHARED_LIB) parse_args EM ngsF-HMM
+	$(CXX) $(DFLAGS) *.o $(LIB) -o ngsF-HMM
+
+
+
+$(SHARED_LIB):
+	$(CXX) $(CFLAGS) $(DFLAGS) -c shared/$@
+
+parse_args:
 	$(CXX) $(CFLAGS) $(DFLAGS) -c parse_args.cpp
 
-threadpool: threadpool.c threadpool.h
-	$(CXX) $(CFLAGS) $(DFLAGS) -c threadpool.c
-
-EM: EM.cpp ngsF-HMM.hpp
+EM:
 	$(CXX) $(CFLAGS) $(DFLAGS) -c EM.cpp
 
-shared: shared.cpp shared.hpp
-	$(CXX) $(CFLAGS) $(DFLAGS) -c shared.cpp
-
-ngsF-HMM: ngsF-HMM.cpp parse_args threadpool EM shared
-	$(CXX) $(CFLAGS) $(DFLAGS) ngsF-HMM.cpp parse_args.o threadpool.o EM.o shared.o $(LIB) -o ngsF-HMM
+ngsF-HMM:
+	$(CXX) $(CFLAGS) $(DFLAGS) -c ngsF-HMM.cpp
 
 test:
 	@cd examples/; bash ./test.sh 2> test.log; cd ../
