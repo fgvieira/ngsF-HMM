@@ -1,6 +1,5 @@
 #pragma once
 
-#include "gen_func.hpp"
 #include "read_data.hpp"
 #include "threadpool.h"
 #include "bfgs.h"
