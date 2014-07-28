@@ -98,15 +98,27 @@ int EM (params *pars) {
     }
   }
 
-  // Close filehandle for iteration log
-  if(pars->log)
-    gzclose(log_fh);
+
+
+  /////////////////////////
+  // Print Final Results //
+  /////////////////////////
+  if(pars->verbose >= 1)
+    printf("==> Printing final results\n");
+
+  if(pars->log && iter % pars->log != 0)
+    dump_data(log_fh, pars);
+
+  print_iter(pars->out_prefix, pars);
+
 
   
   if(iter >= pars->max_iters)
     printf("WARN: Maximum number of iterations reached! Check if analysis converged... \n");
 
   // Free memory and return
+  if(pars->log)
+    gzclose(log_fh);
   free_ptr((void*) lkl_epsilon);
   free_ptr((void*) prev_lkl);
   return 0;
@@ -290,7 +302,7 @@ void print_iter(char *out_prefix, params *pars){
   tmp_out = strdcat(out_prefix, ".indF");
   out_fh = fopen(tmp_out, "w");
   if(out_fh == NULL)
-    error(__FUNCTION__, "cannot open \"indF\" output file!");
+    error(__FUNCTION__, "cannot open INDF output file!");
 
   // Print total Lkl
   double sum = 0;
@@ -315,7 +327,7 @@ void print_iter(char *out_prefix, params *pars){
   tmp_out = strdcat(out_prefix, ".viterbi");
   out_fh = fopen(tmp_out, "wb");
   if(out_fh == NULL)
-    error(__FUNCTION__, "cannot open \"viterbi\" output file!");
+    error(__FUNCTION__, "cannot open VITERBI output file!");
 
   // Print most probable path (Viterbi)
   for(uint64_t i = 0; i < pars->n_ind; i++)
@@ -346,6 +358,25 @@ void print_iter(char *out_prefix, params *pars){
       fclose(out_fh);
       delete [] tmp_out;
   */
+
+  /////////////////////////////////////////////////
+  // Print genotype posterior probabilities
+  tmp_out = strdcat(out_prefix, ".geno");
+  out_fh = fopen(tmp_out, "wb");
+  if(out_fh == NULL)
+    error(__FUNCTION__, "cannot open GENO output file!");
+
+  double pp[N_GENO];
+
+  for(uint64_t s = 1; s <= pars->n_sites; s++)
+    for (uint64_t i = 0; i < pars->n_ind; i++){
+      post_prob(pp, pars->geno_lkl[i][s], pars->prior[s][(int) pars->path[i][s]], N_GENO);
+      fwrite(pp, sizeof(double), N_GENO, out_fh);
+    }
+
+  // Close filehandle
+  fclose(out_fh);
+  delete [] tmp_out;
 }
 
 

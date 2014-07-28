@@ -75,8 +75,8 @@ gunzip testF.glf.gz
 
 ##### Estimate F
 N_SITES=$((`zcat testF.beagle.gz | wc -l`-1))
-../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.2 --path 0 --out testF --log 1 >&2
-../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.2 --path 0 --out testF_bin --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.2 --path 0 --max_iters 20 --out testF     --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads 10 --seed $SEED --geno testF.glf    --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.2 --path 0 --max_iters 20 --out testF_bin --log 1 >&2
 
 
 

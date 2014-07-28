@@ -123,15 +123,6 @@ int main (int argc, char** argv) {
   
 
 
-  /////////////////////////
-  // Print Final Results //
-  /////////////////////////
-  if(pars->verbose >= 1)
-    printf("==> Printing final results\n");
-  print_iter(pars->out_prefix, pars);
-
-
-
   /////////////////
   // Free Memory //
   /////////////////
