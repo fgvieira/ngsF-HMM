@@ -43,7 +43,8 @@ typedef struct {
   double ***marg_prob;   // n_ind * n_sites+1
   double *indF;          // n_ind
   double *aa;            // n_ind
-  double *lkl;           // n_ind
+  double *ind_lkl;       // n_ind
+  double tot_lkl;
 
   threadpool_t *thread_pool;
 } params;

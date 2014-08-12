@@ -29,6 +29,7 @@ void init_pars(params *pars) {
   pars->version = false;
   pars->verbose = 1;
   pars->seed = time(NULL);
+  pars->tot_lkl = 0;
   pars->thread_pool = NULL;
 }
 
@@ -200,6 +201,8 @@ int init_output(params* pars) {
   ///////////////////////////////////
   double indF_rng_min = 0.01;
   double indF_rng_max = 1 - indF_rng_min;
+  double aa_rng_min = 0.00001;
+  double aa_rng_max = 1 - aa_rng_min;
   gzFile in_indF_fh;
 
   pars->indF = init_ptr(pars->n_ind, 0.0);
@@ -208,7 +211,7 @@ int init_output(params* pars) {
   if( strcmp("r", pars->in_indF) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);
-      pars->aa[i]   = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);      
+      pars->aa[i]   = aa_rng_min + gsl_rng_uniform(r) * (aa_rng_max - aa_rng_min);      
     }
   
   else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
@@ -224,7 +227,7 @@ int init_output(params* pars) {
 	error(__FUNCTION__, "wrong INDF file format!");
 
       pars->indF[i] = min(max(t[0], indF_rng_min), indF_rng_max);
-      pars->aa[i]   = min(max(t[1], indF_rng_min), indF_rng_max);
+      pars->aa[i]   = min(max(t[1], aa_rng_min), aa_rng_max);
       i++;
 
       delete [] t;
@@ -238,7 +241,7 @@ int init_output(params* pars) {
 
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = min(max(t[0], indF_rng_min), indF_rng_max);
-      pars->aa[i]   = min(max(t[1], indF_rng_min), indF_rng_max);
+      pars->aa[i]   = min(max(t[1], aa_rng_min), aa_rng_max);
     }
     delete [] t;
   }
@@ -348,7 +351,7 @@ int init_output(params* pars) {
   //////////////////////////
   // Initialize Lkl array //
   //////////////////////////
-  pars->lkl = init_ptr(pars->n_ind, -INFINITY);
+  pars->ind_lkl = init_ptr(pars->n_ind, -INFINITY);
 
 
 

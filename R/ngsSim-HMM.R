@@ -184,7 +184,7 @@ if(file.exists(opt$pos_dist)){
   pos_dist <- as.integer(rnorm(opt$n_sites,mean=avg_dist,sd=avg_dist/10))
 
   # Print sites' positions
-  dist_out <- paste(opt$out,"dist.gz",sep=".")
+  dist_out <- paste(opt$out,"pos.gz",sep=".")
   if(!is.na(file.info(dist_out)[,"size"])){
     warning("WARN: DIST file already exists. Skipping...");
   } else {

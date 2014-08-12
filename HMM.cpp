@@ -4,9 +4,7 @@
 // General structure for launching threads
 struct pth_struct{
   int type;
-  double **Fw;
-  double **Bw;
-  double **Vi;
+  double **ptr;
   double **data;
   double *F;
   double *aa;
@@ -19,7 +17,7 @@ struct pth_struct{
 
 
 // Function prototypes
-void threadpool_add_task(threadpool_t *thread_pool, int type, double **Fw, double **Bw, double **Vi, double **data, double *F, double *aa, double ***prior, char *path, double *pos_dist, uint64_t length);
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *aa, double ***prior, char *path, double *pos_dist, uint64_t length);
 void thread_slave(void *ptr);
 double forward(double **Fw, double **data, double F, double aa, double ***prior, char *path, double *pos_dist, uint64_t length);
 double backward(double **Bw, double **data, double F, double aa, double ***prior, char *path, double *pos_dist, uint64_t length);
@@ -28,13 +26,11 @@ double lkl(const double *x, const void *ptr);
 
 
 // General thread functions
-void threadpool_add_task(threadpool_t *thread_pool, int type, double **Fw, double **Bw, double **Vi, double **data, double *F, double *aa, double ***prior, char *path, double *pos_dist, uint64_t length){
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *aa, double ***prior, char *path, double *pos_dist, uint64_t length){
   pth_struct *p = new pth_struct;
 
   p->type = type;
-  p->Fw = Fw;
-  p->Bw = Bw;
-  p->Vi = Vi;
+  p->ptr = ptr;
   p->data = data;
   p->F = F;
   p->aa = aa;
@@ -62,11 +58,11 @@ void thread_slave(void *ptr){
   pth_struct* p = (pth_struct*) ptr;
 
   if(p->type == 1)
-    forward(p->Fw, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
+    forward(p->ptr, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
   else if(p->type == 2)
-    backward(p->Bw, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
+    backward(p->ptr, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
   else if(p->type == 3)
-    viterbi(p->Vi, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
+    viterbi(p->ptr, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
   else if(p->type == 4){
     double val[2] = {*p->F, *p->aa};
     double l_bound[2] = {0, 0};

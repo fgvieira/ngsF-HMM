@@ -8,9 +8,9 @@ int EM (params *pars) {
   catch_SIG();
 
   uint64_t iter = 0;
-  double  max_lkl_epsilon = -INFINITY;
-  double *lkl_epsilon = init_ptr(pars->n_ind, -INFINITY);
-  double *prev_lkl = init_ptr(pars->n_ind, -INFINITY);
+  double max_lkl_epsilon = -INFINITY;
+  double *prev_ind_lkl = init_ptr(pars->n_ind, -INFINITY);
+  double *ind_lkl_epsilon = init_ptr(pars->n_ind, -INFINITY);
   gzFile log_fh;
 
   // Open filehandle for iteration log
@@ -37,7 +37,7 @@ int EM (params *pars) {
     iter++;
     if(pars->verbose >= 1)
       printf("\nIteration %lu:\n", iter);
-
+    /*
     // Dump heatmap data
     if(0){ // DEBUG!!
       double **Fw = init_ptr(pars->n_sites+1, N_STATES, 0.0);
@@ -56,28 +56,28 @@ int EM (params *pars) {
       }
       free_ptr((void**) Fw, pars->n_sites+1);
     }
-
+    */
     // Run next EM iteration
     iter_EM(pars);
 
     // Check convergence criteria
-    for (uint64_t i = 0; i < pars->n_ind; i++)
-      lkl_epsilon[i] = (pars->lkl[i] - prev_lkl[i]) / fabs(prev_lkl[i]);
-    max_lkl_epsilon = lkl_epsilon[array_max_pos(lkl_epsilon, pars->n_ind)];
+    pars->tot_lkl = 0;
+    for (uint64_t i = 0; i < pars->n_ind; i++){
+      // Get total Lkl
+      pars->tot_lkl += pars->ind_lkl[i];
+      // Get per-indiv lkl epsilon
+      ind_lkl_epsilon[i] = (pars->ind_lkl[i] - prev_ind_lkl[i]) / fabs(prev_ind_lkl[i]);
+    }
+    max_lkl_epsilon = ind_lkl_epsilon[array_max_pos(ind_lkl_epsilon, pars->n_ind)];
     // Save current LKLs
-    cpy(prev_lkl, pars->lkl, pars->n_ind, sizeof(double));
+    cpy(prev_ind_lkl, pars->ind_lkl, pars->n_ind, sizeof(double));
 
     if(pars->verbose >= 3)
-      printf("Lkl epsilon: %s\n", join(lkl_epsilon, pars->n_ind, "\t"));
+      printf("Lkl epsilon: %s\n", join(ind_lkl_epsilon, pars->n_ind, "\t"));
 
     if(pars->verbose >= 1){
-      // Get total lkl
-      double sum = 0;
-      for(uint64_t i = 0; i < pars->n_ind; i++)
-	sum += pars->lkl[i];
-
       time_t iter_end = time(NULL);
-      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", sum, max_lkl_epsilon, difftime(iter_end, iter_start) );
+      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", pars->tot_lkl, max_lkl_epsilon, difftime(iter_end, iter_start) );
     }
 
     fflush(stdout);
@@ -98,13 +98,18 @@ int EM (params *pars) {
     }
   }
 
+  if(iter >= pars->max_iters)
+    printf("WARN: Maximum number of iterations reached! Check if analysis converged... \n");
 
+  
 
   /////////////////////////
   // Print Final Results //
   /////////////////////////
-  if(pars->verbose >= 1)
-    printf("==> Printing final results\n");
+  if(pars->verbose >= 1){
+    printf("\nFinal logLkl: %f\n", pars->tot_lkl);
+    printf("Printing final results\n");
+  }
 
   if(pars->log && iter % pars->log != 0)
     dump_data(log_fh, pars);
@@ -112,15 +117,12 @@ int EM (params *pars) {
   print_iter(pars->out_prefix, pars);
 
 
-  
-  if(iter >= pars->max_iters)
-    printf("WARN: Maximum number of iterations reached! Check if analysis converged... \n");
 
   // Free memory and return
   if(pars->log)
     gzclose(log_fh);
-  free_ptr((void*) lkl_epsilon);
-  free_ptr((void*) prev_lkl);
+  free_ptr((void*) ind_lkl_epsilon);
+  free_ptr((void*) prev_ind_lkl);
   return 0;
 }
 
@@ -143,7 +145,7 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 1, Fw[i], NULL, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
@@ -154,7 +156,7 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 2, NULL, Bw[i], NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
@@ -175,10 +177,12 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Marginal probabilities\n");
   for (uint64_t i = 0; i < pars->n_ind; i++){
-    pars->lkl[i] = logsum(Fw[i][pars->n_sites],2);
+    // Get per-indiv Lkl
+    pars->ind_lkl[i] = logsum(Fw[i][pars->n_sites],2);
+    // Get marg probs
     for (uint64_t s = 1; s <= pars->n_sites; s++)
       for(uint64_t k = 0; k < N_STATES; k++)
-	pars->marg_prob[i][s][k] = Bw[i][s][k] + Fw[i][s][k] - pars->lkl[i];
+	pars->marg_prob[i][s][k] = Bw[i][s][k] + Fw[i][s][k] - pars->ind_lkl[i];
   }
 
 
@@ -192,9 +196,17 @@ void iter_EM(params *pars) {
     if(pars->verbose >= 1)
       printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 3, NULL, NULL, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
 
     threadpool_wait(pars->thread_pool);
+
+    if(pars->verbose >= 4)
+      for(uint64_t i = 0; i < pars->n_ind; i++){
+	char *buf;
+	buf = join(pars->path[i]+1, pars->n_sites, "");
+	printf("\t%s\n", buf);
+	delete [] buf;
+      }
   }
 
 
@@ -209,13 +221,14 @@ void iter_EM(params *pars) {
       printf("==> Update inbreeding and transition probabilities\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, NULL, NULL, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
-  }
-  threadpool_wait(pars->thread_pool);
+      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
 
-  if(pars->verbose >= 4)
-    for(uint64_t i = 0; i < pars->n_ind; i++)
-      printf("\tF: %.10f\n\ta: %f\n", pars->indF[i], pars->aa[i]);
+    threadpool_wait(pars->thread_pool);
+
+    if(pars->verbose >= 4)
+      for(uint64_t i = 0; i < pars->n_ind; i++)
+	printf("\t%.10f\t%f\n", pars->indF[i], pars->aa[i]);
+  }
 
 
 
@@ -235,6 +248,7 @@ void iter_EM(params *pars) {
       double den = 0; // Expected total number of alleles
 
       for (uint64_t i = 0; i < pars->n_ind; i++){
+	//int F = (int) path[i][s];
 	post_prob(pp, pars->geno_lkl[i][s], prior[s][(int) path[i][s]], N_GENO);
 
 	double F = exp(pars->marg_prob[i][s][1]);
@@ -277,23 +291,6 @@ void iter_EM(params *pars) {
 
 
 
-
-void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
-  for(uint64_t cnt = 0; cnt < n_geno; cnt++){
-    pp[cnt] = lkl[cnt];
-    if(prior != NULL)
-      pp[cnt] += prior[cnt];
-  }
-   
-  double norm = logsum(pp, n_geno);
-   
-  for(uint64_t cnt = 0; cnt < n_geno; cnt++)
-    pp[cnt] -= norm;
-}
- 
-
-
- 
 void print_iter(char *out_prefix, params *pars){
   char *tmp_out;
   FILE *out_fh;
@@ -305,10 +302,7 @@ void print_iter(char *out_prefix, params *pars){
     error(__FUNCTION__, "cannot open INDF output file!");
 
   // Print total Lkl
-  double sum = 0;
-  for(uint64_t i = 0; i < pars->n_ind; i++)
-    sum += pars->lkl[i];
-  fprintf(out_fh,"%.10f\n", sum);
+  fprintf(out_fh,"%.10f\n", pars->tot_lkl);
 
   // Print indF and transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
@@ -386,7 +380,7 @@ void dump_data(gzFile fh, params *pars){
 
   if(pars->log_bin){
     // Print Lkl                                                                                                                                                                                                                                                           
-    gzwrite(fh, pars->lkl, sizeof(double)*pars->n_ind);
+    gzwrite(fh, pars->ind_lkl, sizeof(double)*pars->n_ind);
 
     // Print most probable path (Viterbi)                                                                                                                                                                                                                                  
     for (uint64_t i = 0; i < pars->n_ind; i++)
@@ -399,7 +393,7 @@ void dump_data(gzFile fh, params *pars){
 	gzwrite(fh, &mp, sizeof(double));
       }
   }else{
-    buf = join(pars->lkl, pars->n_ind, "\t");
+    buf = join(pars->ind_lkl, pars->n_ind, "\t");
     // Print Lkl                                                                                                                                                                                                                                                           
     if(gzprintf(fh, "//\t%s\n", buf) <= 0)
       error(__FUNCTION__, "cannot write LKL info to LOG file!");

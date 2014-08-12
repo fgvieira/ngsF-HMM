@@ -69,11 +69,11 @@ int main (int argc, char** argv) {
     printf("> Reading from file...\n");
   // Read data from GENO file
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
-  // Read position distances from file
+  // Read positions from file
   if(pars->verbose >= 1)
-    printf("==> Getting distance between sites\n");
+    printf("==> Getting sites coordinates\n");
   if(pars->in_pos)
-    pars->pos_dist = read_pos(pars->in_pos, pars->n_ind, pars->n_sites);
+    pars->pos_dist = read_pos(pars->in_pos, pars->n_sites);
   else
     pars->pos_dist = init_ptr(pars->n_sites+1, INFINITY);
 
@@ -114,13 +114,7 @@ int main (int argc, char** argv) {
 
   // Run EM!
   EM(pars);
-  if(pars->verbose >= 1){
-    double sum = 0;
-    for(uint64_t i = 0; i < pars->n_ind; i++)
-      sum += pars->lkl[i];
-    printf("\nFinal logLkl: %f\n", sum);
-  }
-  
+
 
 
   /////////////////
@@ -142,7 +136,7 @@ int main (int argc, char** argv) {
   free_ptr((void**) pars->path, pars->n_ind);
   free_ptr((void***) pars->marg_prob, pars->n_ind, pars->n_sites+1);
   free_ptr((void*) pars->indF);
-  free_ptr((void*) pars->lkl);
+  free_ptr((void*) pars->ind_lkl);
 
   if(pars->verbose >= 1)
     printf("Done!\n");

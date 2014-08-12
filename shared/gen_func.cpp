@@ -89,12 +89,16 @@ double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
 
 
 
-void call_geno(double *geno, int n_geno) {
+void call_geno(double *geno, int n_geno, double N_pp_thresh, double call_pp_thresh, bool log_scale) {
   int max_pos = array_max_pos(geno, n_geno);
-    
-  for (int g = 0; g < n_geno; g++)
-    geno[g] = -INF;
-  geno[max_pos] = log(1);
+  double max_pp = (log_scale ? exp(geno[max_pos]) : geno[max_pos]);
+
+  if(max_pp < N_pp_thresh || max_pp > call_pp_thresh)
+    for (int g = 0; g < n_geno; g++)
+      geno[g] = (log_scale ? -INF : 0);
+
+  if(max_pp > call_pp_thresh)
+    geno[max_pos] = (log_scale ? log(1) : 1);
 }
 
 
@@ -106,6 +110,21 @@ void conv_space(double *geno, int n_geno, double (*func)(double)) {
     if(geno[g] == -INFINITY)
       geno[g] = -INF;
   }
+}
+
+
+
+void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
+  for(uint64_t cnt = 0; cnt < n_geno; cnt++){
+    pp[cnt] = lkl[cnt];
+    if(prior != NULL)
+      pp[cnt] += prior[cnt];
+  }
+
+  double norm = logsum(pp, n_geno);
+
+  for(uint64_t cnt = 0; cnt < n_geno; cnt++)
+    pp[cnt] -= norm;
 }
 
 
@@ -238,15 +257,17 @@ uint64_t split(char *str, const char *sep, int **out){
   char *end_ptr;
   while(str != NULL){
     pch = _strtok(&str, sep);
-    if(strlen(pch) == 0)
+    if(strlen(pch) == 0){
+      delete [] pch;
       continue;
+    }
     
     buf[i++] = strtol(pch, &end_ptr, 0);
     // Check if an int
     if(*end_ptr)
       i--;
 
-    free(pch);
+    delete [] pch;
   }
 
   *out = new int[i]; // FGV: why the need for *out?!?!!?
@@ -266,15 +287,17 @@ uint64_t split(char *str, const char *sep, float **out){
   char *end_ptr;
   while(str != NULL){
     pch = _strtok(&str, sep);
-    if(strlen(pch) == 0)
+    if(strlen(pch) == 0){
+      delete [] pch;
       continue;
+    }
 
     buf[i++] = strtof(pch, &end_ptr);
     // Check if float
     if(*end_ptr)
       i--;
 
-    free(pch);
+    delete [] pch;
   }
 
   *out = new float[i];
@@ -294,15 +317,17 @@ uint64_t split(char *str, const char *sep, double **out){
   char *end_ptr;
   while(str != NULL){
     pch = _strtok(&str, sep);
-    if(strlen(pch) == 0)
+    if(strlen(pch) == 0){
+      delete [] pch;
       continue;
+    }
 
     buf[i++] = strtod(pch, &end_ptr);
     // Check if double
     if(*end_ptr)
       i--;
 
-    free(pch);
+    delete [] pch;
   }
 
   *out = new double[i];

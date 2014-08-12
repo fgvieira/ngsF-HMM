@@ -75,7 +75,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 
 
 
-double* read_pos(char *in_pos, uint64_t n_ind, uint64_t n_sites){
+double* read_pos(char *in_pos, uint64_t n_sites){
   uint64_t n_fields;
   char **t;
   char *buf = init_ptr(BUFF_LEN, (const char*) '\0');

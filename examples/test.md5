@@ -65,10 +65,10 @@ c214fd93b625e04acb04d0b1e7fe75e4  testF-HMM.path_fixed.GL_CG.indF
 f092e97524af7c7d7bd4de848b8d32e3  testF-HMM.path_fixed.TG.indF
 8b546e6c25a770d2519782fe2ac13591  testF-HMM.path_fixed.TG.log.gz
 0019d23bef56a136a1891211d7007f6f  testF-HMM.path_fixed.TG.viterbi
-20303126d9e4e4a3ac0cc6184aaa2ff8  testF-HMM.SIM.dist.gz
 29fb8d7c38cb717d632d6786990674b3  testF-HMM.SIM.geno.gz
 dd913d32e75db9edcf6fdb563d2abed5  testF-HMM.SIM.glf.gz
 58f85fa6c9db4de6ccc4366040c92e19  testF-HMM.SIM.path.gz
+20303126d9e4e4a3ac0cc6184aaa2ff8  testF-HMM.SIM.pos.gz
 1de7f549cb9c859b5947d29314e874ff  testF-HMM.TRUE.GL_CG.geno
 8094168faaf109d8f841bbbe500daa9b  testF-HMM.TRUE.GL_CG.indF
 d414b6698925d445770802115b198199  testF-HMM.TRUE.GL_CG.log.gz
@@ -90,4 +90,5 @@ d6e34941757e73755c73b2e314f867da  testF.indF.saf.pos.gz
 0199a8b43446a6c12818a7dcb42fd927  testF.indF.saf_sum
 75fa8b7cf0f84bce1ccb19163b0a229c  testF.indF.stat
 87b73a218292b5487105b64c88959204  testF.log.gz
+109d81d0dc8630beeebce1fbed4700b6  testF.pos
 4074e4b3b9bf32741f478cbb5d4aa5a7  testF.viterbi
