@@ -196,7 +196,7 @@ void iter_EM(params *pars) {
     if(pars->verbose >= 1)
       printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
+      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, pars->path[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
 
     threadpool_wait(pars->thread_pool);
 
@@ -248,14 +248,14 @@ void iter_EM(params *pars) {
       double den = 0; // Expected total number of alleles
 
       for (uint64_t i = 0; i < pars->n_ind; i++){
-	//int F = (int) path[i][s];
-	post_prob(pp, pars->geno_lkl[i][s], prior[s][(int) path[i][s]], N_GENO);
+	int state = (int) path[i][s];
+	post_prob(pp, pars->geno_lkl[i][s], prior[s][state], N_GENO);
 
-	double F = exp(pars->marg_prob[i][s][1]);
-	num += exp(pp[1]) + exp(pp[2])*(2-F);
-	den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-F);
+	double indF = exp(pars->marg_prob[i][s][1]);
+	num += exp(pp[1]) + exp(pp[2])*(2-indF);
+	den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-indF);
 	if(pars->verbose >= 8)
-	  printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; marg: %f\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), F);
+	  printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; IBD: %f (%d)\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), indF, state);
       }
       pars->freq[s] = num/den;
     }

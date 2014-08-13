@@ -23,7 +23,7 @@ void init_pars(params *pars) {
   pars->log = 0;
   pars->log_bin = false;
   pars->min_iters = 10;
-  pars->max_iters = 1500;
+  pars->max_iters = 100;
   pars->min_epsilon = 1e-5;
   pars->n_threads = 1;
   pars->version = false;
