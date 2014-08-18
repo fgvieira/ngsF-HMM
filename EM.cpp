@@ -16,12 +16,11 @@ int EM (params *pars) {
   // Open filehandle for iteration log
   if(pars->log){
     char *tmp_out = strdcat(pars->out_prefix, ".log.gz");
-    if((log_fh = gzopen(tmp_out, pars->log_bin ? "wb" : "w")) == NULL)
-      error(__FUNCTION__, "cannot open LOG file!");
-
-    if(gzbuffer(log_fh, pars->n_sites + pars->n_ind*10) < 0)
-      error(__FUNCTION__, "cannot increase ZLIB buffer size!");
+    log_fh = open_gzfile(tmp_out, (pars->log_bin ? "wb9" : "w9"), pars->n_sites+100);
     delete [] tmp_out;
+
+    if(log_fh == NULL)
+      error(__FUNCTION__, "cannot open LOG file!");
   }
 
 
@@ -30,9 +29,8 @@ int EM (params *pars) {
   // Iteration loop //
   ////////////////////
   while((max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
-	  
     time_t iter_start = time(NULL);
-	  
+
     // Next Iteration...
     iter++;
     if(pars->verbose >= 1)
@@ -90,12 +88,12 @@ int EM (params *pars) {
     if(pars->log && (iter == 1 || iter % pars->log == 0)){
       if(pars->verbose >= 1)
 	printf("==> Dumping iteration to log file\n");
-      dump_data(log_fh, pars);
-
-      if(pars->verbose >= 1)    
-	printf("==> Printing current iteration parameters\n");
-      print_iter(pars->out_prefix, pars);
+      dump_data(log_fh, pars, pars->log_bin);
     }
+
+    if(pars->verbose >= 1)    
+      printf("==> Printing current iteration parameters\n");
+    print_iter(pars->out_prefix, pars);
   }
 
   if(iter >= pars->max_iters)
@@ -110,10 +108,6 @@ int EM (params *pars) {
     printf("\nFinal logLkl: %f\n", pars->tot_lkl);
     printf("Printing final results\n");
   }
-
-  if(pars->log && iter % pars->log != 0)
-    dump_data(log_fh, pars);
-
   print_iter(pars->out_prefix, pars);
 
 
@@ -293,70 +287,51 @@ void iter_EM(params *pars) {
 
 void print_iter(char *out_prefix, params *pars){
   char *tmp_out;
-  FILE *out_fh;
+  gzFile out_fh;
 
   // Open filehandle to "indF" file
   tmp_out = strdcat(out_prefix, ".indF");
-  out_fh = fopen(tmp_out, "w");
+  out_fh = open_gzfile(tmp_out, "wT");
+  delete [] tmp_out;
+
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open INDF output file!");
 
   // Print total Lkl
-  fprintf(out_fh,"%.10f\n", pars->tot_lkl);
+  gzprintf(out_fh, "%.10f\n", pars->tot_lkl);
 
   // Print indF and transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
-    fprintf(out_fh,"%.10f\t%f\n", pars->indF[i], pars->aa[i]);
+    gzprintf(out_fh, "%.10f\t%f\n", pars->indF[i], pars->aa[i]);
 
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)
-    fprintf(out_fh,"%f\n", pars->freq[s]);
+    gzprintf(out_fh, "%f\n", pars->freq[s]);
 
   // Close "indF" filehandle
-  fclose(out_fh);
-  delete [] tmp_out;
+  gzclose(out_fh);
 
   /////////////////////////////////////////////////
-  // Open filehandle to "viterbi" file
-  tmp_out = strdcat(out_prefix, ".viterbi");
-  out_fh = fopen(tmp_out, "wb");
+  // Open filehandle to "IBD" file
+  tmp_out = strdcat(out_prefix, ".ibd");
+  out_fh = open_gzfile(tmp_out, "wT", pars->n_sites+100);
+  delete [] tmp_out;
+
   if(out_fh == NULL)
-    error(__FUNCTION__, "cannot open VITERBI output file!");
+    error(__FUNCTION__, "cannot open IBD output file!");
 
-  // Print most probable path (Viterbi)
-  for(uint64_t i = 0; i < pars->n_ind; i++)
-    fwrite(pars->path[i]+1, sizeof(char), pars->n_sites, out_fh);
+  // Print IBD info: most probable path (Viterbi) and IBD marg probs
+  dump_data(out_fh, pars, false);
 
-  // Close "viterbi" filehandle
-  fclose(out_fh);
-  delete [] tmp_out;
-
-  /////////////////////////////////////////////////
-  // Print viterbi path in text mode
-  /*  
-      char *buf;
-      // Open filehandle to "viterbi.txt" file
-      tmp_out = strdcat(out_prefix, ".viterbi.txt");
-      out_fh = fopen(tmp_out, "w");
-      if(out_fh == NULL)
-      error(__FUNCTION__, "cannot open \"viterbi.txt\" output file!");
-
-      // Print most probable path (Viterbi)
-      for(uint64_t i = 0; i < pars->n_ind; i++){
-      buf = join(pars->path[i]+1, pars->n_sites, "");
-      fprintf(out_fh, "%s\n", buf);
-      delete [] buf;
-      }
-  
-      // Close "viterbi.txt" filehandle
-      fclose(out_fh);
-      delete [] tmp_out;
-  */
+  // Close "IBD" filehandle
+  gzclose(out_fh);
 
   /////////////////////////////////////////////////
   // Print genotype posterior probabilities
   tmp_out = strdcat(out_prefix, ".geno");
-  out_fh = fopen(tmp_out, "wb");
+  out_fh = open_gzfile(tmp_out, "wbT");
+  delete [] tmp_out;
+
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open GENO output file!");
 
@@ -365,28 +340,27 @@ void print_iter(char *out_prefix, params *pars){
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     for (uint64_t i = 0; i < pars->n_ind; i++){
       post_prob(pp, pars->geno_lkl[i][s], pars->prior[s][(int) pars->path[i][s]], N_GENO);
-      fwrite(pp, sizeof(double), N_GENO, out_fh);
+      gzwrite(out_fh, pp, sizeof(double)*N_GENO);
     }
 
   // Close filehandle
-  fclose(out_fh);
-  delete [] tmp_out;
+  gzclose(out_fh);
 }
 
 
 
-void dump_data(gzFile fh, params *pars){
+void dump_data(gzFile fh, params *pars, bool out_bin){
   char *buf;
 
-  if(pars->log_bin){
-    // Print Lkl                                                                                                                                                                                                                                                           
+  if(out_bin){
+    // Print Lkl
     gzwrite(fh, pars->ind_lkl, sizeof(double)*pars->n_ind);
 
-    // Print most probable path (Viterbi)                                                                                                                                                                                                                                  
+    // Print most probable path (Viterbi)
     for (uint64_t i = 0; i < pars->n_ind; i++)
       gzwrite(fh, pars->path[i]+1, sizeof(char)*pars->n_sites);
 
-    // Print marginal probs                                                                                                                                                                                                                                                
+    // Print marginal probs
     for (uint64_t i = 0; i < pars->n_ind; i++)
       for (uint64_t s = 1; s <= pars->n_sites; s++){
 	double mp = exp(pars->marg_prob[i][s][1]);
@@ -394,22 +368,22 @@ void dump_data(gzFile fh, params *pars){
       }
   }else{
     buf = join(pars->ind_lkl, pars->n_ind, "\t");
-    // Print Lkl                                                                                                                                                                                                                                                           
+    // Print Lkl
     if(gzprintf(fh, "//\t%s\n", buf) <= 0)
-      error(__FUNCTION__, "cannot write LKL info to LOG file!");
+      error(__FUNCTION__, "cannot write LKL info to file!");
     delete [] buf;
 
-    // Print most probable path (Viterbi)                                                                                                                                                                                                                                  
+    // Print most probable path (Viterbi)
     for (uint64_t i = 0; i < pars->n_ind; i++){
       buf = join(pars->path[i]+1, pars->n_sites, "");
       if(gzprintf(fh, "%s\n", buf) <= 0)
-	error(__FUNCTION__, "cannot write PATH info to LOG file!");
+	error(__FUNCTION__, "cannot write PATH info to file!");
       delete [] buf;
     }
 
-    // Print marginal probs                                                                                                                                                                                                                                                
+    // Print marginal probs
     for (uint64_t i = 0; i < pars->n_ind; i++){
-      // To avoid leading \t                                                                                                                                                                                                                                               
+      // To avoid leading \t
       gzprintf(fh, "%f", exp(pars->marg_prob[i][1][1]));
       for (uint64_t s = 2; s <= pars->n_sites; s++)
 	gzprintf(fh, "\t%f", exp(pars->marg_prob[i][s][1]));

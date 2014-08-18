@@ -60,7 +60,7 @@ int EM(params*);
 void iter_EM(params*);
 void post_prob(double*, double*, double*, uint64_t);
 void print_iter(char*, params*);
-void dump_data(gzFile, params*);
+void dump_data(gzFile, params*, bool = false);
 double calc_trans(char, char, double, double, double, bool = true);
 void calc_prior(double *, double, uint64_t);
 void update_priors(double ***, double *, uint64_t);
