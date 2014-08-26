@@ -179,9 +179,10 @@ if(file.exists(opt$pos_dist)){
     quit("no",-1)
   }
 }else if(opt$pos_dist == "r"){
-  avg_dist <- 1e6
+  avg_dist <- 1000
   cat("==> Setting to normally distributed with mean:",avg_dist,fill=TRUE)
-  pos_dist <- as.integer(rnorm(opt$n_sites,mean=avg_dist,sd=avg_dist/10))
+  pos_dist <- as.integer(rnorm(opt$n_sites,mean=avg_dist,sd=avg_dist/3))
+  pos_dist[pos_dist < 1] = 1
 
   # Print sites' positions
   dist_out <- paste(opt$out,"pos.gz",sep=".")
