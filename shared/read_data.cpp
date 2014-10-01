@@ -15,7 +15,11 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
   double ***geno = init_ptr(n_ind, n_sites+1, N_GENO, -INF);
   
   // Open GENO file
-  gzFile in_geno_fh = gzopen(in_geno, in_bin ? "rb" : "r");
+  gzFile in_geno_fh;
+  if( strcmp(in_geno, "-") == 0 )
+    in_geno_fh = gzdopen(fileno(stdin), in_bin ? "rb" : "r");
+ else
+    in_geno_fh = gzopen(in_geno, in_bin ? "rb" : "r");
   if(in_geno_fh == NULL)
     error(__FUNCTION__, "cannot open GENO file!");
 
@@ -55,9 +59,11 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
       else
 	for(uint64_t i = 0; i < n_ind; i++){
           int g = (int) ptr[i];
-          if(g < 0 || g > 2)
-            error(__FUNCTION__, "wrong GENO format!");
-          geno[i][s][g] = log(1);
+	  if(g >= 0){
+	    if(g > 2)
+	      error(__FUNCTION__, "wrong GENO format!");
+	    geno[i][s][g] = log(1);
+	  }
         }
 
       delete [] t;
