@@ -24,6 +24,12 @@ int EM (params *pars) {
   }
 
 
+  if(pars->log){
+    if(pars->verbose >= 1)
+      printf("==> Dumping initial values to log file\n");
+    dump_data(log_fh, pars, pars->log_bin);
+  }
+
 
   ////////////////////
   // Iteration loop //
