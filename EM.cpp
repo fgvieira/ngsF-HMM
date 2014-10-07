@@ -41,26 +41,7 @@ int EM (params *pars) {
     iter++;
     if(pars->verbose >= 1)
       printf("\nIteration %lu:\n", iter);
-    /*
-    // Dump heatmap data
-    if(0){ // DEBUG!!
-      double **Fw = init_ptr(pars->n_sites+1, N_STATES, 0.0);
 
-      for (double F = 0; F <= 1; F+=0.1){
-        fprintf(stderr, "%f", F);
-
-        for (double aa = 0; aa <= 0.1; aa+=0.01){
-	  double lkl = 0;
-	  for(uint64_t i = 0; i < pars->n_ind; i++)
-	    lkl += forward(Fw, pars->geno_lkl[i], F, aa, pars->prior, pars->path[i], pars->pos_dist, pars->n_sites);
-
-          fprintf(stderr, "\t%f", lkl);
-        }
-        fprintf(stderr, "\n");
-      }
-      free_ptr((void**) Fw, pars->n_sites+1);
-    }
-    */
     // Run next EM iteration
     iter_EM(pars);
 
