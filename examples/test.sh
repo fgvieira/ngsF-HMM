@@ -38,10 +38,10 @@ do
     fi
     
     ID=TRUE
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF $INDF,$TRANS --indF_fixed --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF $INDF,$TRANS --indF_fixed --path testF-HMM.SIM.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=BEST
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --indF $INDF,$TRANS --path sim.path.gz --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --indF $INDF,$TRANS --path testF-HMM.SIM.path.gz --out testF-HMM.$ID.$TYPE --log 1
 
     ID=freq_fixed
     ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF 0.1,0.2 --path 0 --out testF-HMM.$ID.$TYPE --log 1
@@ -50,17 +50,17 @@ do
     ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF $INDF,$TRANS --indF_fixed --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=path_fixed
-    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF 0.1,0.2 --path sim.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF 0.1,0.2 --path testF-HMM.SIM.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=normal
     ../ngsF-HMM -verbose 2 -n_threads 10 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF 0.1,0.2 --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
 
-    #echo "===== Plot ====="
-    #for ID in TRUE BEST freq_fixed indF_fixed path_fixed normal
-    #do
-    #    Rscript ../R/ngsF-HMMplot.R --in_file testF-HMM.$ID.$TYPE.log.gz --n_ind $N_IND --n_sites $N_SITES --geno testF-HMM.SIM.geno.gz --path testF-HMM.SIM.path.gz --out testF-HMM.$ID.$TYPE
-    #done
+    echo "===== Plot ====="
+    for ID in TRUE BEST freq_fixed indF_fixed path_fixed normal
+    do
+        Rscript ../R/ngsF-HMMplot.R --in_file testF-HMM.$ID.$TYPE.ibd --n_ind $N_IND --n_sites $N_SITES --geno testF-HMM.SIM.geno.gz --path testF-HMM.SIM.path.gz --pos testF-HMM.SIM.pos.gz --out testF-HMM.$ID.$TYPE.pdf
+    done
 done >&2
 
 
