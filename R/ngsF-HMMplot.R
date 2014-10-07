@@ -1,6 +1,22 @@
-
+library(optparse)
+library(plyr)
 
 ############################ FUNCTIONS ############################
+chr_abs_pos <- function(pos){
+  chrs <- unique(pos[,1])
+  n_chrs <- length(chrs)
+  #max_pos <- ddply(pos, 1, summarise, max=max(V2))
+    
+  last_pos = 0
+  for (i in 1:n_chrs){
+    pos[pos[,1] == chrs[i],3] <- pos[pos[,1] == chrs[i],2] + last_pos
+    last_pos <- last_pos + max(pos[pos[,1] == chrs[i],3])
+  }
+  
+  colnames(pos) <- c("chr","pos","abs_pos")
+  return(pos)
+}
+
 iter_plot <- function(pos,true_path,true_geno,lkl,path,marg_prob){
   n = length(lkl)
   L = length(path[[1]])
@@ -8,31 +24,43 @@ iter_plot <- function(pos,true_path,true_geno,lkl,path,marg_prob){
   plots=c(1,1)
   if(n>1) plots=c(ceiling(n/2),2)
   par(mfrow=plots, mar=c(2,2,1,1))
-  for (i in 1:n){
+  # Calculate abs_pos
+  abs_pos <- chr_abs_pos(pos)
+  # Get chrs boundaries
+  chrs <- c()
+  for(i in 2:L){
+    if(abs_pos[i,1] != abs_pos[i-1,1]){
+      chrs <- c(chrs, abs_pos[i-1,3])
+    }
+  }
+  
+  for(i in 1:n){
     ## Plot
-    plot(pos, path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
-    
+    plot(abs_pos[,3], path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n", xaxt="n")
+    for(chr in chrs) abline(v=chr)
+    #axis(1, at=seq(0,max(abs_pos),10), labels=month.name)
+
     # Shade most prob state path (RED)
-    shade_areas(path[[i]], pos, rgb(1,0,0,0.2))
-    
+    shade_areas(path[[i]], abs_pos[,3], rgb(1,0,0,0.2))
+
     # Add title
     title(main=lkl[[i]], cex.main=0.5)
     
     # Plot marginal probs
     if(length(marg_prob) != 0)
-      lines(pos, marg_prob[[i]], col="green")
-    
+      lines(abs_pos[,3], marg_prob[[i]], col="green", lwd=0.1)
+
     # TRUE genotypes
     if(length(true_geno) != 0)
-      points(pos, true_geno[[i]]/2, pch=".", col="cyan")
+      points(abs_pos[,3], true_geno[[i]]/2, pch=".", col="cyan")
 
     # TRUE path (BLUE)
     if(length(true_path) != 0)
-      shade_areas(true_path[[i]], pos, rgb(0,0,1,0.2))
+      shade_areas(true_path[[i]], abs_pos[,3], rgb(0,0,1,0.2))
   }
 }
 
-shade_areas <- function(area, pos, color){
+shade_areas <- function(area, abs_pos, color){
   x <- rle(area)
   start <- (cumsum(x$lengths)-x$lengths)[x$values==1] + 1
   end <- cumsum(x$lengths)[x$values==1]
@@ -52,11 +80,10 @@ shade_areas <- function(area, pos, color){
     return(-1);
   
   for (i in 1:length(start))
-    polygon(c(pos[start[i]],pos[start[i]],pos[end[i]],pos[end[i]]),c(0,1,1,0), border=NA, col=color)
+    polygon(c(abs_pos[start[i]],abs_pos[start[i]],abs_pos[end[i]],abs_pos[end[i]]),c(0,1,1,0), border=NA, col=color)
 }
 
 #####  Parse command-line arguments
-library(optparse)
 option_list <- list(make_option(c("-i", "--in_file"), action="store", type="character", default=NULL, help="Path to input file [%default]"),
                     make_option(c("-b", "--binary"), action="store_true", type="logical", default=FALSE, help="Is input in binary? [%default]"),
                     make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
@@ -66,15 +93,24 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
-                    make_option(c("-o", "--out_prefix"), action="store", type="character", default=NULL, help="Output prefix [%default]"),
+                    make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output prefix [%default]"),
                     make_option(c("-q", "--quiet"), action="store_true", type="logical", default=FALSE, help="Print info to STDOUT? [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
-#opt$in_file="ngsF-HMM/XXX.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$path="ngsF-HMM/sim.PI"; opt$geno="ngsF-HMM/sim.geno.gz"
-#opt$in_file="BEST.log.gz"; opt$n_ind=10; opt$n_sites=1000; opt$geno="../sim.geno.gz"; opt$path="../sim.path.gz"; opt$out_prefix="XXX"; opt$pos="asda.pos"
+#opt$in_file="NGS_I10_D0.5_E0.005_F0.5-0.01.TG.ibd"; opt$n_ind=10; opt$n_sites=10000; opt$path="NGS_I10_D0.5_E0.005_F0.5-0.01.path.gz"; opt$geno="NGS_I10_D0.5_E0.005_F0.5-0.01.geno.gz"; opt$pos="NGS_I10_D0.5_E0.005_F0.5-0.01.pos";opt$marg_prob=TRUE
 
 ############################ Parsing input arguments ############################
+
+if(is.null(opt$out)){
+  opt$out <- opt$in_file
+  # Remove GZip extension
+  opt$out <- sub(".gz", "", opt$out, fixed=TRUE)
+  # Remove extension
+  opt$out <- sub("\\.[^.]*$", "", opt$out, perl=TRUE)
+  # Add PDF extension
+  opt$out <- paste(opt$out, "pdf", sep=".")
+}
 
 if(!opt$quiet){
   cat('### Input arguments', fill=TRUE)
@@ -86,7 +122,7 @@ if(!opt$quiet){
   cat('# Known genotypes:', opt$geno, fill=TRUE)
   cat('# Known path:', opt$path, fill=TRUE)
   cat('# Subset:', opt$subset, fill=TRUE)
-  cat('# Out prefix:', opt$out_prefix, fill=TRUE)
+  cat('# Out prefix:', opt$out, fill=TRUE)
 }
 
 
@@ -130,13 +166,19 @@ if(!is.null(opt$subset)){
 
 
 
-if(!is.null(opt$pos) && file.exists(opt$pos)){
-  if(!opt$quiet)
-    cat("====> Reading positions file...", fill=TRUE)
-  pos <- as.numeric(readLines(opt$pos))
-  
-  if(opt$n_sites != length(pos)){
-    cat("ERROR: number of sites and positions file do not match!", fill=TRUE)
+if(!is.null(opt$pos)){
+  if(file.exists(opt$pos)){
+    if(!opt$quiet)
+      cat("====> Reading positions file...", fill=TRUE)
+    pos <- read.table(opt$pos, header=FALSE, stringsAsFactors=FALSE, check.names=FALSE)
+    pos[,2] <- pos[,2]/1e6
+    
+    if(opt$n_sites != nrow(pos)){
+      cat("ERROR: number of sites and positions file do not match!", fill=TRUE)
+      quit("no",-1)
+    }
+  }else{
+    cat("ERROR: cannot open positions file...", fill=TRUE)
     quit("no",-1)
   }
 }
@@ -157,22 +199,17 @@ if(!is.null(opt$in_file) && file.exists(opt$in_file)){
 }
 
 
-
-if(is.null(opt$out_prefix)){
-  opt$out_prefix <- opt$in_file
-  # Remove GZip extension
-  opt$out_prefix <- sub(".gz", "", opt$out_prefix, fixed=TRUE)
-  # Remove extension
-  opt$out_prefix <- sub("\\.[^.]*$", "", opt$out_prefix, perl=TRUE)
+############################ Plotting data ############################
+if(opt$n_ind == 1){
+  pdf(opt$out, log10(opt$n_sites), 2)
+}else{
+  pdf(opt$out, 2*log10(opt$n_sites), 2*opt$n_ind/2)
 }
 
-############################ Plotting data ############################
-iter <- 0
-pdf(paste(opt$out_prefix,"pdf",sep="."), 2*log10(opt$n_sites))
-
-while(iter <- iter + 1) {
-  if(!opt$quiet)
-    cat("==> Parsing iteration:",iter , fill=TRUE)
+iter <- -1
+while(TRUE) {
+  iter <- iter + 1
+  
   # Reading Lkl line
   if(opt$binary){
     lkl <- readBin(fh, double(), n=opt$n_ind)
@@ -210,7 +247,7 @@ while(iter <- iter + 1) {
   }else if(length(subset) == 2){
     if(is.na(subset[1])){
       # If multiple of subset
-      if(iter %% subset != 0) next
+      if(iter != 1 && iter %% subset[2] != 0) next
     }else{
       # If in the interval subset
       if(iter < subset[1]) next
@@ -221,7 +258,7 @@ while(iter <- iter + 1) {
   
   # Plotting...
   if(!opt$quiet)
-    cat("> Plotting...", fill=TRUE)
+    cat("> Plotting iter", iter, "...", fill=TRUE)
   iter_plot(pos,true_path,true_geno,lkl,path,marg_prob)
 }
 
