@@ -10,7 +10,7 @@ rm -f testF*
 N_IND=10
 N_SITES=10000
 FREQ=0.2
-POS_DIST=r
+SITE_POS=r
 INDF=0.5
 TRANS=0.01
 SEED=12345
@@ -20,7 +20,7 @@ echo "========== Simulating data ==========" >&2
 DEPTH=2
 ERROR=0.01
 
-Rscript ../R/ngsSim-HMM.R --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --pos_dist $POS_DIST --indF $INDF --trans $TRANS --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
+Rscript ../R/ngsSim-HMM.R --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --site_pos $SITE_POS --indF $INDF --trans $TRANS --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
 
 
 
@@ -59,7 +59,7 @@ do
     echo "===== Plot ====="
     for ID in TRUE BEST freq_fixed indF_fixed path_fixed normal
     do
-        Rscript ../R/ngsF-HMMplot.R --in_file testF-HMM.$ID.$TYPE.ibd --n_ind $N_IND --n_sites $N_SITES --geno testF-HMM.SIM.geno.gz --path testF-HMM.SIM.path.gz --pos testF-HMM.SIM.pos.gz --out testF-HMM.$ID.$TYPE.pdf
+        Rscript ../R/ngsF-HMMplot.R --in_file testF-HMM.$ID.$TYPE.ibd --n_ind $N_IND --n_sites $N_SITES --geno testF-HMM.SIM.geno.gz --path testF-HMM.SIM.path.gz --pos testF-HMM.SIM.pos.gz --marg_prob --out testF-HMM.$ID.$TYPE.pdf
     done
 done >&2
 
@@ -111,7 +111,7 @@ cat testF.indF.saf | hexdump -v -e "$((2*N_IND+1))/8 \"%.10g\t\"\"\n\"" | perl -
 
 ##### Check MD5
 rm -f *.arg
-md5sum testF* | sort -k 2,2 > /tmp/test.md5
+md5sum testF* | sort -k 2,2 | fgrep -v '.pdf' > /tmp/test.md5
 if diff /tmp/test.md5 test.md5 > /dev/null
 then
     echo "ngsF-HMM: All tests OK!"

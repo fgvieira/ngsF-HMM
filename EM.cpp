@@ -128,8 +128,6 @@ void iter_EM(params *pars) {
   for (uint64_t i = 0; i < pars->n_ind; i++)
     threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
 
-  threadpool_wait(pars->thread_pool);
-
 
     
   // Backward recursion

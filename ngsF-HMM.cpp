@@ -109,7 +109,7 @@ int main (int argc, char** argv) {
   // Analyze Data //
   //////////////////
   // Create thread pool
-  if( (pars->thread_pool = threadpool_create(pars->n_threads, pars->n_ind, 0)) == NULL )
+  if( (pars->thread_pool = threadpool_create(pars->n_threads, 2*pars->n_ind, 0)) == NULL )
     error(__FUNCTION__, "failed to create thread pool!");
 
   // Run EM!

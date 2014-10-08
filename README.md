@@ -2,7 +2,7 @@
 
 # ngsF-HMM
 
-`ngsF-HMM` is a program to estimate per-individual inbreeding tracts using a two-state Hidden Markiv Model (HMM). Furthermore, instead of using called genotypes, it uses a probabilistic framework that takes the uncertainty of genotype's assignation into account.
+`ngsF-HMM` is a program to estimate per-individual inbreeding tracts using a two-state Hidden Markov Model (HMM). Furthermore, instead of using called genotypes, it uses a probabilistic framework that takes the uncertainty of genotype's assignation into account.
 
 
 ### Installation
@@ -11,10 +11,13 @@ To install the entire package just download the source code:
 
     % git clone https://github.com/fgvieira/ngsF-HMM.git
 
-To install these tools just run:
+and run:
 
     % cd ngsF-HMM
     % make
+
+To run the tests:
+
     % make test
 
 Executables are built into the main directory. If you wish to clean all binaries and intermediate files:
@@ -41,10 +44,10 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `-path DOUBLE or CHAR`: Initial state paths. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
 * `-path_fixed`: State paths are fixed (will not be optimized).
 * `-out CHAR`: Prefix for output files.
-* `-log`: Dump LOG file.
+* `-log INT`: Dump LOG file each INT iterations. [0]
 * `-log_bin`: Dump LOG file in binary.
 * `-min_iters INT`: Minimum number of EM iterations. [10]
-* `-max_iters INT`: Maximum number of EM iterations. [1500]
+* `-max_iters INT`: Maximum number of EM iterations. [100]
 * `-min_epsilon FLOAT`: Maximum RMSD between iterations to assume convergence. [1e-5]
 * `-n_threads INT`: Number of threads to use. [1]
 * `-version`: Prints program version and exits.

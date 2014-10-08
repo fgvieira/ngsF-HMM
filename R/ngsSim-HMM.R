@@ -72,7 +72,7 @@ option_list <- list(make_option(c("-n", "--n_ind"), action="store", type="intege
                     make_option(c("-l", "--n_sites"), action="store", type="integer", default=1000, help="Number of independent sites [%default]"),
                     make_option(c("-F", "--indF"), action="store", type="character", default="0", help="Per-individual inbreeding coefficients [%default]"),
                     make_option(c("-f", "--freq"), action="store", type="character", default="0.1", help="Allele frequencies [%default]"),
-                    make_option(c("-x", "--pos_dist"), action="store", type="character", default="1", help="Distance between sites [%default]"),
+                    make_option(c("-x", "--site_pos"), action="store", type="character", default="1", help="Distance between sites [%default]"),
                     make_option(c("-t", "--trans"), action="store", type="character", default="0.01", help="Transition probabilities [%default]"),
                     make_option(c("-d", "--depth"), action="store", type="character", default="5", help="Sequencing depth [%default]"),
                     make_option(c("-e", "--error"), action="store", type="numeric", default=0.01, help="Error rate [%default]"),
@@ -168,22 +168,30 @@ if(file.exists(opt$depth)){
 
 
 
-### Parse distance between sites
-pos_dist = c()
-cat("====> Parsing distance between sites...",fill=TRUE)
-if(file.exists(opt$pos_dist)){
-  cat("==> Reading values from file:",opt$pos_dist,fill=TRUE)
-  pos_dist <- as.numeric(readLines(opt$pos_dist))
-  if(opt$n_sites != length(pos_dist)){
+### Parse sites' positions
+cat("====> Parsing sites positions...",fill=TRUE)
+if(file.exists(opt$site_pos)){
+  cat("==> Reading values from file:",opt$site_pos,fill=TRUE)
+  site_pos <- read.table(opt$site_pos)
+  if(opt$n_sites != nrow(site_pos)){
     cat("ERROR: number of sites and DIST file do not match", fill=TRUE)
     quit("no",-1)
   }
-}else if(opt$pos_dist == "r"){
-  avg_dist <- 1000
+
+  pos_dist <- site_pos[,2]
+  for (i in 2:opt$n_sites)
+    if(site_pos[i,1] != site_pos[i-1,1]){
+      pos_dist[i] <- +Inf
+    }else{
+      pos_dist[i] <- pos_dist[i] - pos_dist[i-1]
+    }
+  
+}else if(opt$site_pos == "r"){
+  avg_dist <- 1e5 # Avg dist between sampled independent SNPs
   cat("==> Setting to normally distributed with mean:",avg_dist,fill=TRUE)
   pos_dist <- as.integer(rnorm(opt$n_sites,mean=avg_dist,sd=avg_dist/3))
   pos_dist[pos_dist < 1] = 1
-
+  
   # Print sites' positions
   dist_out <- paste(opt$out,"pos.gz",sep=".")
   if(!is.na(file.info(dist_out)[,"size"])){
@@ -194,9 +202,10 @@ if(file.exists(opt$pos_dist)){
     close(fh)
   }
 }else{
-  cat("==> Setting to fixed value:",as.numeric(opt$pos_dist),fill=TRUE)
+  cat("==> Setting to fixed value:",as.numeric(opt$site_pos),fill=TRUE)
+  pos_dist = c()
   for (s in 1:opt$n_sites)
-    pos_dist[s] <- as.numeric(opt$pos_dist)
+    pos_dist[s] <- as.numeric(opt$site_pos)
 }
 # Convert distance between positions to Mb
 pos_dist <- pos_dist / 1e6;
