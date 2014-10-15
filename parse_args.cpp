@@ -201,7 +201,7 @@ int init_output(params* pars) {
   ///////////////////////////////////
   double indF_rng_min = 0.01;
   double indF_rng_max = 1 - indF_rng_min;
-  double aa_rng_min = 0.00001;
+  double aa_rng_min = 0.0001;
   double aa_rng_max = 1 - aa_rng_min;
   gzFile in_indF_fh;
 
@@ -251,7 +251,7 @@ int init_output(params* pars) {
   /////////////////////////////
   // Set FREQ initial values //
   /////////////////////////////
-  double freq_rng_min = 0.1;
+  double freq_rng_min = 0.01;
   double freq_rng_max = 0.5 - freq_rng_min;
   gzFile in_freq_fh;
 

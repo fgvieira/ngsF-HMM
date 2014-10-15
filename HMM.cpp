@@ -67,7 +67,7 @@ void thread_slave(void *ptr){
     double val[2] = {*p->F, *p->aa};
     double l_bound[2] = {0, 0};
     double u_bound[2] = {1, 1};
-    int lims[2] = {2, 2};
+    int lims[2] = {2, 1};
 
     findmax_bfgs(2, val, (void*) p, &lkl, NULL, l_bound, u_bound, lims, -1);
     *p->F = val[0];
@@ -100,6 +100,8 @@ double forward(double **Fw, double **data, double F, double aa, double ***prior,
       // logsum(k==0,k==1)
       Fw[s][l] = logsum2(Fw[s-1][0] + calc_trans(0,l,pos_dist[s],F,aa),
 			 Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,aa)) + e_l;
+
+      //printf("site: %lu\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\n", s, l, Fw[s][l], Fw[s-1][0], Fw[s-1][1], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[s][l][0], prior[s][l][1], prior[s][l][2]);
     }
 
   return logsum(Fw[length],2);
