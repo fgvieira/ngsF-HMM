@@ -63,7 +63,8 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 	    if(g > 2)
 	      error(__FUNCTION__, "wrong GENO format!");
 	    geno[i][s][g] = log(1);
-	  }
+	  }else
+	    geno[i][s][0] = geno[i][s][1] = geno[i][s][2] = log((double) 1/N_GENO);
         }
 
       delete [] t;
