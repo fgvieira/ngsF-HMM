@@ -31,6 +31,7 @@ int EM (params *pars) {
   }
 
 
+
   ////////////////////
   // Iteration loop //
   ////////////////////
@@ -60,18 +61,7 @@ int EM (params *pars) {
     if(pars->verbose >= 3)
       printf("Lkl epsilon: %s\n", join(ind_lkl_epsilon, pars->n_ind, "\t"));
 
-    if(pars->verbose >= 1){
-      time_t iter_end = time(NULL);
-      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", pars->tot_lkl, max_lkl_epsilon, difftime(iter_end, iter_start) );
-    }
-
-    fflush(stdout);
-
-
-
-    /////////////////////////
-    // Dump iteration data //
-    /////////////////////////
+    // Dump iteration data
     if(pars->log && (iter == 1 || iter % pars->log == 0)){
       if(pars->verbose >= 1)
 	printf("==> Dumping iteration to log file\n");
@@ -81,6 +71,14 @@ int EM (params *pars) {
     if(pars->verbose >= 1)    
       printf("==> Printing current iteration parameters\n");
     print_iter(pars->out_prefix, pars);
+
+    // Print iteration info..
+    if(pars->verbose >= 1){
+      time_t iter_end = time(NULL);
+      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", pars->tot_lkl, max_lkl_epsilon, difftime(iter_end, iter_start) );
+    }
+
+    fflush(stdout);
   }
 
   if(iter >= pars->max_iters)
@@ -127,8 +125,6 @@ void iter_EM(params *pars) {
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
     threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
-
-
     
   // Backward recursion
   time_t bwd_t = time(NULL);
@@ -144,7 +140,7 @@ void iter_EM(params *pars) {
   // Sanity check!
   for (uint64_t i = 0; i < pars->n_ind; i++){
     if( abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) > EPSILON ){
-      printf("%.15f\t%.15f\n", logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2));
+      printf("Ind %lu: %.15f\t%.15f\n", i, logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2));
       error(__FUNCTION__, "Fw and Bw lkl do not match!");
     }
   }
