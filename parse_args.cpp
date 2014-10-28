@@ -183,6 +183,10 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     error(__FUNCTION__, "number of sites (-n_sites) missing!");
   if(pars->log < 0)
     error(__FUNCTION__, "invalid LOG (-log) option!");
+  if(pars->n_threads > pars->n_ind){
+    warn(__FUNCTION__, "adjusting threads (--n_threads) to match number of individuals!");
+    pars->n_threads = pars->n_ind;
+  }
 }
 
 

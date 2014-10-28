@@ -102,9 +102,14 @@ double forward(double **Fw, double **data, double F, double aa, double ***prior,
 			 Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,aa)) + e_l;
 
       //printf("site: %lu\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\n", s, l, Fw[s][l], Fw[s-1][0], Fw[s-1][1], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[s][l][0], prior[s][l][1], prior[s][l][2]);
+      //printf("dist: %f\tF: %f\ta: %f\n", pos_dist[s], F, aa);
     }
 
-  return logsum(Fw[length],2);
+  double lkl = logsum(Fw[length],2);
+  if(isnan(lkl))
+    error(__FUNCTION__, "problem calculating Lkl!");
+
+  return lkl;
 }
 
 
@@ -127,7 +132,11 @@ double backward(double **Bw, double **data, double F, double aa, double ***prior
   Bw[0][0] += log(1-F);
   Bw[0][1] += log(F);
 
-  return logsum(Bw[0],2);
+  double lkl = logsum(Bw[0],2);
+  if(isnan(lkl))
+    error(__FUNCTION__, "problem calculating Lkl!");
+
+  return lkl;
 }
 
 
@@ -137,7 +146,7 @@ double viterbi(double **Vi, double **data, double F, double aa, double ***prior,
   Vi[0][0] = log(1-F);
   Vi[0][1] = log(F);
 
-  for (uint64_t s = 1; s <= length; s++)
+  for (uint64_t s = 1; s <= length; s++){
     for(uint64_t l = 0; l < N_STATES; l++){
       double e_l = logsum3(data[s][0]+prior[s][l][0], data[s][1]+prior[s][l][1], data[s][2]+prior[s][l][2]);
 
@@ -146,8 +155,8 @@ double viterbi(double **Vi, double **data, double F, double aa, double ***prior,
 		     Vi[s-1][1] + calc_trans(1,l,pos_dist[s],F,aa)) + e_l;
     }
 
-  for (uint64_t s = 1; s <= length; s++)
     path[s] = (Vi[s][0] > Vi[s][1] ? 0 : 1);
+  }
 
   return max(Vi[length][0], Vi[length][1]);
 }
