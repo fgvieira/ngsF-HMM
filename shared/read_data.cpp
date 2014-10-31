@@ -120,9 +120,11 @@ double* read_pos(char *in_pos, uint64_t n_sites){
     if(n_fields < 2)
       error(__FUNCTION__, "wrong POS file format!");
 
+    // If first chr to be parsed
     if(strlen(prev_chr) == 0)
       strcpy(prev_chr, t[0]);
-    else if(strcmp(prev_chr, t[0]) == 0)
+    
+    if(strcmp(prev_chr, t[0]) == 0)
       pos_dist[s] = strtod(t[1], NULL) - prev_pos;
     else {
       pos_dist[s] = INFINITY;

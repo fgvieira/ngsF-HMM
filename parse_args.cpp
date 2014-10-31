@@ -215,7 +215,7 @@ int init_output(params* pars) {
   if( strcmp("r", pars->in_indF) == 0 )
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);
-      pars->aa[i]   = aa_rng_min + gsl_rng_uniform(r) * (aa_rng_max - aa_rng_min);      
+      pars->aa[i]   = aa_rng_min + gsl_rng_uniform(r) * (aa_rng_max - aa_rng_min);
     }
   
   else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
