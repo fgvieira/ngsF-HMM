@@ -66,11 +66,11 @@ int EM (params *pars) {
       if(pars->verbose >= 1)
 	printf("==> Dumping iteration to log file\n");
       dump_data(log_fh, pars, pars->log_bin);
+      
+      if(pars->verbose >= 1)    
+	printf("==> Printing current iteration parameters\n");
+      print_iter(pars->out_prefix, pars);
     }
-
-    if(pars->verbose >= 1)    
-      printf("==> Printing current iteration parameters\n");
-    print_iter(pars->out_prefix, pars);
 
     // Print iteration info..
     if(pars->verbose >= 1){

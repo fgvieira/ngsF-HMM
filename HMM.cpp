@@ -65,8 +65,8 @@ void thread_slave(void *ptr){
     viterbi(p->ptr, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
   else if(p->type == 4){
     double val[2] = {*p->F, *p->aa};
-    double l_bound[2] = {0, 0.00001};
-    double u_bound[2] = {1, 1};
+    double l_bound[2] = {0.00001, 0.00001};
+    double u_bound[2] = {1-l_bound[0], 1};
     int lims[2] = {2, 1};
 
     findmax_bfgs(2, val, (void*) p, &lkl, NULL, l_bound, u_bound, lims, -1);
