@@ -10,14 +10,14 @@ chr_abs_pos <- function(pos){
   last_pos = 0
   for (i in 1:n_chrs){
     pos[pos[,1] == chrs[i],3] <- pos[pos[,1] == chrs[i],2] + last_pos
-    last_pos <- last_pos + max(pos[pos[,1] == chrs[i],3])
+    last_pos <- max(pos[pos[,1] == chrs[i],3])
   }
   
   colnames(pos) <- c("chr","pos","abs_pos")
   return(pos)
 }
 
-iter_plot <- function(pos,true_path,true_geno,lkl,path,marg_prob){
+iter_plot <- function(pos, true_path, true_geno, lkl, path, marg_prob){
   n = length(lkl)
   L = length(path[[1]])
   
@@ -33,34 +33,38 @@ iter_plot <- function(pos,true_path,true_geno,lkl,path,marg_prob){
       chrs <- c(chrs, abs_pos[i-1,3])
     }
   }
-  
+
   for(i in 1:n){
     ## Plot
-    plot(abs_pos[,3], path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n", xaxt="n")
-    for(chr in chrs) abline(v=chr)
-    #axis(1, at=seq(0,max(abs_pos),10), labels=month.name)
-
-    # Shade most prob state path (RED)
-    shade_areas(path[[i]], abs_pos[,3], rgb(1,0,0,0.2))
+    if(is.null(chrs)){
+      plot(abs_pos[,3], path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
+    }else{
+      plot(abs_pos[,3], path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n", xaxt="n")
+      #axis(1, at=seq(0,max(abs_pos),10), labels=month.name)
+      for(chr in chrs) abline(v=chr)
+    }
 
     # Add title
     title(main=lkl[[i]], cex.main=0.5)
     
-    # Plot marginal probs
+    # Plot marginal probs (GREEN line)
     if(length(marg_prob) != 0)
-      lines(abs_pos[,3], marg_prob[[i]], col="green", lwd=0.1)
+      lines(abs_pos[,3], marg_prob[[i]], col=rgb(0,1,0,0.5), lwd=0.1)
 
     # TRUE genotypes
     if(length(true_geno) != 0)
       points(abs_pos[,3], true_geno[[i]]/2, pch=".", col="cyan")
 
-    # TRUE path (BLUE)
+    # Shade most prob state path (BLUE)
+    shade_areas(path[[i]], abs_pos[,3], rgb(0,0,1,0.2))
+    
+    # TRUE path (RED)
     if(length(true_path) != 0)
-      shade_areas(true_path[[i]], abs_pos[,3], rgb(0,0,1,0.2))
+      shade_areas(true_path[[i]], abs_pos[,3], rgb(1,0,0,0.2), lims=c(0.25,0.75,0.75,0.25))
   }
 }
 
-shade_areas <- function(area, abs_pos, color){
+shade_areas <- function(area, abs_pos, color, lims=c(0,1,1,0)){
   x <- rle(area)
   start <- (cumsum(x$lengths)-x$lengths)[x$values==1] + 1
   end <- cumsum(x$lengths)[x$values==1]
@@ -80,7 +84,7 @@ shade_areas <- function(area, abs_pos, color){
     return(-1);
   
   for (i in 1:length(start))
-    polygon(c(abs_pos[start[i]],abs_pos[start[i]],abs_pos[end[i]],abs_pos[end[i]]),c(0,1,1,0), border=NA, col=color)
+    polygon(c(abs_pos[start[i]],abs_pos[start[i]],abs_pos[end[i]],abs_pos[end[i]]), lims, border=NA, col=color)
 }
 
 #####  Parse command-line arguments
@@ -131,6 +135,13 @@ if(!is.null(opt$geno) && file.exists(opt$geno)){
   if(!opt$quiet)
     cat("====> Reading GENO file...", fill=TRUE)
   true_geno <- as.list(read.table(opt$geno))
+
+  # If there are positions info (at least 3 cols and the second are positions), remove them!
+  if( length(true_geno) >= 3 &&
+      max(true_geno[[2]] > 2) ){
+    true_geno[[2]] <- NULL
+    true_geno[[1]] <- NULL
+  }
   
   if(opt$n_ind != length(true_geno) ||
      opt$n_sites != length(true_geno[[1]])){
@@ -145,7 +156,7 @@ if(!is.null(opt$geno) && file.exists(opt$geno)){
 if(!is.null(opt$path) && file.exists(opt$path)){
   if(!opt$quiet)
     cat("====> Reading PATH file...", fill=TRUE)
-  true_path <- as.list(as.data.frame(t(read.fwf(opt$path, rep.int(1, opt$n_sites)))))
+  true_path <- lapply(strsplit(readLines(opt$path, opt$n_ind), ""), as.numeric)
   
   if(opt$n_ind != length(true_path) ||
      opt$n_sites != length(true_path[[1]])){
@@ -216,7 +227,7 @@ while(TRUE) {
   }else{
     line <- readLines(fh, 1)
     if(length(line) < 1) break
-    lkl <- as.numeric(strsplit(line, "\t")[[1]][-1])
+    lkl <- strsplit(line, "\t")[[1]][-1]
   }
   
   # If end of file
@@ -259,7 +270,7 @@ while(TRUE) {
   # Plotting...
   if(!opt$quiet)
     cat("> Plotting iter", iter, "...", fill=TRUE)
-  iter_plot(pos,true_path,true_geno,lkl,path,marg_prob)
+  iter_plot(pos, true_path, true_geno, lkl, path, marg_prob)
 }
 
 close(fh)
