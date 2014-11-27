@@ -124,9 +124,11 @@ double* read_pos(char *in_pos, uint64_t n_sites){
     if(strlen(prev_chr) == 0)
       strcpy(prev_chr, t[0]);
     
-    if(strcmp(prev_chr, t[0]) == 0)
+    if(strcmp(prev_chr, t[0]) == 0){
       pos_dist[s] = strtod(t[1], NULL) - prev_pos;
-    else {
+      if(pos_dist[s] < 1)
+	error(__FUNCTION__, "invalid distance between adjacent sites!");
+    }else{
       pos_dist[s] = INFINITY;
       strcpy(prev_chr, t[0]);
     }

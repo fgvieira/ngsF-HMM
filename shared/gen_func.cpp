@@ -22,7 +22,7 @@ void handler(int s) {
     fprintf(stderr,"\n\"%s\" signal caught! Will try to exit nicely (no more threads are created but we will wait for the current threads to finish).\n", strsignal(s));
 
   if(--really_kill != 3)
-    fprintf(stderr,"\t-> If you really want to force ANGSD to exit uncleanly Ctr+C %d more times\n", really_kill);
+    fprintf(stderr,"\t-> If you really want to force an unclean exit Ctr+C %d more times\n", really_kill);
   fflush(stderr);
 
   if(!really_kill)
@@ -131,10 +131,10 @@ void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
 
 //function does: log(exp(a)+exp(b)) while protecting for underflow
 double logsum(double *a, uint64_t n){
-  // Find maximum value
   double sum = 0;
-  double M = a[0];
 
+  // Find maximum value
+  double M = a[0];
   for(uint64_t i = 1; i < n; i++)
     M = max(a[i], M);
 

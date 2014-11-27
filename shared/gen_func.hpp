@@ -13,7 +13,7 @@
 
 
 const double INF = 1e15;
-const double EPSILON = 1e-6;
+const double EPSILON = 1e-5;
 
 // General definitions
 #define abs(x) ((x) >= 0 ? (x) : -(x))
