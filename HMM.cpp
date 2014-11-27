@@ -65,7 +65,7 @@ void thread_slave(void *ptr){
     viterbi(p->ptr, p->data, *p->F, *p->aa, p->prior, p->path, p->pos_dist, p->length);
   else if(p->type == 4){
     double val[2] = {*p->F, *p->aa};
-    double l_bound[2] = {0.00001, 0.00001};
+    double l_bound[2] = {1/INF, 1/INF};
     double u_bound[2] = {1-l_bound[0], 1};
     int lims[2] = {2, 1};
 
@@ -101,15 +101,13 @@ double forward(double **Fw, double **data, double F, double aa, double ***prior,
       Fw[s][l] = logsum2(Fw[s-1][0] + calc_trans(0,l,pos_dist[s],F,aa),
 			 Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,aa)) + e_l;
 
-      if(isnan(Fw[s][l]))
-	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\n", s, pos_dist[s], F, aa, l, Fw[s][l], Fw[s-1][0], Fw[s-1][1], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[s][l][0], prior[s][l][1], prior[s][l][2]);
+      if(isnan(Fw[s][l])){
+	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\n", s, pos_dist[s], F, aa, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[s][l][0], prior[s][l][1], prior[s][l][2]);
+	error(__FUNCTION__, "NaN found!");
+      }
     }
 
-  double lkl = logsum(Fw[length],2);
-  if(isnan(lkl))
-    error(__FUNCTION__, "problem calculating Lkl!");
-
-  return lkl;
+  return logsum(Fw[length],2);
 }
 
 
@@ -123,20 +121,22 @@ double backward(double **Bw, double **data, double F, double aa, double ***prior
     double e_nIBD = logsum3(data[s][0]+prior[s][0][0], data[s][1]+prior[s][0][1], data[s][2]+prior[s][0][2]);
     double e_IBD  = logsum3(data[s][0]+prior[s][1][0], data[s][1]+prior[s][1][1], data[s][2]+prior[s][1][2]);
 
-    for(uint64_t k = 0; k < N_STATES; k++)
+    for(uint64_t k = 0; k < N_STATES; k++){
       // logsum(l==0,l==1)
       Bw[s-1][k] = logsum2(calc_trans(k,0,pos_dist[s],F,aa) + e_nIBD + Bw[s][0],
 			   calc_trans(k,1,pos_dist[s],F,aa) + e_IBD  + Bw[s][1]);
+
+      if(isnan(Bw[s-1][k])){
+	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tprior: %f %f %f\n", s, pos_dist[s], F, aa, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,aa), calc_trans(k,1,pos_dist[s],F,aa), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], prior[s][k][0], prior[s][k][1], prior[s][k][2]);
+	error(__FUNCTION__, "NaN found!");
+      }
+    }
   }
 
   Bw[0][0] += log(1-F);
   Bw[0][1] += log(F);
 
-  double lkl = logsum(Bw[0],2);
-  if(isnan(lkl))
-    error(__FUNCTION__, "problem calculating Lkl!");
-
-  return lkl;
+  return logsum(Bw[0],2);
 }
 
 

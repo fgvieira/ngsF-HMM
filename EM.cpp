@@ -136,14 +136,13 @@ void iter_EM(params *pars) {
   threadpool_wait(pars->thread_pool);
 
 
-
   // Sanity check!
-  for (uint64_t i = 0; i < pars->n_ind; i++){
+  for (uint64_t i = 0; i < pars->n_ind; i++)
     if( abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) > EPSILON ){
-      printf("Ind %lu: %.15f\t%.15f\n", i, logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2));
+      printf("Ind %lu: %.15f\t%.15f (%.15f)\n", i, logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2), abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) );
       error(__FUNCTION__, "Fw and Bw lkl do not match!");
     }
-  }
+
 
 
 

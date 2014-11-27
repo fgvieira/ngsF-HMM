@@ -203,22 +203,21 @@ int init_output(params* pars) {
   ///////////////////////////////////
   // Set INBREEDING initial values //
   ///////////////////////////////////
-  double indF_rng_min = 0.01;
+  double indF_rng_min = 0.000001;
   double indF_rng_max = 1 - indF_rng_min;
-  double aa_rng_min = 0.0001;
+  double aa_rng_min = 0.000001;
   double aa_rng_max = 1 - aa_rng_min;
   gzFile in_indF_fh;
 
   pars->indF = init_ptr(pars->n_ind, 0.0);
   pars->aa = init_ptr(pars->n_ind, 0.0);
 
-  if( strcmp("r", pars->in_indF) == 0 )
+  if( strcmp("r", pars->in_indF) == 0 ){
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);
       pars->aa[i]   = aa_rng_min + gsl_rng_uniform(r) * (aa_rng_max - aa_rng_min);
     }
-  
-  else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
+  }else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
     uint64_t i = 0;
     while( gzgets(in_indF_fh, buf, BUFF_LEN) != NULL ){
       // Remove trailing newline
@@ -237,9 +236,7 @@ int init_output(params* pars) {
       delete [] t;
     }
     gzclose(in_indF_fh);
-  }
-
-  else{
+  }else{
     if( split(pars->in_indF, (const char*) ",-", &t) != 2 )
       error(__FUNCTION__, "wrong INDF parameters format!");
 

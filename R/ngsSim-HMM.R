@@ -70,19 +70,31 @@ getLikes <- function(x,depth=5,error=0.01,norm=TRUE,loglikeR=FALSE){
 library(optparse)
 option_list <- list(make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-l", "--n_sites"), action="store", type="integer", default=1000, help="Number of independent sites [%default]"),
-                    make_option(c("-F", "--indF"), action="store", type="character", default="0", help="Per-individual inbreeding coefficients [%default]"),
                     make_option(c("-f", "--freq"), action="store", type="character", default="0.1", help="Allele frequencies [%default]"),
                     make_option(c("-x", "--site_pos"), action="store", type="character", default="1", help="Distance between sites [%default]"),
+                    make_option(c("-F", "--indF"), action="store", type="character", default="0", help="Per-individual inbreeding coefficients [%default]"),
                     make_option(c("-t", "--trans"), action="store", type="character", default="0.01", help="Transition probabilities [%default]"),
                     make_option(c("-d", "--depth"), action="store", type="character", default="5", help="Sequencing depth [%default]"),
                     make_option(c("-e", "--error"), action="store", type="numeric", default=0.01, help="Error rate [%default]"),
-                    make_option(c("-s", "--seed"), action="store", type="integer", default=12345, help="Seed for random number generator [%default]"),
+                    make_option(c("-s", "--seed"), action="store", type="integer", default=format(Sys.time(),"%S"), help="Seed for random number generator [clock seconds]"),
                     make_option(c("-o", "--out"), action="store", type="character", default="sim", help="Output prefix [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 
 ############################ Parsing input arguments ############################
+# Print parameters
+cat('# Number of individuals:', opt$n_ind, fill=TRUE)
+cat('# Number of sites:', opt$n_sites, fill=TRUE)
+cat('# Site freqs:', opt$freq, fill=TRUE)
+cat('# Site positions:', opt$site_pos, fill=TRUE)
+cat('# indF:', opt$indF, fill=TRUE)
+cat('# Transition freq:', opt$trans, fill=TRUE)
+cat('# Depth:', opt$depth, fill=TRUE)
+cat('# Seed:', opt$seed, fill=TRUE)
 set.seed(opt$seed)
+cat('# Output prefix:', opt$out, fill=TRUE)
+
+
 
 ### indF
 indF = c()
