@@ -97,10 +97,13 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
+                    make_option(c("-w", "--width"), action="store", type="numeric", default=NULL, help="Each plot width"),
                     make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output prefix [%default]"),
                     make_option(c("-q", "--quiet"), action="store_true", type="logical", default=FALSE, help="Print info to STDOUT? [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
+if(is.null(opt$width))
+  opt$width <- log10(opt$n_sites)
 
 #opt$in_file="NGS_I10_D0.5_E0.005_F0.5-0.01.TG.ibd"; opt$n_ind=10; opt$n_sites=10000; opt$path="NGS_I10_D0.5_E0.005_F0.5-0.01.path.gz"; opt$geno="NGS_I10_D0.5_E0.005_F0.5-0.01.geno.gz"; opt$pos="NGS_I10_D0.5_E0.005_F0.5-0.01.pos";opt$marg_prob=TRUE
 
@@ -126,6 +129,7 @@ if(!opt$quiet){
   cat('# Known genotypes:', opt$geno, fill=TRUE)
   cat('# Known path:', opt$path, fill=TRUE)
   cat('# Subset:', opt$subset, fill=TRUE)
+  cat('# Width:', opt$width, fill=TRUE)
   cat('# Out prefix:', opt$out, fill=TRUE)
 }
 
@@ -212,9 +216,9 @@ if(!is.null(opt$in_file) && file.exists(opt$in_file)){
 
 ############################ Plotting data ############################
 if(opt$n_ind == 1){
-  pdf(opt$out, log10(opt$n_sites), 2)
+  pdf(opt$out, opt$width, 2)
 }else{
-  pdf(opt$out, 2*log10(opt$n_sites), 2*opt$n_ind/2)
+  pdf(opt$out, 2*opt$width, 2*opt$n_ind/2)
 }
 
 iter <- -1
