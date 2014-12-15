@@ -6,13 +6,17 @@ int really_kill = 3;
 
 
 void warn(const char *func, const char *msg) {
+  fflush(stdout);
   fprintf(stderr, "\n[%s] WARN: %s\n", func, msg);
+  fflush(stderr);
 }
 
 
 void error(const char *func, const char *msg) {
+  fflush(stdout);
   fprintf(stderr, "\n[%s] ERROR: %s\n", func, msg);
   perror("\t");
+  fflush(stderr);
   exit(-1);
 }
 
