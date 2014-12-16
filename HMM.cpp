@@ -81,8 +81,13 @@ void thread_slave(void *ptr){
 double lkl(const double *pars, const void *data){
   pth_struct* p = (pth_struct*) data;
   double **Fw = init_ptr(p->length+1, N_STATES, 0.0);
+  double lkl = 0;
 
-  double lkl = forward(Fw, p->data, pars[0], pars[1], p->prior, p->path, p->pos_dist, p->length);
+  if(isnan(pars[0]) || isinf(pars[0]) ||
+     isnan(pars[1]) || isinf(pars[1]) )
+    lkl = INF; // Added due to a putative bug on the BFGS function
+  else
+    lkl = forward(Fw, p->data, pars[0], pars[1], p->prior, p->path, p->pos_dist, p->length);
 
   free_ptr((void**) Fw, p->length+1);
   return -lkl;
@@ -103,7 +108,7 @@ double forward(double **Fw, double **data, double F, double aa, double ***prior,
 
       if(isnan(Fw[s][l])){
 	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\n", s, pos_dist[s], F, aa, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[s][l][0], prior[s][l][1], prior[s][l][2]);
-	error(__FUNCTION__, "NaN found!");
+	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
 
@@ -128,7 +133,7 @@ double backward(double **Bw, double **data, double F, double aa, double ***prior
 
       if(isnan(Bw[s-1][k])){
 	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tprior: %f %f %f\n", s, pos_dist[s], F, aa, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,aa), calc_trans(k,1,pos_dist[s],F,aa), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], prior[s][k][0], prior[s][k][1], prior[s][k][2]);
-	error(__FUNCTION__, "NaN found!");
+	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
   }
