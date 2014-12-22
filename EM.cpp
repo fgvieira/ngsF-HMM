@@ -21,12 +21,9 @@ int EM (params *pars) {
 
     if(log_fh == NULL)
       error(__FUNCTION__, "cannot open LOG file!");
-  }
 
-
-  if(pars->log){
     if(pars->verbose >= 1)
-      printf("==> Dumping initial values to log file\n");
+      printf("==> Dumping initial values to LOG file\n");
     dump_data(log_fh, pars, pars->log_bin);
   }
 
@@ -97,7 +94,7 @@ int EM (params *pars) {
       for (double F = 1/INF; F <= 1; F+=0.1){
 	fprintf(stderr, "%f", F);
 	for (double aa = 0; aa <= 0.2; aa+=0.01){
-	  double lkl = forward(Fw, pars->geno_lkl[i], F, aa, pars->prior, pars->path[i], pars->pos_dist, pars->n_sites);
+	  double lkl = forward(Fw, pars->geno_lkl[i], F, aa, pars->freq, pars->marg_prob[i], pars->pos_dist, pars->n_sites);
 	  fprintf(stderr, "\t%f", lkl);
 	}
 	fprintf(stderr, "\n");
@@ -130,10 +127,10 @@ int EM (params *pars) {
 
 
 void iter_EM(params *pars) {
-  double ***prior = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INF);
-  cpy(prior, pars->prior, pars->n_sites+1, N_STATES, N_GENO, sizeof(double));
   char **path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
   cpy(path, pars->path, pars->n_ind, pars->n_sites+1, sizeof(char));
+  double ***marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, -INF);
+  cpy(marg_prob, pars->marg_prob, pars->n_ind, pars->n_sites+1, N_STATES, sizeof(double));
 
   double ***Fw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
   double ***Bw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
@@ -146,14 +143,14 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
     
   // Backward recursion
   time_t bwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
@@ -181,7 +178,7 @@ void iter_EM(params *pars) {
     // Get marg probs
     for (uint64_t s = 1; s <= pars->n_sites; s++)
       for(uint64_t k = 0; k < N_STATES; k++)
-	pars->marg_prob[i][s][k] = Bw[i][s][k] + Fw[i][s][k] - pars->ind_lkl[i];
+	pars->marg_prob[i][s][k] = check_interv(exp(Bw[i][s][k] + Fw[i][s][k] - pars->ind_lkl[i]), false);
   }
 
 
@@ -195,7 +192,7 @@ void iter_EM(params *pars) {
     if(pars->verbose >= 1)
       printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, pars->path[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
+      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, pars->path[i], marg_prob[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
 
     threadpool_wait(pars->thread_pool);
 
@@ -220,7 +217,7 @@ void iter_EM(params *pars) {
       printf("==> Update inbreeding and transition probabilities\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], prior, path[i], pars->pos_dist, pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
 
     threadpool_wait(pars->thread_pool);
 
@@ -231,57 +228,60 @@ void iter_EM(params *pars) {
 
 
 
-  // Estimate allele frequencies
+  // Estimate allele frequencies (EM)
   time_t freqs_t = time(NULL);
-  time_t emission_t = time(NULL);
   if(pars->freq_fixed){
     if(pars->verbose >= 1)
       printf("==> Alelle frequencies not estimated!\n");
   }else{
     if(pars->verbose >= 1)
-      printf("==> Update allele frequencies\n");
+      printf("==> Estimate allele frequencies\n");
     double pp[N_GENO];
 
     for (uint64_t s = 1; s <= pars->n_sites; s++){
       double num = 0; // Expected number minor alleles
       double den = 0; // Expected total number of alleles
 
-      for (uint64_t i = 0; i < pars->n_ind; i++){
-	int state = (int) path[i][s];
-	post_prob(pp, pars->geno_lkl[i][s], prior[s][state], N_GENO);
+      int iters = 0;
+      double prev_freq = 100;
 
-	double indF = exp(pars->marg_prob[i][s][1]);
-	num += exp(pp[1]) + exp(pp[2])*(2-indF);
-	den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-indF);
-	if(pars->verbose >= 8)
-	  printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; IBD: %f (%d)\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), indF, state);
+      while (abs(prev_freq - pars->freq[s]) > 0.001 && iters++ < 100){
+	prev_freq = pars->freq[s];
+	for (uint64_t i = 0; i < pars->n_ind; i++){
+	  double indF = pars->marg_prob[i][s][1];
+          //double indF = (double) path[i][s];
+
+	  double prior[3];
+	  calc_prior(prior, pars->freq[s], indF);
+	  post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
+
+	  num += exp(pp[1]) + exp(pp[2])*(2-indF);
+	  den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-indF);
+	  if(pars->verbose >= 8)
+	    printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; IBD: %f (%f)\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), indF, marg_prob[i][s][1]);
+	}
+	pars->freq[s] = num/den;
+	if(pars->verbose >= 7)
+	  printf("%lu %d; num: %f; den: %f; freq: %f %f (%f)\n", s, iters, num, den, prev_freq, pars->freq[s], abs(prev_freq - pars->freq[s]));
       }
-      pars->freq[s] = num/den;
     }
-
-    // Update emission probabilities
-    emission_t = time(NULL);
-    if(pars->verbose >= 1)
-      printf("==> Update emission probabilities\n");
-    update_priors(pars->prior, pars->freq, pars->n_sites);
   }
 
 
 
   time_t end_t = time(NULL);
   if(pars->verbose >= 3)
-    printf("\nFw: %.1f\nBw: %.1f\nMP: %.1f\npath: %.1f\nindF: %.1f\nfreqs: %.1f\nemission: %.1f\n", 
+    printf("\nFw: %.1f\nBw: %.1f\nMP: %.1f\npath: %.1f\nindF: %.1f\nfreqs: %.1f\n", 
 	   difftime(bwd_t,fwd_t), 
 	   difftime(mp_t,bwd_t), 
 	   difftime(path_t,mp_t), 
 	   difftime(indF_t,path_t), 
-	   difftime(freqs_t,indF_t), 
-	   difftime(emission_t,freqs_t), 
-	   difftime(end_t,emission_t)
+	   difftime(freqs_t,indF_t),
+	   difftime(end_t,freqs_t)
 	   );
 
-  free_ptr((void***) prior, pars->n_sites+1, N_STATES);
   free_ptr((void**) path, pars->n_ind);
+  free_ptr((void***) marg_prob, pars->n_ind, pars->n_sites+1);
 
   free_ptr((void***) Fw, pars->n_ind, pars->n_sites+1);
   free_ptr((void***) Bw, pars->n_ind, pars->n_sites+1);
@@ -344,7 +344,10 @@ void print_iter(char *out_prefix, params *pars){
 
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     for (uint64_t i = 0; i < pars->n_ind; i++){
-      post_prob(pp, pars->geno_lkl[i][s], pars->prior[s][(int) pars->path[i][s]], N_GENO);
+      double prior[3];
+      //calc_prior(prior, pars->freq[s], pars->marg_prob[i][s][1]);
+      calc_prior(prior, pars->freq[s], (double) pars->path[i][s]);
+      post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
       gzwrite(out_fh, pp, sizeof(double)*N_GENO);
     }
 
@@ -368,8 +371,7 @@ void dump_data(gzFile fh, params *pars, bool out_bin){
     // Print marginal probs
     for (uint64_t i = 0; i < pars->n_ind; i++)
       for (uint64_t s = 1; s <= pars->n_sites; s++){
-	double mp = exp(pars->marg_prob[i][s][1]);
-	gzwrite(fh, &mp, sizeof(double));
+	gzwrite(fh, &pars->marg_prob[i][s][1], sizeof(double));
       }
   }else{
     buf = join(pars->ind_lkl, pars->n_ind, "\t");
@@ -389,9 +391,9 @@ void dump_data(gzFile fh, params *pars, bool out_bin){
     // Print marginal probs
     for (uint64_t i = 0; i < pars->n_ind; i++){
       // To avoid leading \t
-      gzprintf(fh, "%f", exp(pars->marg_prob[i][1][1]));
+      gzprintf(fh, "%f", pars->marg_prob[i][1][1]);
       for (uint64_t s = 2; s <= pars->n_sites; s++)
-	gzprintf(fh, "\t%f", exp(pars->marg_prob[i][s][1]));
+	gzprintf(fh, "\t%f", pars->marg_prob[i][s][1]);
       gzprintf(fh, "\n");
     }
   }
@@ -430,24 +432,16 @@ double calc_trans(char k, char l, double pos_dist, double F, double aa, bool con
 
 
 
-void calc_prior(double *priors, double freq, uint64_t F){
+void calc_prior(double *priors, double freq, double F){
   priors[0] = log(pow(1-freq,2)   +   (1-freq)*freq*F);
   priors[1] = log(2*(1-freq)*freq - 2*(1-freq)*freq*F);
   priors[2] = log(pow(freq,2)     +   (1-freq)*freq*F);
 
-  /* Added to avoid impossible cases (like HET on an IBD state). This way, 
-     the prior for an HET is not 0 and impossible cases can still be calculated. 
-     We could set the PP to missing (e.g. 0.3,0.3,0.3) but the IBD state is being 
-     optimized so I prefer to keep the information and give preference to the GL.
+  /* Added to avoid impossible cases (like HET on an IBD position). This way, 
+     the prior for an HET is not 0 and these cases can still be calculated. 
+     We could set the PP to missing (e.g. 0.3,0.3,0.3) but the IBD status is being 
+     optimized so it is probably better to keep the information and give preference to the GL.
    */
   if(F == 1)
     priors[1] = -INF;
-}
-
-
-
-void update_priors(double ***prior, double *freq, uint64_t n_sites){
-  for(uint64_t s = 1; s <= n_sites; s++)
-    for(uint64_t F = 0; F < N_STATES; F++)
-      calc_prior(prior[s][F], freq[s], F);
 }

@@ -289,15 +289,6 @@ int init_output(params* pars) {
 
 
 
-  ///////////////////////////////////////////////
-  // Set EMISSION probabilities initial values //
-  ///////////////////////////////////////////////
-  pars->prior = init_ptr(pars->n_sites+1, N_STATES, N_GENO, -INFINITY);
-  // Update emission probs based on allele freqs
-  update_priors(pars->prior, pars->freq, pars->n_sites);
-  
-
-
   /////////////////////////////
   // Set PATH initial values //
   /////////////////////////////

@@ -38,9 +38,8 @@ typedef struct {
   uint seed;
 
   double *freq;          // n_sites+1
-  double ***prior;       // n_sites+1 * N_STATES * N_GENO
   char **path;           // n_ind * n_sites+1
-  double ***marg_prob;   // n_ind * n_sites+1
+  double ***marg_prob;   // n_ind * n_sites+1 * N_STATES
   double *indF;          // n_ind
   double *aa;            // n_ind
   double *ind_lkl;       // n_ind
@@ -62,5 +61,4 @@ void post_prob(double*, double*, double*, uint64_t);
 void print_iter(char*, params*);
 void dump_data(gzFile, params*, bool = false);
 double calc_trans(char, char, double, double, double, bool = true);
-void calc_prior(double *, double, uint64_t);
-void update_priors(double ***, double *, uint64_t);
+void calc_prior(double *, double, double);
