@@ -36,6 +36,7 @@ void catch_SIG();
 double check_interv(double, bool);
 int array_max_pos(double*, int);
 double draw_rnd(gsl_rng*, uint64_t, uint64_t);
+bool miss_data(double*);
 void call_geno(double*, int, double = 0, double = 0, bool = true);
 void conv_space(double*, int, double (*func)(double));
 void post_prob(double*, double*, double*, uint64_t);

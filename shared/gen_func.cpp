@@ -92,8 +92,19 @@ double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
 
 
 
+// Test for missing data in genotype
+// => all genos are equal
+bool miss_data(double *geno){
+  if(abs(geno[0] - geno[1]) < EPSILON && 
+     abs(geno[1] - geno[2]) < EPSILON)
+    return true;
+  else
+    return false;
+}
 
-void call_geno(double *geno, int n_geno, double N_pp_thresh, double call_pp_thresh, bool log_scale) {
+
+
+void call_geno(double *geno, int n_geno, double N_pp_thresh, double call_pp_thresh, bool log_scale){
   int max_pos = array_max_pos(geno, n_geno);
   double max_pp = (log_scale ? exp(geno[max_pos]) : geno[max_pos]);
 

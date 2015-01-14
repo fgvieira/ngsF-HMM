@@ -87,8 +87,8 @@ int main (int argc, char** argv) {
       for(uint64_t s = 1; s <= pars->n_sites; s++){
 	if(pars->call_geno)
 	  // Call genotypes
-	  call_geno(pars->geno_lkl[i][s], N_GENO);
-	else if(!pars->in_loglkl)
+	  call_geno(pars->geno_lkl[i][s], N_GENO, 0, 0, pars->in_loglkl);
+	if(!pars->in_loglkl)
 	  // Convert space
 	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
 
