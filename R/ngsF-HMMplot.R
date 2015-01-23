@@ -17,10 +17,10 @@ chr_abs_pos <- function(pos){
   return(pos)
 }
 
-iter_plot <- function(pos, true_path, true_geno, lkl, path, marg_prob){
+iter_plot <- function(pos, true_path, true_geno, lkl, path, marg_prob, titles){
   n = length(lkl)
   L = length(path[[1]])
-  
+
   plots=c(1,1)
   if(n>1) plots=c(ceiling(n/2),2)
   par(mfrow=plots, mar=c(2,2,1,1))
@@ -45,7 +45,7 @@ iter_plot <- function(pos, true_path, true_geno, lkl, path, marg_prob){
     }
 
     # Add title
-    title(main=lkl[[i]], cex.main=0.5)
+    title(main=paste(titles[i],lkl[[i]],sep=" / "), cex.main=0.5)
     
     # Plot marginal probs (GREEN line)
     if(length(marg_prob) != 0)
@@ -92,12 +92,13 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-b", "--binary"), action="store_true", type="logical", default=FALSE, help="Is input in binary? [%default]"),
                     make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-s", "--n_sites"), action="store", type="integer", default=1000, help="Number of sites [%default]"),
+                    make_option(c("-t", "--titles"), action="store", type="character", default=NULL, help="File with per-plot titles."),
                     make_option(c("--pos"), action="store", type="character", default=NULL, help="Path to file with site positions [%default]"),
                     make_option(c("-m", "--marg_prob"), action="store_true", type="logical", default=FALSE, help="Plot marginal probabilities? [%default]"),
                     make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
-                    make_option(c("-w", "--width"), action="store", type="numeric", default=NULL, help="Each plot width"),
+                    make_option(c("-w", "--width"), action="store", type="numeric", default=NULL, help="Each plot width [%default]"),
                     make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output prefix [%default]"),
                     make_option(c("-q", "--quiet"), action="store_true", type="logical", default=FALSE, help="Print info to STDOUT? [%default]")
 )
@@ -125,6 +126,7 @@ if(!opt$quiet){
   cat('# Is input file binary?', opt$binary, fill=TRUE)
   cat('# Number indiv:', opt$n_ind, fill=TRUE)
   cat('# Number sites:', opt$n_sites, fill=TRUE)
+  cat('# Titles:', opt$titles, fill=TRUE)
   cat('# Positions file:', opt$pos, fill=TRUE)
   cat('# Known genotypes:', opt$geno, fill=TRUE)
   cat('# Known path:', opt$path, fill=TRUE)
@@ -154,8 +156,22 @@ if(!is.null(opt$geno) && file.exists(opt$geno)){
   }
 }else
   true_geno <- list()
+
+
   
-  
+if(!is.null(opt$titles)){
+  if(!opt$quiet)
+    cat("====> Reading TITLES file...", fill=TRUE)
+  titles <- apply(as.matrix(read.table(opt$titles)), 1, paste, collapse=" / ")
+
+  if(opt$n_ind != length(titles)){
+    cat("ERROR: number of indiv and TITLES file do not match!", fill=TRUE)
+    quit("no",-1)
+  }
+}else
+  titles <- matrix()
+
+
 
 if(!is.null(opt$path) && file.exists(opt$path)){
   if(!opt$quiet)
@@ -244,7 +260,7 @@ while(TRUE) {
       path[[j]] <- readBin(fh, integer(), n=opt$n_sites)
   }else
     path <- lapply(strsplit(readLines(fh, opt$n_ind), ""), as.numeric)
-  
+
   # Reading post prob
   marg_prob <- list()
   if(opt$binary){
@@ -270,11 +286,11 @@ while(TRUE) {
     }
   }
   
-  
+
   # Plotting...
   if(!opt$quiet)
     cat("> Plotting iter", iter, "...", fill=TRUE)
-  iter_plot(pos, true_path, true_geno, lkl, path, marg_prob)
+  iter_plot(pos, true_path, true_geno, lkl, path, marg_prob, titles)
 }
 
 close(fh)
