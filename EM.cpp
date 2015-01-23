@@ -13,6 +13,31 @@ int EM (params *pars) {
   double *ind_lkl_epsilon = init_ptr(pars->n_ind, -INFINITY);
   gzFile log_fh;
 
+
+
+  // Print out initial parameters
+  if(pars->verbose >= 5){
+    printf("==> Initial parameters:\n");
+    // indF and aa
+    for(uint64_t i = 0; i < pars->n_ind; i++)
+      printf("\t%.10f\t%f\n", pars->indF[i], pars->aa[i]);
+
+    // path
+    for(uint64_t i = 0; i < pars->n_ind; i++){
+      char *buf;
+      buf = join(pars->path[i]+1, pars->n_sites, "");
+      printf("\t%s\n", buf);
+      delete [] buf;
+    }
+
+    // freq
+    for(uint64_t s = 1; s <= pars->n_sites; s++)
+      printf("\t%f", pars->freq[s]);
+    printf("\n");
+  }
+
+
+
   // Open filehandle for iteration log
   if(pars->log){
     char *tmp_out = strdcat(pars->out_prefix, ".log.gz");
