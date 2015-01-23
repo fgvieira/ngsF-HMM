@@ -76,6 +76,8 @@ void thread_slave(void *ptr){
     *p->aa = val[1];
   }else
     error(__FUNCTION__, "invalid thread task option!");
+
+  delete p;
 }
 
 

@@ -131,6 +131,7 @@ int main (int argc, char** argv) {
   // pars struct
   //free_ptr((void*) pars->in_geno);
   free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
+  free_ptr((void*) pars->pos_dist);
   free_ptr((void*) pars->freq);
   free_ptr((void**) pars->path, pars->n_ind);
   free_ptr((void***) pars->marg_prob, pars->n_ind, pars->n_sites+1);
