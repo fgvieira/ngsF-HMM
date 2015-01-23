@@ -146,19 +146,16 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 
   // Default value for initial values
   if(pars->in_freq == NULL) {
-    pars->in_freq = new char[2];
-    pars->in_freq[0] = 'r';
-    pars->in_freq[1] = '\0';
+    pars->in_freq = init_ptr(20, (const char*) '\0');
+    strcat(pars->in_freq, "r");
   }
   if(pars->in_indF == NULL) {
-    pars->in_indF = new char[2];
-    pars->in_indF[0] = 'r';
-    pars->in_indF[1] = '\0';
+    pars->in_indF = init_ptr(20, (const char*) '\0');
+    strcat(pars->in_indF, "0.1-0.1");
   }
   if(pars->in_path == NULL) {
-    pars->in_path = new char[2];
-    pars->in_path[0] = 'r';
-    pars->in_path[1] = '\0';
+    pars->in_path = init_ptr(20, (const char*) '\0');
+    strcat(pars->in_path, "r");
   }
 
 
