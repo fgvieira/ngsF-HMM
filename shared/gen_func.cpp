@@ -198,7 +198,13 @@ void chomp(char *str){
 
 // Open gzFile
 gzFile open_gzfile(const char* name, const char* mode, uint64_t buf_size){
-  gzFile fh = gzopen(name, mode);
+  gzFile fh = NULL;
+
+  if( strcmp(name, "-") == 0 )
+    fh = gzdopen(fileno(stdin), mode);
+  else
+    fh = gzopen(name, mode);
+
   if(fh == NULL)
     return NULL;
 
