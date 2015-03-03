@@ -67,6 +67,11 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
       delete [] t;
     }
   }
+
+  // Check if file is at EOF
+  gzread(in_geno_fh, buf, 1);
+  if(!gzeof(in_geno_fh))
+    error(__FUNCTION__, "GENO file not at EOF. Check GENO file and number of sites!");
   
   gzclose(in_geno_fh);
   delete [] buf;
@@ -92,6 +97,7 @@ double* read_pos(char *in_pos, uint64_t n_sites){
 
   // Open file
   gzFile in_pos_fh = open_gzfile(in_pos, "r");
+  if(in_pos_fh == NULL)
     error(__FUNCTION__, "cannot open POS file!");
 
   for(uint64_t s = 1; s <= n_sites; s++){
@@ -106,7 +112,7 @@ double* read_pos(char *in_pos, uint64_t n_sites){
     n_fields = split(buf, (const char*) " \t", &t);
 
     // Check if header and skip
-    if(!n_fields){
+    if(!n_fields || strtod(t[1], NULL)==0){
       s--;
       printf("> Header found! Skipping line...\n");
       continue;
@@ -131,6 +137,11 @@ double* read_pos(char *in_pos, uint64_t n_sites){
 
     delete [] t;
   }
+
+  // Check if file is at EOF
+  gzread(in_pos_fh, buf, 1);
+  if(!gzeof(in_pos_fh))
+    error(__FUNCTION__, "POS file not at EOF. Check POS file and number of sites!");
 
   gzclose(in_pos_fh);
   delete [] buf;

@@ -373,6 +373,7 @@ void print_iter(char *out_prefix, params *pars){
       //calc_prior(prior, pars->freq[s], pars->marg_prob[i][s][1]);
       calc_prior(prior, pars->freq[s], (double) pars->path[i][s]);
       post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
+      conv_space(pp, N_GENO, exp);
       gzwrite(out_fh, pp, sizeof(double)*N_GENO);
     }
 
