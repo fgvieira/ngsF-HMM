@@ -63,7 +63,7 @@ getLikes <- function(x,depth=5,error=0.01,norm=TRUE,loglikeR=FALSE){
     res <- t(apply(res, 1, function(x){x/max}))
   }
   
-  return(log(res))
+  return(list(log(res),depth))
 }
 
 #####  Parse command-line arguments
@@ -76,7 +76,7 @@ option_list <- list(make_option(c("-n", "--n_ind"), action="store", type="intege
                     make_option(c("-t", "--trans"), action="store", type="character", default="0.01", help="Transition probabilities [%default]"),
                     make_option(c("-d", "--depth"), action="store", type="character", default="5", help="Sequencing depth [%default]"),
                     make_option(c("-e", "--error"), action="store", type="numeric", default=0.01, help="Error rate [%default]"),
-                    make_option(c("-s", "--seed"), action="store", type="integer", default=format(Sys.time(),"%S"), help="Seed for random number generator [clock seconds]"),
+                    make_option(c("-s", "--seed"), action="store", type="integer", default=runif(1,1,1e6), help="Seed for random number generator [random]"),
                     make_option(c("-o", "--out"), action="store", type="character", default="sim", help="Output prefix [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -197,40 +197,28 @@ if(file.exists(opt$site_pos)){
     }else{
       pos_dist[i] <- pos_dist[i] - pos_dist[i-1]
     }
-  
 }else if(opt$site_pos == "r"){
   avg_dist <- 1e5 # Avg dist between sampled independent SNPs
   cat("==> Setting to normally distributed with mean:",avg_dist,fill=TRUE)
   pos_dist <- as.integer(rnorm(opt$n_sites,mean=avg_dist,sd=avg_dist/3))
   pos_dist[pos_dist < 1] = 1
-  
-  # Print sites' positions
-  dist_out <- paste(opt$out,"pos.gz",sep=".")
-  if(!is.na(file.info(dist_out)[,"size"])){
-    warning("WARN: DIST file already exists. Skipping...");
-  } else {
-    fh <- gzfile(dist_out, "w", compression=9)
-    write.table(paste("chrS",cumsum(as.numeric(pos_dist)),sep="\t"), fh, quote=FALSE, sep="\n", row.names=FALSE, col.names=FALSE)
-    close(fh)
-  }
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$site_pos),fill=TRUE)
   pos_dist = c()
   for (s in 1:opt$n_sites)
     pos_dist[s] <- as.numeric(opt$site_pos)
 }
-# Convert distance between positions to Mb
-pos_dist <- pos_dist / 1e6;
 
 
 
 ############################ Generate data ############################
 
 ############ Generating TRUE (hidden) path
+# Distances are converted to Mb (divided by 1e6)
 cat("====> Generating true path...",fill=TRUE)
 path = list();
 for (i in 1:opt$n_ind)
-  path[[i]] = get_IBD(pos_dist, indF[i], trans[i])
+  path[[i]] = get_IBD(pos_dist/1e6, indF[i], trans[i])
 
 
 # Print
@@ -272,8 +260,12 @@ if(!is.na(file.info(seq_out)[,"size"])){
 ############ Calculate genotype likelihoods
 cat("====> Calculating genotype likelihoods...",fill=TRUE)
 geno_lkl <- geno
-for (i in 1:opt$n_ind)
-  geno_lkl[[i]] = getLikes(geno[[i]],depth[i],opt$error,T,F)
+true_depth <- geno
+for (i in 1:opt$n_ind){
+  x <- getLikes(geno[[i]],depth[i],opt$error,T,F)
+  geno_lkl[[i]] <- x[[1]]
+  true_depth[[i]] <- x[[2]]
+ }
 
 # Print
 lkl_out <- paste(opt$out,"glf.gz",sep=".")
@@ -286,5 +278,19 @@ if(!is.na(file.info(lkl_out)[,"size"])){
       writeLines(as.character(geno_lkl[[i]][,s]), fh, "\t")
     write("", fh)
   }
+  close(fh)
+}
+
+
+
+############ Print sites' positions
+cat("====> Printing sites positions...",fill=TRUE)
+dist_out <- paste(opt$out,"pos.gz",sep=".")
+if(!is.na(file.info(dist_out)[,"size"])){
+  warning("WARN: DIST file already exists. Skipping...");
+} else {
+  x <- as.matrix(as.data.frame(true_depth))
+  fh <- gzfile(dist_out, "w", compression=9)
+  write.table(paste("chrSIM",cumsum(as.numeric(pos_dist)),rowSums(x),apply(x,1,paste,collapse=","),sep="\t"), fh, quote=FALSE, sep="\n", row.names=FALSE, col.names=FALSE)
   close(fh)
 }
