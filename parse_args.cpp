@@ -28,7 +28,7 @@ void init_pars(params *pars) {
   pars->n_threads = 1;
   pars->version = false;
   pars->verbose = 1;
-  pars->seed = time(NULL);
+  pars->seed = time(NULL) + rand();
   pars->tot_lkl = 0;
   pars->thread_pool = NULL;
 }
@@ -151,7 +151,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   }
   if(pars->in_indF == NULL) {
     pars->in_indF = init_ptr(20, (const char*) '\0');
-    strcat(pars->in_indF, "0.1-0.1");
+    strcat(pars->in_indF, "0.1-0.01");
   }
   if(pars->in_path == NULL) {
     pars->in_path = init_ptr(20, (const char*) '\0');
