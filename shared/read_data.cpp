@@ -64,6 +64,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 	    geno[i][s][0] = geno[i][s][1] = geno[i][s][2] = log((double) 1/N_GENO);
         }
 
+      // Free memory
       delete [] t;
     }
   }
@@ -135,6 +136,9 @@ double* read_pos(char *in_pos, uint64_t n_sites){
     }
     prev_pos = strtoul(t[1], NULL, 0);
 
+    // Free memory
+    for(uint64_t cnt = 0; cnt < n_fields; cnt++)
+      delete [] t[cnt];
     delete [] t;
   }
 
