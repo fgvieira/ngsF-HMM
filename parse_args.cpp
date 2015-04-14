@@ -210,11 +210,16 @@ int init_output(params* pars) {
   pars->aa = init_ptr(pars->n_ind, 0.0);
 
   if( strcmp("r", pars->in_indF) == 0 ){
+    if(pars->verbose >= 1)
+      printf("==> Using random initial inbreeding values.\n");
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);
       pars->aa[i]   = aa_rng_min + gsl_rng_uniform(r) * (aa_rng_max - aa_rng_min);
     }
   }else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
+    if(pars->verbose >= 1)
+      printf("==> Reading initial inbreeding values from file \"%s\".\n", pars->in_indF);
+
     uint64_t i = 0;
     while( gzgets(in_indF_fh, buf, BUFF_LEN) != NULL ){
       // Remove trailing newline
@@ -234,6 +239,9 @@ int init_output(params* pars) {
     }
     gzclose(in_indF_fh);
   }else{
+    if(pars->verbose >= 1)
+      printf("==> Setting initial inbreeding values to: %s.\n", pars->in_indF);
+
     if( split(pars->in_indF, (const char*) ",-", &t) != 2 )
       error(__FUNCTION__, "wrong INDF parameters format!");
 
@@ -257,12 +265,49 @@ int init_output(params* pars) {
   // Initialize site 0 to invalid value
   pars->freq[0] = -1;
 
-  if( strcmp("r", pars->in_freq) == 0 )
+  if( strcmp("r", pars->in_freq) == 0 ) {
+    if(pars->verbose >= 1)
+      printf("==> Using random initial frequency values.\n");
+
     for(uint64_t s = 1; s <= pars->n_sites; s++)
       pars->freq[s] = freq_rng_min + gsl_rng_uniform(r) * (freq_rng_max - freq_rng_min);
 
-  else if( (in_freq_fh = gzopen(pars->in_freq, "r")) != NULL ){
+  } else if( strcmp("e", pars->in_freq) == 0 ){
+    if(pars->verbose >= 1)
+      printf("==> Estimating initial frequency values assuming HWE.\n");
+
+    double pp[N_GENO];
+    for(uint64_t s = 1; s <= pars->n_sites; s++){
+      double num = 0; // Expected number minor alleles
+      double den = 0; // Expected total number of alleles
+
+      int iters = 0;
+      double prev_freq = 100;
+
+      while (abs(prev_freq - pars->freq[s]) > 0.001 && iters++ < 100){
+	prev_freq = pars->freq[s];
+	for (uint64_t i = 0; i < pars->n_ind; i++){
+	  double prior[3];
+	  calc_prior(prior, pars->freq[s], 0);
+	  post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
+
+	  num += exp(pp[1]) + 2*exp(pp[2]);
+	  den += 2*exp(logsum3(pp[0],pp[1],pp[2]));
+	  if(pars->verbose >= 8)
+	    printf("%lu %lu; num: %f; den; %f; pp: %f %f %f\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]));
+	}
+	pars->freq[s] = num/den;
+	if(pars->verbose >= 7)
+	  printf("%lu %d; num: %f; den: %f; freq: %f %f (%f)\n", s, iters, num, den, prev_freq, pars->freq[s], abs(prev_freq - pars->freq[s]));
+      }
+    }
+
+  } else if( (in_freq_fh = gzopen(pars->in_freq, "r")) != NULL ){
+    if(pars->verbose >= 1)
+      printf("==> Reading initial frequency values from file \"%s\".\n", pars->in_freq);
+
     uint64_t s = 1;
+    uint64_t n_fields = 0;
     while( gzgets(in_freq_fh, buf, BUFF_LEN) != NULL ){
       // Remove trailing newline
       chomp(buf);
@@ -270,7 +315,16 @@ int init_output(params* pars) {
       if(strlen(buf) == 0)
 	continue;
 
-      if( s > pars->n_sites || split(buf, (const char*) " ,-\t", &t) != 1)
+      // Parse input line into array
+      n_fields = split(buf, (const char*) " ,-\t", &t);
+
+      // Check if header and skip
+      if(!n_fields){
+	printf("> Header found! Skipping line...\n");
+	continue;
+      }
+
+      if( s > pars->n_sites || n_fields != 1)
         error(__FUNCTION__, "wrong FREQ file format!");
 
       pars->freq[s] = min(max(t[0], freq_rng_min), freq_rng_max);
@@ -278,11 +332,14 @@ int init_output(params* pars) {
       delete [] t;
     } 
     gzclose(in_freq_fh);
-  }
 
-  else
+  } else {
+    if(pars->verbose >= 1)
+      printf("==> Setting initial frequency values to: %s.\n", pars->in_freq);
+
     for(uint64_t s = 1; s <= pars->n_sites; s++)
       pars->freq[s] = min(max(atof(pars->in_freq), freq_rng_min), freq_rng_max);
+  }
 
 
 
@@ -293,12 +350,18 @@ int init_output(params* pars) {
 
   pars->path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
 
-  if( strcmp("r", pars->in_path) == 0 )
+  if( strcmp("r", pars->in_path) == 0 ){
+    if(pars->verbose >= 1)
+      printf("==> Using random initial IBD states.\n");
+
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++)
 	pars->path[i][s] = gsl_rng_uniform(r) > 0.5 ? 1 : 0;
 
-  else if( (in_path_fh = gzopen(pars->in_path, "r")) != NULL ){
+  } else if( (in_path_fh = gzopen(pars->in_path, "r")) != NULL ){
+    if(pars->verbose >= 1)
+      printf("==> Reading initial IBD states from file \"%s\".\n", pars->in_path);
+
     uint64_t i = 0;
     while(gzgets(in_path_fh, buf, BUFF_LEN) != NULL){
       // Remove trailing newline
@@ -317,12 +380,15 @@ int init_output(params* pars) {
       delete [] t;
     }
     gzclose(in_path_fh);
-  }
 
-  else
+  } else {
+    if(pars->verbose >= 1)
+      printf("==> Setting initial IBD states to: %s.\n", pars->in_path);
+
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++)
 	pars->path[i][s] = atoi(pars->in_path) > 0.5 ? 1 : 0;
+  }
 
 
 

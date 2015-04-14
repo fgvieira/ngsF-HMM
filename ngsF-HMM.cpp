@@ -53,10 +53,9 @@ int main (int argc, char** argv) {
     pars->in_bin = false;
   }else if(pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO){
     if(pars->verbose >= 1)
-      printf("==> BINARY input file (always loglkl)\n");
+      printf("==> BINARY input file (always lkl)\n");
     pars->in_bin = true;
     pars->in_lkl = true;
-    pars->in_loglkl = true;
   }else
     error(__FUNCTION__, "invalid/corrupt genotype input file!");
 
@@ -66,7 +65,7 @@ int main (int argc, char** argv) {
   // Read input data //
   /////////////////////
   if(pars->verbose >= 1)
-    printf("> Reading from file...\n");
+    printf("> Reading data from file...\n");
   // Read data from GENO file
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
   // Read positions from file
