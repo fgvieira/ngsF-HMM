@@ -61,6 +61,13 @@ int main (int argc, char** argv) {
 
 
 
+  /////////////////////////////////////////////
+  // Declare and initialize output variables //
+  /////////////////////////////////////////////
+  init_output(pars);
+
+
+
   /////////////////////
   // Read input data //
   /////////////////////
@@ -84,23 +91,17 @@ int main (int argc, char** argv) {
   if(pars->in_lkl)
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++){
-	if(pars->call_geno)
-	  // Call genotypes
-	  call_geno(pars->geno_lkl[i][s], N_GENO, 0, 0, pars->in_loglkl);
 	if(!pars->in_loglkl)
 	  // Convert space
 	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
+	if(pars->call_geno){
+	  // Call genotypes
+	  call_geno(pars->geno_lkl[i][s], N_GENO, 0, 0, true);
+	}
 
 	// Normalize GL
 	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
-
-
-
-  /////////////////////////////////////////////
-  // Declare and initialize output variables //
-  /////////////////////////////////////////////
-  init_output(pars);
 
 
 

@@ -68,7 +68,7 @@ void thread_slave(void *ptr){
   else if(p->type == 4){
     double val[2] = {*p->F, *p->aa};
     double l_bound[2] = {1/INF, 1/INF};
-    double u_bound[2] = {1-l_bound[0], 5};
+    double u_bound[2] = {1-l_bound[0], 10};
     int lims[2] = {2, 2};
 
     findmax_bfgs(2, val, (void*) p, &lkl, NULL, l_bound, u_bound, lims, -1);

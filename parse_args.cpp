@@ -151,7 +151,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   }
   if(pars->in_indF == NULL) {
     pars->in_indF = init_ptr(20, (const char*) '\0');
-    strcat(pars->in_indF, "0.1-0.01");
+    strcat(pars->in_indF, "0.01-0.001");
   }
   if(pars->in_path == NULL) {
     pars->in_path = init_ptr(20, (const char*) '\0');
@@ -171,15 +171,15 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 
   // Check Arguments
   if(pars->in_geno == NULL)
-    error(__FUNCTION__, "genotype input file (-geno) missing!");
+    error(__FUNCTION__, "genotype input file (--geno) missing!");
   if(pars->out_prefix == NULL)
-    error(__FUNCTION__, "output prefix (-out_prefix) missing!");
+    error(__FUNCTION__, "output prefix (--out_prefix) missing!");
   if(pars->n_ind == 0)
-    error(__FUNCTION__, "number of individuals (-n_ind) missing!");
+    error(__FUNCTION__, "number of individuals (--n_ind) missing!");
   if(pars->n_sites == 0)
-    error(__FUNCTION__, "number of sites (-n_sites) missing!");
+    error(__FUNCTION__, "number of sites (--n_sites) missing!");
   if(pars->log < 0)
-    error(__FUNCTION__, "invalid LOG (-log) option!");
+    error(__FUNCTION__, "invalid LOG (--log) option!");
   if(pars->n_threads > pars->n_ind){
     warn(__FUNCTION__, "adjusting threads (--n_threads) to match number of individuals!");
     pars->n_threads = pars->n_ind;
@@ -293,12 +293,8 @@ int init_output(params* pars) {
 
 	  num += exp(pp[1]) + 2*exp(pp[2]);
 	  den += 2*exp(logsum3(pp[0],pp[1],pp[2]));
-	  if(pars->verbose >= 8)
-	    printf("%lu %lu; num: %f; den; %f; pp: %f %f %f\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]));
 	}
 	pars->freq[s] = num/den;
-	if(pars->verbose >= 7)
-	  printf("%lu %d; num: %f; den: %f; freq: %f %f (%f)\n", s, iters, num, den, prev_freq, pars->freq[s], abs(prev_freq - pars->freq[s]));
       }
     }
 
