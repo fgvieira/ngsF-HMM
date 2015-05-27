@@ -85,6 +85,19 @@ int array_max_pos(double *array, int size) {
 }
 
 
+int array_min_pos(double *array, int size) {
+  int res = 0;
+  double min = +INFINITY;
+
+  for (int cnt = 0; cnt < size; cnt++) {
+    if (array[cnt] < min) {
+      res = cnt;
+      min = array[cnt];
+    }
+  }
+  return res;
+}
+
 
 double draw_rnd(gsl_rng *r, uint64_t min, uint64_t max) {
   return( min + gsl_rng_uniform(r) * (max - min) );
@@ -104,16 +117,50 @@ bool miss_data(double *geno){
 
 
 
-void call_geno(double *geno, int n_geno, double N_pp_thresh, double call_pp_thresh, bool log_scale){
+/* Function to call genotypes from post probs
+   NOTE: probs must be normalized, that is, sum (or logsum) to 1!
+      geno              : array with probs
+      n_geno            : number of genotypes in array
+      log_scale         : are the probs in log scale?
+      N_prob_thresh     : minimum prob to use data.
+                          If max prob is lower, data set as missing
+      call_prob_thresh  : minimum prob to call a genotype. 
+                          If max prob is lower, leave geno as probs
+      miss_data         : how the missing data is handled
+          0 = missing data (all genot with equal prob)
+	  1 = sample random genotype
+	  2 = call the highest prob geno (since missing data, probably major/major)
+*/
+void call_geno(double *geno, int n_geno, bool log_scale, double N_prob_thresh, double call_prob_thresh, int miss_data){
+  if(N_prob_thresh > call_prob_thresh)
+    error(__FUNCTION__, "missing data threshold must be smaller than calling genotype threshold!");
+
   int max_pos = array_max_pos(geno, n_geno);
+  int min_pos = array_min_pos(geno, n_geno);
   double max_pp = (log_scale ? exp(geno[max_pos]) : geno[max_pos]);
 
-  if(max_pp < N_pp_thresh || max_pp > call_pp_thresh)
+  // If missing data
+  if(geno[min_pos] == geno[max_pos]){
+    max_pp = 0;
+
+    if(miss_data)
+      call_prob_thresh = 0;
+    if(miss_data == 1)
+      max_pos = rand() % 3;
+  }
+
+
+  if(max_pp <= N_prob_thresh)
+    for (int g = 0; g < n_geno; g++)
+      geno[g] = (log_scale ? log((double) 1/n_geno) : (double) 1/n_geno);
+
+
+  if(max_pp >= call_prob_thresh){
     for (int g = 0; g < n_geno; g++)
       geno[g] = (log_scale ? -INF : 0);
 
-  if(max_pp > call_pp_thresh)
     geno[max_pos] = (log_scale ? log(1) : 1);
+  }
 }
 
 

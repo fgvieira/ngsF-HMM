@@ -96,7 +96,7 @@ int main (int argc, char** argv) {
 	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
 	if(pars->call_geno){
 	  // Call genotypes
-	  call_geno(pars->geno_lkl[i][s], N_GENO, 0, 0, true);
+	  call_geno(pars->geno_lkl[i][s], N_GENO, true);
 	}
 
 	// Normalize GL

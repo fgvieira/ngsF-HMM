@@ -31,4 +31,4 @@ test:
 	@cd examples/; bash ./test.sh 2> test.log; cd ../
 
 clean:
-	@rm -f *~ *.o ngsF-HMM examples/testF*
+	@rm -f *~ *.o ngsF-HMM examples/testF* examples/testF.log
