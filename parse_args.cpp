@@ -28,7 +28,7 @@ void init_pars(params *pars) {
   pars->n_threads = 1;
   pars->version = false;
   pars->verbose = 1;
-  pars->seed = time(NULL) + rand();
+  pars->seed = time(NULL) + rand() % 1000;
   pars->tot_lkl = 0;
   pars->thread_pool = NULL;
 }
