@@ -114,7 +114,7 @@ double forward(double **Fw, double **data, double F, double aa, double *freq, do
 			 Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,aa)) + e_l;
 
       if(isnan(Fw[s][l])){
-	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\tfreq: %f\tmarg_prob: %f\n", s, pos_dist[s], F, aa, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[0], prior[1], prior[2], freq[s], marg_prob[s][l]);
+	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\tfreq: %f\tmarg_prob: %f\n", s, pos_dist[s], F, aa, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,aa), calc_trans(1,l,pos_dist[s],F,aa), e_l, data[s][0], data[s][1], data[s][2], prior[0], prior[1], prior[2], freq[s], marg_prob[s][l]);
 	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
@@ -144,7 +144,7 @@ double backward(double **Bw, double **data, double F, double aa, double *freq, d
 			   calc_trans(k,1,pos_dist[s],F,aa) + e_IBD  + Bw[s][1]);
 
       if(isnan(Bw[s-1][k])){
-	printf("site: %lu\tdist: %f\tF: %f %f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tfreq: %f\tmarg_prob: %f %f\n", s, pos_dist[s], F, aa, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,aa), calc_trans(k,1,pos_dist[s],F,aa), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], freq[s], marg_prob[s][0], marg_prob[s][1]);
+	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tfreq: %f\tmarg_prob: %f %f\n", s, pos_dist[s], F, aa, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,aa), calc_trans(k,1,pos_dist[s],F,aa), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], freq[s], marg_prob[s][0], marg_prob[s][1]);
 	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
