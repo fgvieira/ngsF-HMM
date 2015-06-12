@@ -10,7 +10,7 @@
 
 =head1 NAME
 
-    convert_ibd.pl v0.0.1
+    convert_ibd.pl v0.0.2
 
 =head1 SYNOPSIS
 
@@ -18,10 +18,11 @@
 
     OPTIONS:
        -help            This help screen
-       -ind_file        File with individual information (ID on first column)
+       -ind_file        File with individual information (IND_ID on first column)
        -pos_file        TSV file with position information (CHR,POS)
        -ibd_pos_file    File with regions as IBD state per position (one indiv per line, one 0/1 per site)
-       -ibd_coord_file  BED file with the coordinates of the IBD regions (CHR,START,END,ID)
+       -ibd_coord_file  BED file with the coordinates of the IBD regions (CHR,START,END,IND_ID).
+                        If IND_ID is blank or '*', interval is assumed on all individuals
 
 =head1 DESCRIPTION
 
@@ -47,7 +48,9 @@ use Getopt::Long;
 $| = 1;
 
 my ($ind_file, $pos_file, $ibd_pos_file, $ibd_coord_file, $ids);
-my ($s, $ind_id, $chr, $start_pos, $end_pos, @buf, @inds, @sites, %ibd);
+my ($s, $chr, $start_pos, $end_pos, $inds_id, @buf, @inds, @sites, %ibd);
+
+$ind_file='stdin';
 
 #Get the command-line options
 &GetOptions('h|help'            => sub { exec('perldoc',$0); exit; },
@@ -106,14 +109,14 @@ if($ibd_pos_file) {
 	$s = 0;
 
 	while( (($s = index($_, "1", $s)) != -1) ) {
-	    $ind_id = $inds[$curr_ind];
 	    $chr = $sites[$s]{'chr'};
 	    $start_pos = $sites[$s]{'pos'}-1;
-	    
+	    $inds_id = $inds[$curr_ind];
+
 	    for(; $s<=$#sites; $s++) {
 		if($s == $#sites || $sites[$s+1]{'chr'} != $chr || substr($_, $s+1, 1) == 0) {
 		    $end_pos = $sites[$s]{'pos'};
-		    print($chr."\t".$start_pos."\t".$end_pos."\t".$ind_id."\t".($end_pos-$start_pos)."\n");
+		    print($chr."\t".$start_pos."\t".$end_pos."\t".$inds_id."\t".($end_pos-$start_pos)."\n");
 		    $s++;
 		    last;
 		}
@@ -128,16 +131,19 @@ if($ibd_pos_file) {
     open(FILE, $ibd_coord_file) or die("ERROR: cannot read IBD_COORDINATES file: $ibd_coord_file\n");
     while(<FILE>) {
 	chomp();
-	($chr, $start_pos, $end_pos, $ind_id) = split(/[\t ]/);
+	($chr, $start_pos, $end_pos, $inds_id) = split(/[\t ]/);
+	# Assume all individuals if $inds_id empty or '*'
+	$inds_id = join(",",@inds) if(!defined($inds_id) || $inds_id eq "*");
 
-	next unless($ind_id && $chr && $start_pos && $end_pos);
-	next unless( grep {$_ eq $ind_id} keys(%ibd) );
-	# Increment start_pos by one since BED files are 0-based
-	$start_pos++;
-
-	for($s=0; $s<=$#sites; $s++) {
-	    if($sites[$s]->{'chr'} == $chr && $sites[$s]->{'pos'} >= $start_pos && $sites[$s]->{'pos'} <= $end_pos) {
-		substr($ibd{$ind_id}, $s, 1, "1");
+	foreach my $ind_id ( split(/,/,$inds_id) ) {
+	    next unless($ind_id && $chr && $start_pos && $end_pos);
+	    next unless( grep {$_ eq $ind_id} keys(%ibd) );
+	    # Increment start_pos by one since BED files are 0-based
+	    $start_pos++;
+	    for($s=0; $s<=$#sites; $s++) {
+		if($sites[$s]->{'chr'} eq $chr && $sites[$s]->{'pos'} >= $start_pos && $sites[$s]->{'pos'} <= $end_pos) {
+		    substr($ibd{$ind_id}, $s, 1, "1");
+		}
 	    }
 	}
     }
