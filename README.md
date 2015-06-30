@@ -61,10 +61,12 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--seed INT`: Seed for random number generator.
 
 ### Input data
-As input `ngsF-HMM` reads a Genotype Likelihood (GL) file composed of 3 genotype likelihoods, per site and individual. The file can be either in binary (as doubles) or gzipped text, in which case allows for initial non-genotype columns.
+As input `ngsF-HMM` reads a Genotype Likelihood (GL) file composed of 3 genotype likelihoods, per site and individual. The file can be either in binary (as doubles) or gzipped text (sites on rows). The latter case allows for initial non-genotype columns.
 
 ### Stopping Criteria
 An issue on iterative algorithms is the stopping criteria. `ngsF-HMM` implements a dual condition threshold: relative difference in log-likelihood and estimates RMSD (F and freq). As for which threshold to use, simulations show that 1e-5 seems to be a reasonable value. However, if you're dealing with low coverage data (2x-3x), it might be worth to use lower thresholds (between 1e-6 and 1e-9).
+
+### To avoid convergence to local maxima, ngsF-HMM should be run several times from different starting points. To make this task easier, a script (`ngsF-HMM.sh`) is provided that can be called with the exact same parameters as `ngsF-HMM`.
 
 ### Thread pool
 The thread pool implementation was adapted from Mathias Brossard's and is freely available from:
