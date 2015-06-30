@@ -11,7 +11,7 @@ Then, estimate inbreeding coefficients:
 
     N_SITES=$((`zcat testF.mafs.gz | wc -l`-1))
     gunzip testF.glf.gz
-    ../ngsF-HMM --verbose 2 --seed 12345 --geno testF.glf --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --trans 0.1,0.1 --path 0 --out testF --log
+    ../ngsF-HMM --verbose 2 --seed 12345 --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.1 --path 0 --out testF --log 1
 
 We now incorporate these estimates in the calculation of genotype posterior probabilities:
 
