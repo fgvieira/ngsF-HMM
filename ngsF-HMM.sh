@@ -1,7 +1,18 @@
 #!/bin/bash
 
 
-######### Functions ##########
+
+#################
+### Variables ###
+#################
+N_REP=20
+TMP_DIR=$HOME/scratch/ngsF-HMM
+
+
+
+#################
+### Functions ###
+#################
 in_array() {
     idx=""
     local CNT=0
@@ -18,14 +29,13 @@ in_array() {
 }
 
 
-########## Variables ##########
-TMP_DIR=/tmp
-N_REP=20
-ID=ngsF-HMM_$RANDOM
 
-
-##############################
+#######################
+### Check arguments ###
+#######################
 args=( $@ )
+ID=ngsF-HMM_$RANDOM
+mkdir -p $TMP_DIR
 
 # find -o/-out/--out argument
 in_array "--out" "${args[@]}"
@@ -42,7 +52,10 @@ fi
 OUT=${args[$idx]}
 
 
-# Run each replicate
+
+##########################
+### Run each replicate ###
+##########################
 for REP in `seq -w 1 $N_REP`
 do
     args[$idx]=$TMP_DIR/$ID.REP_$REP
@@ -50,6 +63,10 @@ do
 done
 
 
+
+##########################
+### Get best replicate ###
+##########################
 # Find best replicate
 BEST=`awk 'FNR==1{print FILENAME"\t"$1}' $TMP_DIR/$ID.REP_*.indF | sort -k 2,2gr | awk 'NR==1{sub(".indF","",$1); print $1}'`
 
