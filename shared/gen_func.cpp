@@ -141,16 +141,14 @@ void call_geno(double *geno, int n_geno, bool log_scale, double N_prob_thresh, d
 
   // If missing data
   if(geno[min_pos] == geno[max_pos]){
-    max_pp = 0;
-
-    if(miss_data)
-      call_prob_thresh = 0;
-    if(miss_data == 1)
+    if(miss_data == 0)
+      max_pp = -1;
+    else if(miss_data == 1)
       max_pos = rand() % 3;
   }
 
 
-  if(max_pp <= N_prob_thresh)
+  if(max_pp < N_prob_thresh)
     for (int g = 0; g < n_geno; g++)
       geno[g] = (log_scale ? log((double) 1/n_geno) : (double) 1/n_geno);
 
