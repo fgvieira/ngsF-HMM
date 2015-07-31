@@ -162,7 +162,7 @@ if(!is.null(opt$geno) && file.exists(opt$geno)){
 if(!is.null(opt$titles)){
   if(!opt$quiet)
     cat("====> Reading TITLES file...", fill=TRUE)
-  titles <- apply(as.matrix(read.table(opt$titles)), 1, paste, collapse=" / ")
+  titles <- apply(as.matrix(read.table(opt$titles, sep="\t")), 1, paste, collapse=" / ")
 
   if(opt$n_ind != length(titles)){
     cat("ERROR: number of indiv and TITLES file do not match!", fill=TRUE)
