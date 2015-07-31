@@ -23,11 +23,11 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
     if(in_bin){
       for(uint64_t i = 0; i < n_ind; i++)
 	if( gzread(in_geno_fh, geno[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
-	  error(__FUNCTION__, "cannot read GENO file!");
+	  error(__FUNCTION__, "cannot read binary GENO file. Check GENO file and number of sites!");
     }
     else{
       if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
-	error(__FUNCTION__, "cannot read GENO file!");
+	error(__FUNCTION__, "cannot read GZip GENO file. Check GENO file and number of sites!");
       // Remove trailing newline
       chomp(buf);
       // Check if empty
@@ -44,7 +44,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
       }
 
       if(n_fields < n_ind * n_geno)
-	error(__FUNCTION__, "wrong GENO file format!");
+	error(__FUNCTION__, "wrong GENO file format. Less fields than expected!");
       
       // Use last "n_ind * n_geno" columns
       ptr = t + (n_fields - n_ind * n_geno);
@@ -58,7 +58,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
           int g = (int) ptr[i];
 	  if(g >= 0){
 	    if(g > 2)
-	      error(__FUNCTION__, "wrong GENO format!");
+	      error(__FUNCTION__, "wrong GENO file format. Genotypes must be coded as {-1,0,1,2} !");
 	    geno[i][s][g] = log(1);
 	  }else
 	    geno[i][s][0] = geno[i][s][1] = geno[i][s][2] = log((double) 1/N_GENO);
