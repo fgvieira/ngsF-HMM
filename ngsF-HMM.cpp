@@ -88,22 +88,32 @@ int main (int argc, char** argv) {
     pars->pos_dist[s] /= 1e6;
   
   // If input is not genotypes, check whether to call genotypes and/or convert to log-space
-  if(pars->in_lkl)
-    for(uint64_t i = 0; i < pars->n_ind; i++)
-      for(uint64_t s = 1; s <= pars->n_sites; s++){
-	if(!pars->in_loglkl)
-	  // Convert space
-	  conv_space(pars->geno_lkl[i][s], N_GENO, log);
-	if(pars->call_geno){
-	  // Call genotypes
-	  call_geno(pars->geno_lkl[i][s], N_GENO, true);
-	}
-
-	// Normalize GL
-	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
+  for(uint64_t i = 0; i < pars->n_ind; i++)
+    for(uint64_t s = 1; s <= pars->n_sites; s++){
+      if(!pars->in_loglkl)
+	// Convert space
+	conv_space(pars->geno_lkl[i][s], N_GENO, log);
+      if(pars->in_lkl && pars->call_geno){
+	// Call genotypes
+	//printf("=> BEFORE: %f %f %f\n", pars->geno_lkl[i][s][0], pars->geno_lkl[i][s][1], pars->geno_lkl[i][s][2]);
+	call_geno(pars->geno_lkl[i][s], N_GENO);
+	//printf("=> AFTER: %f %f %f\n", pars->geno_lkl[i][s][0], pars->geno_lkl[i][s][1], pars->geno_lkl[i][s][2]);
       }
 
+      // Normalize GL
+      post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
 
+      // Ensure minimum GL allowed
+      if( pars->geno_lkl[i][s][array_min_pos(pars->geno_lkl[i][s], N_GENO)] < log(0.001) ) {
+	for(uint64_t g = 0; g < N_GENO; g++)
+	  if(pars->geno_lkl[i][s][g] < log(0.001))
+	    pars->geno_lkl[i][s][g] = log(0.001);
+	// Re-normalize GL
+	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
+      }
+    }
+
+  exit(0);
 
   //////////////////
   // Analyze Data //
