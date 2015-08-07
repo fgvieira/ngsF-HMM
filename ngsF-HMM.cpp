@@ -75,6 +75,11 @@ int main (int argc, char** argv) {
     printf("> Reading data from file...\n");
   // Read data from GENO file
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
+  // If input is called genotypes, they are converted to loglkl by read_geno()
+  if(pars->in_bin == false && pars->in_lkl == false){
+    pars->in_lkl = true;
+    pars->in_loglkl = true;
+  }
   // Read positions from file
   if(pars->verbose >= 1)
     printf("==> Getting sites coordinates\n");
@@ -113,7 +118,7 @@ int main (int argc, char** argv) {
       }
     }
 
-  exit(0);
+
 
   //////////////////
   // Analyze Data //
