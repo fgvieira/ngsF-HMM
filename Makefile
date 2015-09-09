@@ -1,8 +1,8 @@
 CC=gcc
 CXX=g++
 
-CFLAGS = -g -Wall -I./shared
-#CFLAGS = -O3 -Wall -I./shared
+#CFLAGS = -g -Wall -I./shared
+CFLAGS = -O3 -I./shared
 DFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 LIB = -lgsl -lgslcblas -lz -lpthread
 
