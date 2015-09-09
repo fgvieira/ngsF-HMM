@@ -1,4 +1,5 @@
 #!/bin/bash
+shopt -s extglob
 
 
 
@@ -67,16 +68,26 @@ done
 ##########################
 ### Get best replicate ###
 ##########################
-# Find best replicate
-BEST=`awk 'FNR==1{print FILENAME"\t"$1}' $TMP_DIR/$ID.REP_*.indF | sort -k 2,2gr | awk 'NR==1{sub(".indF","",$1); print $1}'`
+if [ -s $TMP_DIR/$ID.REP_*(0)1.indF ]; then
+    # Find best replicate
+    BEST=`awk 'FNR==1{print FILENAME"\t"$1}' $TMP_DIR/$ID.REP_*.indF | sort -k 2,2gr | awk 'NR==1{sub(".indF","",$1); print $1}'`
 
-# Get best replicate
-mv $BEST.indF $OUT.indF
-mv $BEST.ibd $OUT.ibd
-mv $BEST.geno $OUT.geno
-if [[ -s $BEST.log.gz ]]; then
-    mv $BEST.log.gz $OUT.log.gz
-fi
+    if [ -s $BEST.indF ]; then
+	# Get best replicate
+	mv $BEST.indF $OUT.indF
+	mv $BEST.ibd $OUT.ibd
+	mv $BEST.geno $OUT.geno
+	if [[ -s $BEST.log.gz ]]; then
+	    mv $BEST.log.gz $OUT.log.gz
+	fi
+    else
+	echo "ERROR: invalid BEST output files"
+	exit -1
+    fi
+else
+    echo "ERROR: no output files found"
+    exit -1
+fi	
 
 # Clean-up
 rm -f $TMP_DIR/$ID.REP_*
