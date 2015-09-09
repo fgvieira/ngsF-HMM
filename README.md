@@ -5,6 +5,15 @@
 `ngsF-HMM` is a program to estimate per-individual inbreeding tracts using a two-state Hidden Markov Model (HMM). Furthermore, instead of using called genotypes, it uses a probabilistic framework that takes the uncertainty of genotype's assignation into account; making it specially suited for low-quality or low-coverage datasets.
 
 
+### Citation
+
+`ngsF-HMM` was been submitted to [Bioinformatics](http://bioinformatics.oxfordjournals.org/), so please cite it if you use it in your work:
+
+    Vieira FG, Albrechtsen A, Gilbert MT and Nielsen R
+    Estimating IBD tracts from low coverage NGS data
+    Bioinformatics (submitted)
+
+
 ### Installation
 
 `ngsF-HMM` can be easily installed but has some external dependencies:
@@ -66,7 +75,7 @@ As input `ngsF-HMM` reads a Genotype Likelihood (GL) file composed of 3 genotype
 ### Stopping Criteria
 An issue on iterative algorithms is the stopping criteria. `ngsF-HMM` implements a dual condition threshold: relative difference in log-likelihood and estimates RMSD (F and freq). As for which threshold to use, simulations show that 1e-5 seems to be a reasonable value. However, if you're dealing with low coverage data (2x-3x), it might be worth to use lower thresholds (between 1e-6 and 1e-9).
 
-### To avoid convergence to local maxima, ngsF-HMM should be run several times from different starting points. To make this task easier, a script (`ngsF-HMM.sh`) is provided that can be called with the exact same parameters as `ngsF-HMM`.
+To avoid convergence to local maxima, ngsF-HMM should be run several times from different starting points. To make this task easier, a script (`ngsF-HMM.sh`) is provided that can be called with the exact same parameters as `ngsF-HMM`.
 
 ### Thread pool
 The thread pool implementation was adapted from Mathias Brossard's and is freely available from:
