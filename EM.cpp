@@ -18,9 +18,9 @@ int EM (params *pars) {
   // Print out initial parameters
   if(pars->verbose >= 5){
     printf("==> Initial parameters:\n");
-    // indF and aa
+    // indF and alpha
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      printf("\t%.10f\t%f\n", pars->indF[i], pars->aa[i]);
+      printf("\t%.10f\t%f\n", pars->indF[i], pars->alpha[i]);
 
     // path
     for(uint64_t i = 0; i < pars->n_ind; i++){
@@ -111,15 +111,15 @@ int EM (params *pars) {
   // Dump Lkl surface - DEBUG!!!
   if(0){
     for(uint64_t i = 0; i < pars->n_ind; i++){
-      for (double aa = 0; aa <= 0.2; aa+=0.01)
-	fprintf(stderr, "\t%f", aa);
+      for (double alpha = 0; alpha <= 0.2; alpha+=0.01)
+	fprintf(stderr, "\t%f", alpha);
       fprintf(stderr, "\n");
 
       double **Fw = init_ptr(pars->n_sites+1, N_STATES, 0.0);
       for (double F = 1/INF; F <= 1; F+=0.1){
 	fprintf(stderr, "%f", F);
-	for (double aa = 0; aa <= 0.2; aa+=0.01){
-	  double lkl = forward(Fw, pars->geno_lkl[i], F, aa, pars->freq, pars->marg_prob[i], pars->pos_dist, pars->n_sites);
+	for (double alpha = 0; alpha <= 0.2; alpha+=0.01){
+	  double lkl = forward(Fw, pars->geno_lkl[i], F, alpha, pars->freq, pars->marg_prob[i], pars->pos_dist, pars->n_sites);
 	  fprintf(stderr, "\t%f", lkl);
 	}
 	fprintf(stderr, "\n");
@@ -168,14 +168,14 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
     
   // Backward recursion
   time_t bwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
@@ -217,7 +217,7 @@ void iter_EM(params *pars) {
     if(pars->verbose >= 1)
       printf("==> Update most probable path (Viterbi)\n");
     for (uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, pars->path[i], marg_prob[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
+      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], marg_prob[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
 
     threadpool_wait(pars->thread_pool);
 
@@ -242,13 +242,13 @@ void iter_EM(params *pars) {
       printf("==> Update inbreeding and transition probabilities\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->aa[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
 
     threadpool_wait(pars->thread_pool);
 
     if(pars->verbose >= 4)
       for(uint64_t i = 0; i < pars->n_ind; i++)
-	printf("\t%.10f\t%f\n", pars->indF[i], pars->aa[i]);
+	printf("\t%.10f\t%f\n", pars->indF[i], pars->alpha[i]);
   }
 
 
@@ -332,7 +332,7 @@ void print_iter(char *out_prefix, params *pars){
 
   // Print indF and transition prob
   for(uint16_t i = 0; i < pars->n_ind; i++)
-    gzprintf(out_fh, "%.10f\t%f\n", pars->indF[i], pars->aa[i]);
+    gzprintf(out_fh, "%.10f\t%f\n", pars->indF[i], pars->alpha[i]);
 
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)
@@ -427,11 +427,11 @@ void dump_data(gzFile fh, params *pars, bool out_bin){
 
 
 
-double calc_trans(char k, char l, double pos_dist, double F, double aa, bool cont){
+double calc_trans(char k, char l, double pos_dist, double F, double alpha, bool cont){
   double trans = 0;
 
   if(cont){
-    double coanc_change = exp(-aa*pos_dist);
+    double coanc_change = exp(-alpha*pos_dist);
     // Continuous HMM
     if(k == 0 && l == 0)
       trans = (1-coanc_change) * (1-F) + coanc_change;
@@ -444,13 +444,13 @@ double calc_trans(char k, char l, double pos_dist, double F, double aa, bool con
   } else {
     // HMM
     if(k == 0 && l == 0)
-      trans = 1-aa*F;
+      trans = 1-alpha*F;
     else if(k == 0 && l == 1)
-      trans = aa*F;
+      trans = alpha*F;
     else if(k == 1 && l == 0)
-      trans = aa*(1-F);
+      trans = alpha*(1-F);
     else if(k == 1 && l == 1)
-      trans = 1-aa*(1-F);
+      trans = 1-alpha*(1-F);
   }
 
   return log(trans);

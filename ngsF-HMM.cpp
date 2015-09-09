@@ -151,7 +151,7 @@ int main (int argc, char** argv) {
   free_ptr((void**) pars->path, pars->n_ind);
   free_ptr((void***) pars->marg_prob, pars->n_ind, pars->n_sites+1);
   free_ptr((void*) pars->indF);
-  free_ptr((void*) pars->aa);
+  free_ptr((void*) pars->alpha);
   free_ptr((void*) pars->ind_lkl);
 
   if(pars->verbose >= 1)

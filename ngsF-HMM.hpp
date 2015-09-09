@@ -41,7 +41,7 @@ typedef struct {
   char **path;           // n_ind * n_sites+1
   double ***marg_prob;   // n_ind * n_sites+1 * N_STATES
   double *indF;          // n_ind
-  double *aa;            // n_ind
+  double *alpha;            // n_ind
   double *ind_lkl;       // n_ind
   double tot_lkl;
 
