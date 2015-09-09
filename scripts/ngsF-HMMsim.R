@@ -69,14 +69,14 @@ getLikes <- function(x,depth=5,error=0.01,norm=TRUE,loglikeR=FALSE){
 #####  Parse command-line arguments
 library(optparse)
 option_list <- list(make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
-                    make_option(c("-l", "--n_sites"), action="store", type="integer", default=1000, help="Number of independent sites [%default]"),
+                    make_option(c("-s", "--n_sites"), action="store", type="integer", default=1000, help="Number of independent sites [%default]"),
                     make_option(c("-f", "--freq"), action="store", type="character", default="0.1", help="Allele frequencies [%default]"),
                     make_option(c("-x", "--site_pos"), action="store", type="character", default="1", help="Distance between sites [%default]"),
                     make_option(c("-F", "--indF"), action="store", type="character", default="0", help="Per-individual inbreeding coefficients [%default]"),
-                    make_option(c("-t", "--trans"), action="store", type="character", default="0.01", help="Transition probabilities [%default]"),
+                    make_option(c("-a", "--alpha"), action="store", type="character", default="0.01", help="Transition parameter [%default]"),
                     make_option(c("-d", "--depth"), action="store", type="character", default="5", help="Sequencing depth [%default]"),
                     make_option(c("-e", "--error"), action="store", type="numeric", default=0.01, help="Error rate [%default]"),
-                    make_option(c("-s", "--seed"), action="store", type="integer", default=runif(1,1,1e6), help="Seed for random number generator [random]"),
+                    make_option(c("--seed"), action="store", type="integer", default=runif(1,1,1e6), help="Seed for random number generator [random]"),
                     make_option(c("-o", "--out"), action="store", type="character", default="sim", help="Output prefix [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -88,7 +88,7 @@ cat('# Number of sites:', opt$n_sites, fill=TRUE)
 cat('# Site freqs:', opt$freq, fill=TRUE)
 cat('# Site positions:', opt$site_pos, fill=TRUE)
 cat('# indF:', opt$indF, fill=TRUE)
-cat('# Transition freq:', opt$trans, fill=TRUE)
+cat('# Transition parameter:', opt$trans, fill=TRUE)
 cat('# Depth:', opt$depth, fill=TRUE)
 cat('# Seed:', opt$seed, fill=TRUE)
 set.seed(opt$seed)
@@ -97,7 +97,6 @@ cat('# Output prefix:', opt$out, fill=TRUE)
 
 
 ### indF
-indF = c()
 cat("====> Parsing per-individual indF...",fill=TRUE)
 if(file.exists(opt$indF)){
   cat("==> Reading values from file:",opt$indF,fill=TRUE)
@@ -111,14 +110,12 @@ if(file.exists(opt$indF)){
   indF <- runif(opt$n_ind)
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$indF),fill=TRUE)
-  for (i in 1:opt$n_ind)
-    indF[i] <- as.numeric(opt$indF)
+  indF <- rep(as.numeric(opt$indF),opt$n_ind)
 }
 
 
 
 ### freq
-freq = c()
 cat("====> Parsing allele frequencies...",fill=TRUE)
 if(file.exists(opt$freq)){
   cat("==> Reading values from file:",opt$freq,fill=TRUE)
@@ -132,35 +129,31 @@ if(file.exists(opt$freq)){
   freq <- runif(opt$n_sites)
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$freq),fill=TRUE)
-  for (s in 1:opt$n_sites)
-    freq[s] <- as.numeric(opt$freq)
+  freq <- rep(as.numeric(opt$freq),opt$n_ind)
 }
 
 
 
-### trans
-trans = c()
-cat("====> Parsing per-individual transition probability...",fill=TRUE)
-if(file.exists(opt$trans)){
-  cat("==> Reading values from file:",opt$trans,fill=TRUE)
-  trans <- as.numeric(readLines(opt$trans))
-  if(opt$n_ind != length(trans)){
-    cat("ERROR: number of individuals and transitions file do not match", fill=TRUE)
+### alpha
+cat("====> Parsing per-individual TRANSITION parameter...",fill=TRUE)
+if(file.exists(opt$alpha)){
+  cat("==> Reading values from file:",opt$alpha,fill=TRUE)
+  alpha <- as.numeric(readLines(opt$alpha))
+  if(opt$n_ind != length(alpha)){
+    cat("ERROR: number of individuals and TRANSITION file do not match", fill=TRUE)
     quit("no",-1)
   }
-}else if(opt$trans == "r"){
+}else if(opt$alpha == "r"){
   cat("==> Using random values",fill=TRUE)
-  trans <- runif(opt$n_ind)
+  alpha <- runif(opt$n_ind)
 }else{
-  cat("==> Setting to fixed value:",as.numeric(opt$trans),fill=TRUE)
-  for (i in 1:opt$n_ind)
-    trans[i] <- as.numeric(opt$trans)
+  cat("==> Setting to fixed value:",as.numeric(opt$alpha),fill=TRUE)
+  alpha <- rep(as.numeric(opt$alpha),opt$n_ind)
 }
 
 
 
 ### depth
-depth = c()
 cat("====> Parsing per-individual depth...",fill=TRUE)
 if(file.exists(opt$depth)){
   cat("==> Reading values from file:",opt$depth,fill=TRUE)
@@ -174,8 +167,7 @@ if(file.exists(opt$depth)){
   depth <- runif(opt$n_ind)
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$depth),fill=TRUE)
-  for (i in 1:opt$n_ind)
-    depth[i] <- as.numeric(opt$depth)
+  depth <- rep(as.numeric(opt$depth),opt$n_ind)
 }
 
 
@@ -204,9 +196,7 @@ if(file.exists(opt$site_pos)){
   pos_dist[pos_dist < 1] = 1
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$site_pos),fill=TRUE)
-  pos_dist = c()
-  for (s in 1:opt$n_sites)
-    pos_dist[s] <- as.numeric(opt$site_pos)
+  pos_dist <- rep(as.numeric(opt$site_pos),opt$n_sites)
 }
 
 
@@ -218,7 +208,7 @@ if(file.exists(opt$site_pos)){
 cat("====> Generating true path...",fill=TRUE)
 path = list();
 for (i in 1:opt$n_ind)
-  path[[i]] = get_IBD(pos_dist/1e6, indF[i], trans[i])
+  path[[i]] = get_IBD(pos_dist/1e6, indF[i], alpha[i])
 
 
 # Print
