@@ -12,7 +12,7 @@ N_SITES=10000
 FREQ=0.2
 SITE_POS=r
 INDF=0.5
-TRANS=0.01
+ALPHA=0.01
 SEED=12345
 
 ##### Simulate data from HMM
@@ -20,7 +20,7 @@ echo "========== Simulating data ==========" >&2
 DEPTH=2
 ERROR=0.01
 
-Rscript ../scripts/ngsSim-HMM.R --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --site_pos $SITE_POS --indF $INDF --trans $TRANS --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
+Rscript ../scripts/ngsF-HMMsim.R --n_ind $N_IND --n_sites $N_SITES --freq $FREQ --site_pos $SITE_POS --indF $INDF --alpha $ALPHA --depth $DEPTH --error $ERROR --seed $SEED --out testF-HMM.SIM >&2
 
 
 
@@ -38,16 +38,16 @@ do
     fi
     
     ID=TRUE
-    ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF $INDF,$TRANS --indF_fixed --path testF-HMM.SIM.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF $INDF,$ALPHA --indF_fixed --path testF-HMM.SIM.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=BEST
-    ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --indF $INDF,$TRANS --path testF-HMM.SIM.path.gz --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --indF $INDF,$ALPHA --path testF-HMM.SIM.path.gz --out testF-HMM.$ID.$TYPE --log 1
 
     ID=freq_fixed
     ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF 0.1,0.2 --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=indF_fixed
-    ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF $INDF,$TRANS --indF_fixed --path 0 --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF $INDF,$ALPHA --indF_fixed --path 0 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=path_fixed
     ../ngsF-HMM -verbose 2 -n_threads 30 --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF 0.1,0.2 --path testF-HMM.SIM.path.gz --path_fixed --out testF-HMM.$ID.$TYPE --log 1
