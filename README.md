@@ -54,8 +54,8 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--call_geno`: Call genotypes before running analyses.
 * `--freqs DOUBLE or CHAR`: Initial frequency values. Can be defined by user as a DOUBLE, (r)andom, (e)stimated or read from a FILE.
 * `--freqs_fixed`: Allele frequencies are fixed (will not be optimized).
-* `--indF DOUBLE-DOUBLE or CHAR`: Initial inbreeding and transition probability values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
-* `--indF_fixed`: Inbreeding and transition probability values are fixed (will not be optimized).
+* `--indF DOUBLE-DOUBLE or CHAR`: Initial inbreeding and transition parameter values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
+* `--indF_fixed`: Inbreeding and transition parameter values are fixed (will not be optimized).
 * `--path DOUBLE or CHAR`: Initial state paths. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
 * `--path_fixed`: State paths are fixed (will not be optimized).
 * `--out CHAR`: Prefix for output files.

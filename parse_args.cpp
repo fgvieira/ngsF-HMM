@@ -46,7 +46,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"n_ind", required_argument, NULL, 'n'},
       {"n_sites", required_argument, NULL, 's'},
       {"call_geno", no_argument, NULL, 'G'},
-      {"freq", required_argument, NULL, 'f'},      
+      {"freq", required_argument, NULL, 'f'},
       {"freq_fixed", no_argument, NULL, 'F'},
       {"indF", required_argument, NULL, 'i'},
       {"indF_fixed", no_argument, NULL, 'I'},
@@ -214,7 +214,7 @@ int init_output(params* pars) {
       printf("==> Using random initial inbreeding values.\n");
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = indF_rng_min + gsl_rng_uniform(r) * (indF_rng_max - indF_rng_min);
-      pars->alpha[i]   = alpha_rng_min + gsl_rng_uniform(r) * (alpha_rng_max - alpha_rng_min);
+      pars->alpha[i] = alpha_rng_min + gsl_rng_uniform(r) * (alpha_rng_max - alpha_rng_min);
     }
   }else if( (in_indF_fh = gzopen(pars->in_indF, "r")) != NULL ){
     if(pars->verbose >= 1)
@@ -232,7 +232,7 @@ int init_output(params* pars) {
 	error(__FUNCTION__, "wrong INDF file format!");
 
       pars->indF[i] = min(max(t[0], indF_rng_min), indF_rng_max);
-      pars->alpha[i]   = min(max(t[1], alpha_rng_min), alpha_rng_max);
+      pars->alpha[i] = min(max(t[1], alpha_rng_min), alpha_rng_max);
       i++;
 
       delete [] t;
@@ -247,7 +247,7 @@ int init_output(params* pars) {
 
     for(uint64_t i = 0; i < pars->n_ind; i++){
       pars->indF[i] = min(max(t[0], indF_rng_min), indF_rng_max);
-      pars->alpha[i]   = min(max(t[1], alpha_rng_min), alpha_rng_max);
+      pars->alpha[i] = min(max(t[1], alpha_rng_min), alpha_rng_max);
     }
     delete [] t;
   }
@@ -370,7 +370,7 @@ int init_output(params* pars) {
       if(i >= pars->n_ind || split(buf, (const char*) "", &t) != pars->n_sites)
         error(__FUNCTION__, "wrong PATH file format!");
 
-      for(uint64_t s = 0; s < pars->n_sites; s++)
+      for(uint64_t s = 1; s <= pars->n_sites; s++)
 	pars->path[i][s] = t[s] > 0.5 ? 1 : 0;
       i++;
       delete [] t;

@@ -232,14 +232,14 @@ void iter_EM(params *pars) {
 
 
   
-  // Estimate inbreeding and transition probabilities
+  // Estimate inbreeding and transition parameter
   time_t indF_t = time(NULL);
   if(pars->indF_fixed){
     if(pars->verbose >= 1)
-      printf("==> Inbreeding and transition probabilities not estimated!\n");
+      printf("==> Inbreeding and transition parameter not estimated!\n");
   }else{
     if(pars->verbose >= 1)
-      printf("==> Update inbreeding and transition probabilities\n");
+      printf("==> Update inbreeding and transition parameter\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
       threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
@@ -330,7 +330,7 @@ void print_iter(char *out_prefix, params *pars){
   // Print total Lkl
   gzprintf(out_fh, "%.10f\n", pars->tot_lkl);
 
-  // Print indF and transition prob
+  // Print indF and transition pars
   for(uint16_t i = 0; i < pars->n_ind; i++)
     gzprintf(out_fh, "%.10f\t%f\n", pars->indF[i], pars->alpha[i]);
 

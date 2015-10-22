@@ -106,7 +106,6 @@ double forward(double **Fw, double **data, double F, double alpha, double *freq,
   for (uint64_t s = 1; s <= length; s++)
     for(uint64_t l = 0; l < N_STATES; l++){
       double prior[3];
-      //calc_prior(prior, freq[s], marg_prob[s][l]);
       calc_prior(prior, freq[s], l);
       double e_l = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
       // logsum(k==0,k==1)
@@ -131,10 +130,8 @@ double backward(double **Bw, double **data, double F, double alpha, double *freq
 
   for (uint64_t s = length; s > 0; s--){
     double prior[3];
-    //calc_prior(prior, freq[s], marg_prob[s][0]);
     calc_prior(prior, freq[s], 0);
     double e_nIBD = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
-    //calc_prior(prior, freq[s], marg_prob[s][1]);
     calc_prior(prior, freq[s], 1);
     double e_IBD  = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
 
@@ -166,7 +163,6 @@ double viterbi(double **Vi, double **data, double F, double alpha, double *freq,
   for (uint64_t s = 1; s <= length; s++){
     for(uint64_t l = 0; l < N_STATES; l++){
       double prior[3];
-      //calc_prior(prior, freq[s], marg_prob[s][l]);
       calc_prior(prior, freq[s], l);
       double e_l = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
 
