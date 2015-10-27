@@ -331,8 +331,14 @@ void print_iter(char *out_prefix, params *pars){
   gzprintf(out_fh, "%.10f\n", pars->tot_lkl);
 
   // Print indF and transition pars
-  for(uint16_t i = 0; i < pars->n_ind; i++)
-    gzprintf(out_fh, "%.10f\t%f\n", pars->indF[i], pars->alpha[i]);
+  for(uint16_t i = 0; i < pars->n_ind; i++){
+    if(pars->indF[i] < EPSILON)
+      gzprintf(out_fh, "%.5f\tNA\n", (double) 0);
+    else if(pars->indF[i] > 1-EPSILON)
+      gzprintf(out_fh, "%.5f\tNA\n", (double) 1);
+    else
+      gzprintf(out_fh, "%.5f\t%f\n", pars->indF[i], pars->alpha[i]);
+  }
 
   // Print allele freqs
   for(uint64_t s = 1; s <= pars->n_sites; s++)
