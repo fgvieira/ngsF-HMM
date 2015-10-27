@@ -25,7 +25,6 @@ typedef struct {
   char *in_indF;
   bool indF_fixed;
   char *in_path;
-  bool path_fixed;
   char *out_prefix;
   unsigned int log;
   bool log_bin;

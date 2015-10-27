@@ -18,7 +18,6 @@ void init_pars(params *pars) {
   pars->in_indF = NULL;
   pars->indF_fixed = false;
   pars->in_path = NULL;
-  pars->path_fixed = false;
   pars->out_prefix = NULL;
   pars->log = 0;
   pars->log_bin = false;
@@ -51,7 +50,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"indF", required_argument, NULL, 'i'},
       {"indF_fixed", no_argument, NULL, 'I'},
       {"path", required_argument, NULL, 'p'},
-      {"path_fixed", no_argument, NULL, 'P'},
       {"out", required_argument, NULL, 'o'},
       {"log", required_argument, NULL, 'X'},
       {"log_bin", required_argument, NULL, 'b'},
@@ -66,7 +64,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Fi:Ip:Po:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Fi:Ip:o:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -104,9 +102,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       break;
     case 'p':
       pars->in_path = optarg;
-      break;
-    case 'P':
-      pars->path_fixed = true;
       break;
     case 'o':
       pars->out_prefix = optarg;
@@ -162,8 +157,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   // Print arguments to STDOUT
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tpath: %s\n\tpath_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
-           pars->in_geno, pars->in_pos, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_indF, pars->indF_fixed ? "true":"false", pars->in_path, pars->path_fixed ? "true":"false", pars->out_prefix, pars->log, pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
+    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tpath: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+           pars->in_geno, pars->in_pos, pars->in_lkl ? "true":"false", pars->in_loglkl ? "true":"false", pars->n_ind, pars->n_sites, pars->call_geno ? "true":"false", pars->in_freq, pars->freq_fixed ? "true":"false", pars->in_indF, pars->indF_fixed ? "true":"false", pars->in_path, pars->out_prefix, pars->log, pars->log_bin ? "true":"false", pars->min_iters, pars->max_iters, pars->min_epsilon, pars->n_threads, pars->version ? "true":"false", pars->verbose, pars->seed);
   }
   if(pars->verbose >= 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -240,7 +235,7 @@ int init_output(params* pars) {
     gzclose(in_indF_fh);
   }else{
     if(pars->verbose >= 1)
-      printf("==> Setting initial inbreeding values to: %s.\n", pars->in_indF);
+      printf("==> Setting initial inbreeding values to: %s\n", pars->in_indF);
 
     if( split(pars->in_indF, (const char*) ",-", &t) != 2 )
       error(__FUNCTION__, "wrong INDF parameters format!");
@@ -331,7 +326,7 @@ int init_output(params* pars) {
 
   } else {
     if(pars->verbose >= 1)
-      printf("==> Setting initial frequency values to: %s.\n", pars->in_freq);
+      printf("==> Setting initial frequency values to: %s\n", pars->in_freq);
 
     for(uint64_t s = 1; s <= pars->n_sites; s++)
       pars->freq[s] = min(max(atof(pars->in_freq), freq_rng_min), freq_rng_max);
@@ -379,7 +374,7 @@ int init_output(params* pars) {
 
   } else {
     if(pars->verbose >= 1)
-      printf("==> Setting initial IBD states to: %s.\n", pars->in_path);
+      printf("==> Setting initial IBD states to: %s\n", pars->in_path);
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t s = 1; s <= pars->n_sites; s++)

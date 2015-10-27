@@ -22,14 +22,6 @@ int EM (params *pars) {
     for(uint64_t i = 0; i < pars->n_ind; i++)
       printf("\t%.10f\t%f\n", pars->indF[i], pars->alpha[i]);
 
-    // path
-    for(uint64_t i = 0; i < pars->n_ind; i++){
-      char *buf;
-      buf = join(pars->path[i]+1, pars->n_sites, "");
-      printf("\t%s\n", buf);
-      delete [] buf;
-    }
-
     // freq
     for(uint64_t s = 1; s <= pars->n_sites; s++)
       printf("\t%f", pars->freq[s]);
@@ -108,33 +100,26 @@ int EM (params *pars) {
 
 
 
-  // Dump Lkl surface - DEBUG!!!
-  if(0){
-    for(uint64_t i = 0; i < pars->n_ind; i++){
-      for (double alpha = 0; alpha <= 0.2; alpha+=0.01)
-	fprintf(stderr, "\t%f", alpha);
-      fprintf(stderr, "\n");
+  /////////////
+  // Viterbi //
+  /////////////
+  if(pars->verbose >= 1)
+    printf("\n==> Decoding most probable path (Viterbi)\n");
+  double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
 
-      double **Fw = init_ptr(pars->n_sites+1, N_STATES, 0.0);
-      for (double F = 1/INF; F <= 1; F+=0.1){
-	fprintf(stderr, "%f", F);
-	for (double alpha = 0; alpha <= 0.2; alpha+=0.01){
-	  double lkl = forward(Fw, pars->geno_lkl[i], F, alpha, pars->freq, pars->marg_prob[i], pars->pos_dist, pars->n_sites);
-	  fprintf(stderr, "\t%f", lkl);
-	}
-	fprintf(stderr, "\n");
-      }
-      free_ptr((void**) Fw, pars->n_sites+1);
-    }
-  }
+  for (uint64_t i = 0; i < pars->n_ind; i++)
+    threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], pars->marg_prob[i], pars->pos_dist, pars->n_sites);
 
-  
+  threadpool_wait(pars->thread_pool);
+  free_ptr((void***) Vi, pars->n_ind, pars->n_sites+1);
+
+
 
   /////////////////////////
   // Print Final Results //
   /////////////////////////
   if(pars->verbose >= 1){
-    printf("\nFinal logLkl: %f\n", pars->tot_lkl);
+    printf("Final logLkl: %f\n", pars->tot_lkl);
     printf("Printing final results\n");
   }
   print_iter(pars->out_prefix, pars);
@@ -152,14 +137,10 @@ int EM (params *pars) {
 
 
 void iter_EM(params *pars) {
-  char **path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
-  cpy(path, pars->path, pars->n_ind, pars->n_sites+1, sizeof(char));
   double ***marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, -INF);
   cpy(marg_prob, pars->marg_prob, pars->n_ind, pars->n_sites+1, N_STATES, sizeof(double));
-
   double ***Fw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
   double ***Bw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
-  double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
 
 
 
@@ -208,30 +189,6 @@ void iter_EM(params *pars) {
 
 
   
-  // Viterbi
-  time_t path_t = time(NULL);
-  if(pars->path_fixed){
-    if(pars->verbose >= 1)
-      printf("==> Most probable path not estimated!\n");
-  }else{
-    if(pars->verbose >= 1)
-      printf("==> Update most probable path (Viterbi)\n");
-    for (uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], marg_prob[i], pars->pos_dist, pars->n_sites); // Here we use pars->path (instead of path) beacause the path is updated!
-
-    threadpool_wait(pars->thread_pool);
-
-    if(pars->verbose >= 4)
-      for(uint64_t i = 0; i < pars->n_ind; i++){
-	char *buf;
-	buf = join(pars->path[i]+1, pars->n_sites, "");
-	printf("\t%s\n", buf);
-	delete [] buf;
-      }
-  }
-
-
-  
   // Estimate inbreeding and transition parameter
   time_t indF_t = time(NULL);
   if(pars->indF_fixed){
@@ -274,7 +231,6 @@ void iter_EM(params *pars) {
 	prev_freq = pars->freq[s];
 	for (uint64_t i = 0; i < pars->n_ind; i++){
 	  double indF = pars->marg_prob[i][s][1];
-          //double indF = (double) path[i][s];
 
 	  double prior[3];
 	  calc_prior(prior, pars->freq[s], indF);
@@ -296,21 +252,17 @@ void iter_EM(params *pars) {
 
   time_t end_t = time(NULL);
   if(pars->verbose >= 3)
-    printf("\nFw: %.1f\nBw: %.1f\nMP: %.1f\npath: %.1f\nindF: %.1f\nfreqs: %.1f\n", 
+    printf("\nFw: %.1f\nBw: %.1f\nMP: %.1f\nindF: %.1f\nfreqs: %.1f\n", 
 	   difftime(bwd_t,fwd_t), 
 	   difftime(mp_t,bwd_t), 
-	   difftime(path_t,mp_t), 
-	   difftime(indF_t,path_t), 
+	   difftime(indF_t,mp_t), 
 	   difftime(freqs_t,indF_t),
 	   difftime(end_t,freqs_t)
 	   );
 
-  free_ptr((void**) path, pars->n_ind);
   free_ptr((void***) marg_prob, pars->n_ind, pars->n_sites+1);
-
   free_ptr((void***) Fw, pars->n_ind, pars->n_sites+1);
   free_ptr((void***) Bw, pars->n_ind, pars->n_sites+1);
-  free_ptr((void***) Vi, pars->n_ind, pars->n_sites+1);
 }
 
 
