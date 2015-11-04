@@ -44,30 +44,29 @@ Executables are built into the main directory. If you wish to clean all binaries
     % ./ngsF-HMM [options] --n_ind INT --n_sites INT --glf glf/in/file --out output/file
 
 #### Parameters
-
-* `--geno FILE`: Input genotype file.
-* `--pos` FILE: Input site coordinates file
-* `--lkl`: Input are genotype likelihoods (BEAGLE format).
-* `--loglkl`: Input are genotype log-likelihoods.
-* `--n_ind INT`: Sample size (number of individuals).
-* `--n_sites INT`: Total number of sites.
-* `--call_geno`: Call genotypes before running analyses.
-* `--freqs DOUBLE or CHAR`: Initial frequency values. Can be defined by user as a DOUBLE, (r)andom, (e)stimated or read from a FILE.
-* `--freqs_fixed`: Allele frequencies are fixed (will not be optimized).
-* `--indF DOUBLE-DOUBLE or CHAR`: Initial inbreeding and transition parameter values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
-* `--indF_fixed`: Inbreeding and transition parameter values are fixed (will not be optimized).
-* `--path DOUBLE or CHAR`: Initial state paths. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
-* `--path_fixed`: State paths are fixed (will not be optimized).
-* `--out CHAR`: Prefix for output files.
-* `--log INT`: Dump LOG file each INT iterations. [0]
-* `--log_bin`: Dump LOG file in binary.
-* `--min_iters INT`: Minimum number of EM iterations. [10]
-* `--max_iters INT`: Maximum number of EM iterations. [100]
-* `--min_epsilon FLOAT`: Maximum RMSD between iterations to assume convergence. [1e-5]
-* `--n_threads INT`: Number of threads to use. [1]
-* `--version`: Prints program version and exits.
-* `--verbose INT`: Selects verbosity level. [1]
-* `--seed INT`: Seed for random number generator.
+* `--geno FILE`: input file with genotypes, genotype likelihoods or genotype posterior probabilities.
+* `--pos` FILE: input site coordinates file
+* `--lkl`: input are genotype likelihoods (BEAGLE format).
+* `--loglkl`: input are genotype log-likelihoods.
+* `--n_ind INT`: sample size (number of individuals).
+* `--n_sites INT`: total number of sites.
+* `--call_geno`: call genotypes before running analyses.
+* `--freqs DOUBLE or CHAR`: initial frequency values. Can be defined by user as a DOUBLE, (r)andom, (e)stimated or read from a FILE.
+* `--freqs_fixed`: allele frequencies are fixed (will not be optimized).
+* `--indF DOUBLE-DOUBLE or CHAR`: initial inbreeding and transition parameter values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
+* `--indF_fixed`: inbreeding and transition parameter values are fixed (will not be optimized).
+* `--path DOUBLE or CHAR`: initial state paths. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
+* `--path_fixed`: state paths are fixed (will not be optimized).
+* `--out CHAR`: prefix for output files.
+* `--log INT`: dump LOG file each INT iterations. [0]
+* `--log_bin`: dump LOG file in binary.
+* `--min_iters INT`: minimum number of EM iterations. [10]
+* `--max_iters INT`: maximum number of EM iterations. [100]
+* `--min_epsilon FLOAT`: maximum RMSD between iterations to assume convergence. [1e-5]
+* `--n_threads INT`: number of threads to use. [1]
+* `--version`: prints program version and exits.
+* `--verbose INT`: selects verbosity level. [1]
+* `--seed INT`: seed for random number generator.
 
 ### Input data
 As input `ngsF-HMM` reads a Genotype Likelihood (GL) file composed of 3 genotype likelihoods, per site and individual. The file can be either in binary (as doubles) or gzipped text (sites on rows). The latter case allows for initial non-genotype columns.

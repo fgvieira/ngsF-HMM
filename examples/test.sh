@@ -66,7 +66,7 @@ done >&2
 N_IND=20
 $ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doGlf 2 -doMaf 1 -SNP_pval 1e-4 -out testF
 $ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doGlf 3 -doMaf 1 -SNP_pval 1e-4 -out testF
-gunzip testF.glf.gz
+gunzip -f testF.glf.gz
 
 
 
@@ -85,7 +85,7 @@ $ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_
 
 
 ##### Calculate covariance matrix
-gunzip testF.indF.geno.gz
+gunzip -f testF.indF.geno.gz
 $NGSPOPGEN/ngsCovar -probfile testF.indF.geno -outfile testF.indF.covar -nind $N_IND -nsites $N_SITES -call 0 -sfsfile testF.indF.saf -norm 0
 
 
