@@ -3,7 +3,7 @@
 #include "gen_func.hpp"
 
 // Reads both called genotypes (1 field per site and indiv), genotype lkls or genotype post probs (3 fields per site and indiv)
-double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, uint64_t n_sites){
+double*** read_geno(char *in_geno, bool in_bin, bool in_probs, bool in_logscale, uint64_t n_ind, uint64_t n_sites){
   uint64_t n_fields;
   // Depending on input we will have either 1 or 3 genot
   uint64_t n_geno = (in_probs ? N_GENO : 1);
@@ -21,9 +21,14 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 
   for(uint64_t s = 1; s <= n_sites; s++){
     if(in_bin){
-      for(uint64_t i = 0; i < n_ind; i++)
+      for(uint64_t i = 0; i < n_ind; i++){
 	if( gzread(in_geno_fh, geno[i][s], N_GENO * sizeof(double)) != N_GENO * sizeof(double) )
 	  error(__FUNCTION__, "cannot read binary GENO file. Check GENO file and number of sites!");
+	if(!in_logscale)
+	  conv_space(geno[i][s], N_GENO, log);
+	// Normalize GL
+	post_prob(geno[i][s], geno[i][s], NULL, N_GENO);
+      }
     }
     else{
       if( gzgets(in_geno_fh, buf, BUFF_LEN) == NULL)
@@ -49,13 +54,12 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
       // Use last "n_ind * n_geno" columns
       ptr = t + (n_fields - n_ind * n_geno);
       
-      if(in_probs)
-	for(uint64_t i = 0; i < n_ind; i++)
+      for(uint64_t i = 0; i < n_ind; i++){
+	if(in_probs){
           for(uint64_t g = 0; g < N_GENO; g++)
-            geno[i][s][g] = ptr[i*N_GENO+g];
-      else
-	for(uint64_t i = 0; i < n_ind; i++){
-          int g = (int) ptr[i];
+            geno[i][s][g] = (in_logscale ? ptr[i*N_GENO+g] : log(ptr[i*N_GENO+g]));
+	}else{
+	  int g = (int) ptr[i];
 	  if(g >= 0){
 	    if(g > 2)
 	      error(__FUNCTION__, "wrong GENO file format. Genotypes must be coded as {-1,0,1,2} !");
@@ -63,6 +67,10 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
 	  }else
 	    geno[i][s][0] = geno[i][s][1] = geno[i][s][2] = log((double) 1/N_GENO);
         }
+	
+	// Normalize GL
+	post_prob(geno[i][s], geno[i][s], NULL, N_GENO);
+      }
 
       // Free memory
       delete [] t;
@@ -73,7 +81,7 @@ double*** read_geno(char *in_geno, bool in_bin, bool in_probs, uint64_t n_ind, u
   gzread(in_geno_fh, buf, 1);
   if(!gzeof(in_geno_fh))
     error(__FUNCTION__, "GENO file not at EOF. Check GENO file and number of sites!");
-  
+
   gzclose(in_geno_fh);
   delete [] buf;
   return geno;

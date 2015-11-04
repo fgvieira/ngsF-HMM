@@ -14,6 +14,7 @@
 
 const double INF = 1e15;
 const double EPSILON = 1e-5;
+const uint64_t BUFF_LEN = 100000;
 
 // General definitions
 #define abs(x) ((x) >= 0 ? (x) : -(x))
@@ -36,6 +37,7 @@ void catch_SIG();
 double check_interv(double, bool);
 int array_max_pos(double*, int);
 int array_min_pos(double*, int);
+void transp_matrix(void*, void*, uint64_t, uint64_t);
 double draw_rnd(gsl_rng*, uint64_t, uint64_t);
 bool miss_data(double*);
 void call_geno(double*, int, bool = true, double = 0, double = 0, int = 0);
@@ -46,7 +48,7 @@ double logsum2(double, double);
 double logsum3(double, double, double);
 void chomp(char*);
 gzFile open_gzfile(const char*, const char*, uint64_t = 10000);
-int64_t read_file(const char*, char***, uint64_t);
+uint64_t read_file(const char*, char***, uint64_t = BUFF_LEN);
 
 uint64_t split(char*, const char*, int**);
 uint64_t split(char*, const char*, float**);
