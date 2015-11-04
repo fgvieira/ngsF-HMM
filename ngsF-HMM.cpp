@@ -40,7 +40,7 @@ int main (int argc, char** argv) {
   
   
   ///////////////////////
-  // Check input files //
+  // Adjust parameters //
   ///////////////////////
   // Get file total size
   struct stat st;
@@ -59,6 +59,12 @@ int main (int argc, char** argv) {
   }else
     error(__FUNCTION__, "invalid/corrupt genotype input file!");
 
+  // Adjust number of threads
+  if(pars->n_threads > pars->n_ind){
+    warn(__FUNCTION__, "adjusting threads (--n_threads) to match number of individuals!");
+    pars->n_threads = pars->n_ind;
+  }
+
 
 
   /////////////////////////////////////////////
@@ -71,15 +77,6 @@ int main (int argc, char** argv) {
   /////////////////////
   // Read input data //
   /////////////////////
-  if(pars->verbose >= 1)
-    printf("> Reading data from file...\n");
-  // Read data from GENO file
-  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->n_ind, pars->n_sites);
-  // If input is called genotypes, they are converted to loglkl by read_geno()
-  if(pars->in_bin == false && pars->in_lkl == false){
-    pars->in_lkl = true;
-    pars->in_loglkl = true;
-  }
   // Read positions from file
   if(pars->verbose >= 1)
     printf("==> Getting sites coordinates\n");
@@ -87,26 +84,23 @@ int main (int argc, char** argv) {
     pars->pos_dist = read_pos(pars->in_pos, pars->n_sites);
   else
     pars->pos_dist = init_ptr(pars->n_sites+1, INFINITY);
-
   // Convert position distances to Mb
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     pars->pos_dist[s] /= 1e6;
-  
-  // If input is not genotypes, check whether to call genotypes and/or convert to log-space
+
+  // Read data from GENO file
+  if(pars->verbose >= 1)
+    printf("> Reading data from file...\n");
+  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->in_loglkl, pars->n_ind, pars->n_sites);
+  // Read_geno always returns genos in logscale
+  pars->in_loglkl = true;
+
+  // If input is not genotypes, check whether to call genotypes
   for(uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t s = 1; s <= pars->n_sites; s++){
-      if(!pars->in_loglkl)
-	// Convert space
-	conv_space(pars->geno_lkl[i][s], N_GENO, log);
-      if(pars->in_lkl && pars->call_geno){
-	// Call genotypes
-	//printf("=> BEFORE: %f %f %f\n", pars->geno_lkl[i][s][0], pars->geno_lkl[i][s][1], pars->geno_lkl[i][s][2]);
+      // Call genotypes
+      if(pars->call_geno)
 	call_geno(pars->geno_lkl[i][s], N_GENO);
-	//printf("=> AFTER: %f %f %f\n", pars->geno_lkl[i][s][0], pars->geno_lkl[i][s][1], pars->geno_lkl[i][s][2]);
-      }
-
-      // Normalize GL
-      post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
 
       // Ensure minimum GL allowed
       if( pars->geno_lkl[i][s][array_min_pos(pars->geno_lkl[i][s], N_GENO)] < log(0.001) ) {

@@ -6,7 +6,7 @@ shopt -s extglob
 #################
 ### Variables ###
 #################
-N_REP=20
+N_REP=10
 TMP_DIR=$HOME/scratch/ngsF-HMM
 
 

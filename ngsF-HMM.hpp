@@ -18,7 +18,6 @@ typedef struct {
   uint64_t n_ind;
   uint64_t n_sites;
   double ***geno_lkl; // n_ind * n_sites+1 * N_GENO
-  double *pos_dist;   // n_sites+1
   bool call_geno;
   char *in_freq;
   bool freq_fixed;
@@ -36,6 +35,7 @@ typedef struct {
   uint verbose;
   uint seed;
 
+  double *pos_dist;      // n_sites+1
   double *freq;          // n_sites+1
   char **path;           // n_ind * n_sites+1
   double ***marg_prob;   // n_ind * n_sites+1 * N_STATES
