@@ -10,7 +10,6 @@ struct pth_struct{
   double *alpha;
   double *freq;
   char *path;
-  double **marg_prob;
   double *pos_dist;
   uint64_t length;
 };
@@ -18,16 +17,16 @@ struct pth_struct{
 
 
 // Function prototypes
-void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *alpha, double *freq, char *path, double **marg_prob, double *pos_dist, uint64_t length);
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *alpha, double *freq, char *path, double *pos_dist, uint64_t length);
 void thread_slave(void *ptr);
-double forward(double **Fw, double **data, double F, double alpha, double *freq, double **marg_prob, double *pos_dist, uint64_t length);
-double backward(double **Bw, double **data, double F, double alpha, double *freq, double **marg_prob, double *pos_dist, uint64_t length);
-double viterbi(double **Vi, double **data, double F, double alpha, double *freq, char *path, double **marg_prob, double *pos_dist, uint64_t length);
+double forward(double **Fw, double **data, double F, double alpha, double *freq, double *pos_dist, uint64_t length);
+double backward(double **Bw, double **data, double F, double alpha, double *freq, double *pos_dist, uint64_t length);
+double viterbi(double **Vi, double **data, double F, double alpha, double *freq, char *path, double *pos_dist, uint64_t length);
 double lkl(const double *x, const void *ptr);
 
 
 // General thread functions
-void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *alpha, double *freq, char *path, double **marg_prob, double *pos_dist, uint64_t length){
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *alpha, double *freq, char *path, double *pos_dist, uint64_t length){
   pth_struct *p = new pth_struct;
 
   p->type = type;
@@ -37,7 +36,6 @@ void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, doub
   p->alpha = alpha;
   p->freq = freq;
   p->path = path;
-  p->marg_prob = marg_prob;
   p->pos_dist = pos_dist;
   p->length = length;
 
@@ -60,11 +58,11 @@ void thread_slave(void *ptr){
   pth_struct* p = (pth_struct*) ptr;
 
   if(p->type == 1)
-    forward(p->ptr, p->data, *p->F, *p->alpha, p->freq, p->marg_prob, p->pos_dist, p->length);
+    forward(p->ptr, p->data, *p->F, *p->alpha, p->freq, p->pos_dist, p->length);
   else if(p->type == 2)
-    backward(p->ptr, p->data, *p->F, *p->alpha, p->freq, p->marg_prob, p->pos_dist, p->length);
+    backward(p->ptr, p->data, *p->F, *p->alpha, p->freq, p->pos_dist, p->length);
   else if(p->type == 3)
-    viterbi(p->ptr, p->data, *p->F, *p->alpha, p->freq, p->path, p->marg_prob, p->pos_dist, p->length);
+    viterbi(p->ptr, p->data, *p->F, *p->alpha, p->freq, p->path, p->pos_dist, p->length);
   else if(p->type == 4){
     double val[2] = {*p->F, *p->alpha};
     double l_bound[2] = {1/INF, 1/INF};
@@ -91,7 +89,7 @@ double lkl(const double *pars, const void *data){
      isnan(pars[1]) || isinf(pars[1]) )
     lkl = INF; // Added due to a putative bug on the BFGS function
   else
-    lkl = forward(Fw, p->data, pars[0], pars[1], p->freq, p->marg_prob, p->pos_dist, p->length);
+    lkl = forward(Fw, p->data, pars[0], pars[1], p->freq, p->pos_dist, p->length);
 
   free_ptr((void**) Fw, p->length+1);
   return -lkl;
@@ -99,7 +97,7 @@ double lkl(const double *pars, const void *data){
 
 
 // Forward function
-double forward(double **Fw, double **data, double F, double alpha, double *freq, double **marg_prob, double *pos_dist, uint64_t length){
+double forward(double **Fw, double **data, double F, double alpha, double *freq, double *pos_dist, uint64_t length){
   Fw[0][0] = log(1-F);
   Fw[0][1] = log(F);
 
@@ -113,7 +111,7 @@ double forward(double **Fw, double **data, double F, double alpha, double *freq,
 			 Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,alpha)) + e_l;
 
       if(isnan(Fw[s][l])){
-	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\tfreq: %f\tmarg_prob: %f\n", s, pos_dist[s], F, alpha, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,alpha), calc_trans(1,l,pos_dist[s],F,alpha), e_l, data[s][0], data[s][1], data[s][2], prior[0], prior[1], prior[2], freq[s], marg_prob[s][l]);
+	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\tfreq: %f\n", s, pos_dist[s], F, alpha, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,alpha), calc_trans(1,l,pos_dist[s],F,alpha), e_l, data[s][0], data[s][1], data[s][2], prior[0], prior[1], prior[2], freq[s]);
 	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
@@ -124,7 +122,7 @@ double forward(double **Fw, double **data, double F, double alpha, double *freq,
 
 
 // Backward function
-double backward(double **Bw, double **data, double F, double alpha, double *freq, double **marg_prob, double *pos_dist, uint64_t length){
+double backward(double **Bw, double **data, double F, double alpha, double *freq, double *pos_dist, uint64_t length){
   Bw[length][0] = log(1);
   Bw[length][1] = log(1);
 
@@ -141,7 +139,7 @@ double backward(double **Bw, double **data, double F, double alpha, double *freq
 			   calc_trans(k,1,pos_dist[s],F,alpha) + e_IBD  + Bw[s][1]);
 
       if(isnan(Bw[s-1][k])){
-	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tfreq: %f\tmarg_prob: %f %f\n", s, pos_dist[s], F, alpha, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,alpha), calc_trans(k,1,pos_dist[s],F,alpha), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], freq[s], marg_prob[s][0], marg_prob[s][1]);
+	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tfreq: %f\n", s, pos_dist[s], F, alpha, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,alpha), calc_trans(k,1,pos_dist[s],F,alpha), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], freq[s]);
 	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
@@ -156,7 +154,7 @@ double backward(double **Bw, double **data, double F, double alpha, double *freq
 
 
 // Viterbi function
-double viterbi(double **Vi, double **data, double F, double alpha, double *freq, char *path, double **marg_prob, double *pos_dist, uint64_t length){
+double viterbi(double **Vi, double **data, double F, double alpha, double *freq, char *path, double *pos_dist, uint64_t length){
   Vi[0][0] = log(1-F);
   Vi[0][1] = log(F);
 

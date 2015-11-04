@@ -108,7 +108,7 @@ int EM (params *pars) {
   double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
 
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], pars->marg_prob[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
   free_ptr((void***) Vi, pars->n_ind, pars->n_sites+1);
@@ -149,29 +149,26 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, pars->pos_dist, pars->n_sites);
     
   // Backward recursion
   time_t bwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
 
-
+  /*
   // Lkl check! - relaxed (to 0.001) due to precision issues on large datasets
-  if(0){
-    for (uint64_t i = 0; i < pars->n_ind; i++)
-      if( abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) > 0.001 ){
-	printf("Ind %lu: %.15f\t%.15f (%.15f)\n", i, logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2), abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) );
-	error(__FUNCTION__, "Fw and Bw lkl do not match!");
-      }
-  }
-
-
+  for (uint64_t i = 0; i < pars->n_ind; i++)
+    if( abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) > 0.001 ){
+      printf("Ind %lu: %.15f\t%.15f (%.15f)\n", i, logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2), abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) );
+      error(__FUNCTION__, "Fw and Bw lkl do not match!");
+    }
+  */
 
 
   // Marginal probabilities
@@ -199,7 +196,7 @@ void iter_EM(params *pars) {
       printf("==> Update inbreeding and transition parameter\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, marg_prob[i], pars->pos_dist, pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, pars->pos_dist, pars->n_sites);
 
     threadpool_wait(pars->thread_pool);
 
