@@ -45,7 +45,7 @@ int main (int argc, char** argv) {
   // Get file total size
   struct stat st;
   if(stat(pars->in_geno, &st) != 0)
-    error(__FUNCTION__, "cannot check file size!");
+    error(__FUNCTION__, "cannot check GENO file size!");
 
   if(strcmp(strrchr(pars->in_geno, '.'), ".gz") == 0){
     if(pars->verbose >= 1)
