@@ -17,7 +17,6 @@ void init_pars(params *pars) {
   pars->freq_fixed = false;
   pars->in_indF = NULL;
   pars->indF_fixed = false;
-  pars->in_path = NULL;
   pars->out_prefix = NULL;
   pars->log = 0;
   pars->log_bin = false;
@@ -52,7 +51,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"freq_fixed", no_argument, NULL, 'F'},
       {"indF", required_argument, NULL, 'i'},
       {"indF_fixed", no_argument, NULL, 'I'},
-      {"path", required_argument, NULL, 'p'},
       {"out", required_argument, NULL, 'o'},
       {"log", required_argument, NULL, 'X'},
       {"log_bin", required_argument, NULL, 'b'},
@@ -67,7 +65,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Fi:Ip:o:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Fi:Io:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -102,9 +100,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       break;
     case 'I':
       pars->indF_fixed = true;
-      break;
-    case 'p':
-      pars->in_path = optarg;
       break;
     case 'o':
       pars->out_prefix = optarg;
@@ -154,10 +149,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     pars->in_indF = init_ptr(20, (const char*) '\0');
     strcat(pars->in_indF, "0.01-0.001");
   }
-  if(pars->in_path == NULL) {
-    pars->in_path = init_ptr(20, (const char*) '\0');
-    strcat(pars->in_path, "r");
-  }
 
 
 
@@ -166,7 +157,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   ///////////////////////////////
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tpath: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
            pars->in_geno,
 	   pars->in_pos,
 	   pars->in_lkl ? "true":"false",
@@ -178,7 +169,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 	   pars->freq_fixed ? "true":"false",
 	   pars->in_indF,
 	   pars->indF_fixed ? "true":"false",
-	   pars->in_path,
 	   pars->out_prefix,
 	   pars->log,
 	   pars->log_bin ? "true":"false",
@@ -365,52 +355,10 @@ int init_output(params* pars) {
 
 
 
-  /////////////////////////////
-  // Set PATH initial values //
-  /////////////////////////////
-  gzFile in_path_fh;
-
+  //////////////////////////
+  // Allocate PATH memory //
+  //////////////////////////
   pars->path = init_ptr(pars->n_ind, pars->n_sites+1, (const char*) '\0');
-
-  if( strcmp("r", pars->in_path) == 0 ){
-    if(pars->verbose >= 1)
-      printf("==> Using random initial IBD states.\n");
-
-    for(uint64_t i = 0; i < pars->n_ind; i++)
-      for(uint64_t s = 1; s <= pars->n_sites; s++)
-	pars->path[i][s] = gsl_rng_uniform(r) > 0.5 ? 1 : 0;
-
-  } else if( (in_path_fh = gzopen(pars->in_path, "r")) != NULL ){
-    if(pars->verbose >= 1)
-      printf("==> Reading initial IBD states from file \"%s\".\n", pars->in_path);
-
-    uint64_t i = 0;
-    while(gzgets(in_path_fh, buf, BUFF_LEN) != NULL){
-      // Remove trailing newline
-      chomp(buf);
-      // Check if empty
-      if(strlen(buf) == 0)
-	continue;
-
-      int* t = NULL;
-      if(i >= pars->n_ind || split(buf, (const char*) "", &t) != pars->n_sites)
-        error(__FUNCTION__, "wrong PATH file format!");
-
-      for(uint64_t s = 1; s <= pars->n_sites; s++)
-	pars->path[i][s] = t[s] > 0.5 ? 1 : 0;
-      i++;
-      delete [] t;
-    }
-    gzclose(in_path_fh);
-
-  } else {
-    if(pars->verbose >= 1)
-      printf("==> Setting initial IBD states to: %s\n", pars->in_path);
-
-    for(uint64_t i = 0; i < pars->n_ind; i++)
-      for(uint64_t s = 1; s <= pars->n_sites; s++)
-	pars->path[i][s] = atoi(pars->in_path) > 0.5 ? 1 : 0;
-  }
 
 
 

@@ -55,8 +55,6 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--freqs_fixed`: allele frequencies are fixed (will not be optimized).
 * `--indF DOUBLE-DOUBLE or CHAR`: initial inbreeding and transition parameter values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
 * `--indF_fixed`: inbreeding and transition parameter values are fixed (will not be optimized).
-* `--path DOUBLE or CHAR`: initial state paths. Can be (r)andom, (u)niform at 0.01, or read from a FILE.
-* `--path_fixed`: state paths are fixed (will not be optimized).
 * `--out CHAR`: prefix for output files.
 * `--log INT`: dump LOG file each INT iterations. [0]
 * `--log_bin`: dump LOG file in binary.

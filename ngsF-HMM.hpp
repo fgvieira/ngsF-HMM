@@ -23,7 +23,6 @@ typedef struct {
   bool freq_fixed;
   char *in_indF;
   bool indF_fixed;
-  char *in_path;
   char *out_prefix;
   unsigned int log;
   bool log_bin;
