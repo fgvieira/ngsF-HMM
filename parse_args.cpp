@@ -157,7 +157,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   ///////////////////////////////
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno file: %s\n\tpos file: %s\n\tgeno lkl: %s\n\tgeno loglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tout prefix: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
            pars->in_geno,
 	   pars->in_pos,
 	   pars->in_lkl ? "true":"false",
@@ -188,6 +188,10 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   /////////////////////
   // Check Arguments //
   /////////////////////
+  if(pars->version) {
+    printf("ngsF-HMM v%s\nCompiled on %s @ %s\n", version, __DATE__, __TIME__);
+    exit(0);
+  }
   if(pars->in_geno == NULL)
     error(__FUNCTION__, "genotype input file (--geno) missing!");
   if(pars->n_ind == 0)
@@ -197,7 +201,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   if(pars->call_geno && !pars->in_lkl)
     error(__FUNCTION__, "can only call genotypes from likelihoods!");
   if(pars->out_prefix == NULL)
-    error(__FUNCTION__, "output prefix (--out_prefix) missing!");
+    error(__FUNCTION__, "output prefix (--out) missing!");
   if(pars->log < 0)
     error(__FUNCTION__, "invalid LOG (--log) option!");
   if(pars->n_threads < 1)
@@ -222,8 +226,8 @@ int init_output(params* pars) {
   double alpha_rng_max = 1 - alpha_rng_min;
   gzFile in_indF_fh;
 
-  pars->indF = init_ptr(pars->n_ind, 0.0);
-  pars->alpha = init_ptr(pars->n_ind, 0.0);
+  pars->indF = init_ptr(pars->n_ind, (double) 0);
+  pars->alpha = init_ptr(pars->n_ind, (double) 0);
 
   if( strcmp("r", pars->in_indF) == 0 ){
     if(pars->verbose >= 1)
@@ -365,7 +369,7 @@ int init_output(params* pars) {
   ///////////////////////////////////////
   // Initialize Marginal Probabilities //
   ///////////////////////////////////////
-  pars->marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
+  pars->marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
   // Initialize site 0 to invalid value
   for (uint64_t i = 0; i < pars->n_ind; i++)
     for(uint64_t k = 0; k < N_STATES; k++)
@@ -376,7 +380,7 @@ int init_output(params* pars) {
   //////////////////////////
   // Initialize Lkl array //
   //////////////////////////
-  pars->ind_lkl = init_ptr(pars->n_ind, -INFINITY);
+  pars->ind_lkl = init_ptr(pars->n_ind, (double) -INFINITY);
 
 
 

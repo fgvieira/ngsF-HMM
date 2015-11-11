@@ -32,13 +32,8 @@ int main (int argc, char** argv) {
   init_pars(pars);
   parse_cmd_args(pars, argc, argv);
 
-  if(pars->version) {
-    printf("ngsF-HMM v%s\nCompiled on %s @ %s", version, __DATE__, __TIME__);
-    exit(0);
-  }
 
-  
-  
+
   ///////////////////////
   // Adjust parameters //
   ///////////////////////
@@ -83,7 +78,7 @@ int main (int argc, char** argv) {
   if(pars->in_pos)
     pars->pos_dist = read_pos(pars->in_pos, pars->n_sites);
   else
-    pars->pos_dist = init_ptr(pars->n_sites+1, INFINITY);
+    pars->pos_dist = init_ptr(pars->n_sites+1, (double) INFINITY);
   // Convert position distances to Mb
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     pars->pos_dist[s] /= 1e6;

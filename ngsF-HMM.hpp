@@ -6,7 +6,7 @@
 
 extern bool SIG_COND;
 const uint64_t N_STATES = 2;
-
+extern char const* version;
 
 // Struct to store all input arguments
 typedef struct {
