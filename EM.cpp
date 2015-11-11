@@ -9,8 +9,8 @@ int EM (params *pars) {
 
   uint64_t iter = 0;
   double max_lkl_epsilon = -INFINITY;
-  double *prev_ind_lkl = init_ptr(pars->n_ind, -INFINITY);
-  double *ind_lkl_epsilon = init_ptr(pars->n_ind, -INFINITY);
+  double *prev_ind_lkl = init_ptr(pars->n_ind, (double) -INFINITY);
+  double *ind_lkl_epsilon = init_ptr(pars->n_ind, (double) -INFINITY);
   gzFile log_fh;
 
 
@@ -105,7 +105,7 @@ int EM (params *pars) {
   /////////////
   if(pars->verbose >= 1)
     printf("\n==> Decoding most probable path (Viterbi)\n");
-  double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
+  double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
 
   for (uint64_t i = 0; i < pars->n_ind; i++)
     threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], pars->pos_dist, pars->n_sites);
@@ -139,8 +139,8 @@ int EM (params *pars) {
 void iter_EM(params *pars) {
   double ***marg_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, -INF);
   cpy(marg_prob, pars->marg_prob, pars->n_ind, pars->n_sites+1, N_STATES, sizeof(double));
-  double ***Fw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
-  double ***Bw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, 0.0);
+  double ***Fw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
+  double ***Bw = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
 
 
 

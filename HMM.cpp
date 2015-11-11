@@ -82,7 +82,7 @@ void thread_slave(void *ptr){
 
 double lkl(const double *pars, const void *data){
   pth_struct* p = (pth_struct*) data;
-  double **Fw = init_ptr(p->length+1, N_STATES, 0.0);
+  double **Fw = init_ptr(p->length+1, N_STATES, (double) 0);
   double lkl = 0;
 
   if(isnan(pars[0]) || isinf(pars[0]) ||
