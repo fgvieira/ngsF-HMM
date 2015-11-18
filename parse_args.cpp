@@ -296,27 +296,8 @@ int init_output(params* pars) {
     if(pars->verbose >= 1)
       printf("==> Estimating initial frequency values assuming HWE.\n");
 
-    double pp[N_GENO];
-    for(uint64_t s = 1; s <= pars->n_sites; s++){
-      double num = 0; // Expected number minor alleles
-      double den = 0; // Expected total number of alleles
-
-      int iters = 0;
-      double prev_freq = 100;
-
-      while (abs(prev_freq - pars->freq[s]) > 0.001 && iters++ < 100){
-	prev_freq = pars->freq[s];
-	for (uint64_t i = 0; i < pars->n_ind; i++){
-	  double prior[3];
-	  calc_prior(prior, pars->freq[s], 0);
-	  post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
-
-	  num += exp(pp[1]) + 2*exp(pp[2]);
-	  den += 2*exp(logsum3(pp[0],pp[1],pp[2]));
-	}
-	pars->freq[s] = num/den;
-      }
-    }
+    for(uint64_t s = 1; s <= pars->n_sites; s++)
+      pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], (double) 0, true);
 
   } else if( (in_freq_fh = gzopen(pars->in_freq, "r")) != NULL ){
     if(pars->verbose >= 1)

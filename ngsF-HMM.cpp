@@ -32,6 +32,12 @@ int main (int argc, char** argv) {
   init_pars(pars);
   parse_cmd_args(pars, argc, argv);
 
+  // Adjust number of threads
+  if(pars->n_threads > pars->n_ind){
+    warn(__FUNCTION__, "adjusting threads (--n_threads) to match number of individuals!");
+    pars->n_threads = pars->n_ind;
+  }
+
 
 
   ///////////////////////
@@ -54,19 +60,6 @@ int main (int argc, char** argv) {
   }else
     error(__FUNCTION__, "invalid/corrupt genotype input file!");
 
-  // Adjust number of threads
-  if(pars->n_threads > pars->n_ind){
-    warn(__FUNCTION__, "adjusting threads (--n_threads) to match number of individuals!");
-    pars->n_threads = pars->n_ind;
-  }
-
-
-
-  /////////////////////////////////////////////
-  // Declare and initialize output variables //
-  /////////////////////////////////////////////
-  init_output(pars);
-
 
 
   /////////////////////
@@ -87,6 +80,8 @@ int main (int argc, char** argv) {
   if(pars->verbose >= 1)
     printf("> Reading data from file...\n");
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->in_loglkl, pars->n_ind, pars->n_sites);
+  pars->geno_lkl_s = transp_matrix(pars->geno_lkl, pars->n_ind, pars->n_sites+1);
+
   // Read_geno always returns genos in logscale
   pars->in_loglkl = true;
 
@@ -98,14 +93,21 @@ int main (int argc, char** argv) {
 	call_geno(pars->geno_lkl[i][s], N_GENO);
 
       // Ensure minimum GL allowed
-      if( pars->geno_lkl[i][s][array_min_pos(pars->geno_lkl[i][s], N_GENO)] < log(0.001) ) {
+      if( pars->geno_lkl[i][s][array_min_pos(pars->geno_lkl[i][s], N_GENO)] < log(0.001) ){
 	for(uint64_t g = 0; g < N_GENO; g++)
 	  if(pars->geno_lkl[i][s][g] < log(0.001))
 	    pars->geno_lkl[i][s][g] = log(0.001);
 	// Re-normalize GL
-	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
+	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO, true);
       }
     }
+
+
+
+  /////////////////////////////////////////////
+  // Declare and initialize output variables //
+  /////////////////////////////////////////////
+  init_output(pars);
 
 
 
@@ -135,6 +137,7 @@ int main (int argc, char** argv) {
   // pars struct
   //free_ptr((void*) pars->in_geno);
   free_ptr((void***) pars->geno_lkl, pars->n_ind, pars->n_sites+1);
+  free_ptr((void**) pars->geno_lkl_s, pars->n_sites+1);
   free_ptr((void*) pars->pos_dist);
   free_ptr((void*) pars->freq);
   free_ptr((void**) pars->path, pars->n_ind);

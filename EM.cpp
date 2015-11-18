@@ -215,8 +215,8 @@ void iter_EM(params *pars) {
   }else{
     if(pars->verbose >= 1)
       printf("==> Estimate allele frequencies\n");
-    double pp[N_GENO];
 
+    double pp[N_GENO];
     for (uint64_t s = 1; s <= pars->n_sites; s++){
       double num = 0; // Expected number minor alleles
       double den = 0; // Expected total number of alleles
@@ -224,14 +224,14 @@ void iter_EM(params *pars) {
       int iters = 0;
       double prev_freq = 100;
 
-      while (abs(prev_freq - pars->freq[s]) > 0.001 && iters++ < 100){
+      while (abs(prev_freq - pars->freq[s]) > EPSILON && iters++ < 100){
 	prev_freq = pars->freq[s];
 	for (uint64_t i = 0; i < pars->n_ind; i++){
 	  double indF = pars->marg_prob[i][s][1];
 
 	  double prior[3];
 	  calc_prior(prior, pars->freq[s], indF);
-	  post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
+	  post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO, true);
 
 	  num += exp(pp[1]) + exp(pp[2])*(2-indF);
 	  den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-indF);
@@ -327,7 +327,7 @@ void print_iter(char *out_prefix, params *pars){
       double prior[3];
       //calc_prior(prior, pars->freq[s], pars->marg_prob[i][s][1]);
       calc_prior(prior, pars->freq[s], (double) pars->path[i][s]);
-      post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
+      post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO, true);
       conv_space(pp, N_GENO, exp);
       gzwrite(out_fh, pp, sizeof(double)*N_GENO);
     }
@@ -409,20 +409,4 @@ double calc_trans(char k, char l, double pos_dist, double F, double alpha, bool 
   }
 
   return log(trans);
-}
-
-
-
-void calc_prior(double *priors, double freq, double F){
-  priors[0] = log(pow(1-freq,2)   +   (1-freq)*freq*F);
-  priors[1] = log(2*(1-freq)*freq - 2*(1-freq)*freq*F);
-  priors[2] = log(pow(freq,2)     +   (1-freq)*freq*F);
-
-  /* Added to avoid impossible cases (like HET on an IBD position). This way, 
-     the prior for an HET is not 0 and these cases can still be calculated. 
-     We could set the PP to missing (e.g. 0.3,0.3,0.3) but the IBD status is being 
-     optimized so it is probably better to keep the information and give preference to the GL.
-   */
-  if(F == 1)
-    priors[1] = -INF;
 }
