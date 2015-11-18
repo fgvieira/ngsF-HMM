@@ -2,69 +2,44 @@ library(optparse)
 library(plyr)
 
 ############################ FUNCTIONS ############################
-chr_abs_pos <- function(pos){
-  chrs <- unique(pos[,1])
-  n_chrs <- length(chrs)
-  #max_pos <- ddply(pos, 1, summarise, max=max(V2))
-    
-  last_pos = 0
-  for (i in 1:n_chrs){
-    pos[pos[,1] == chrs[i],3] <- pos[pos[,1] == chrs[i],2] + last_pos
-    last_pos <- max(pos[pos[,1] == chrs[i],3])
-  }
-  
-  colnames(pos) <- c("chr","pos","abs_pos")
-  return(pos)
-}
-
-iter_plot <- function(pos, true_path, true_geno, lkl, path, marg_prob, titles){
+iter_plot <- function(pos, path, marg_prob, true_path, true_geno, lkl, titles){
   n = length(lkl)
   L = length(path[[1]])
 
   plots=c(1,1)
   if(n>1) plots=c(ceiling(n/2),2)
-  par(mfrow=plots, mar=c(2,2,1,1))
-  # Calculate abs_pos
-  abs_pos <- chr_abs_pos(pos)
-  # Get chrs boundaries
-  chrs <- c()
-  for(i in 2:L){
-    if(abs_pos[i,1] != abs_pos[i-1,1]){
-      chrs <- c(chrs, abs_pos[i-1,3])
+  
+  chrs <- unique(pos[,1])
+  for (chr in chrs){
+    par(mfrow=plots, mar=c(2,2,1,1))
+    chr_pos <- which(pos==chr)
+
+    for(i in 1:n){
+      ## Plot
+      plot(pos[chr_pos,2], path[[i]][chr_pos], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
+      
+      # Add title
+      title(main=paste(titles[i],chr,lkl[[i]],sep=" / "), cex.main=0.5)
+      
+      # Plot marginal probs (GREEN line)
+      if(length(marg_prob) != 0)
+        lines(pos[chr_pos,2], marg_prob[[i]][chr_pos], col=rgb(0,1,0,0.5), lwd=0.1)
+      
+      # TRUE genotypes
+      if(length(true_geno) != 0)
+        points(pos[chr_pos,2], true_geno[[i]][chr_pos]/2, pch=".", col="cyan")
+      
+      # Shade most prob state path (BLUE)
+      shade_areas(path[[i]][chr_pos], pos[chr_pos,2], rgb(0,0,1,0.2))
+      
+      # TRUE path (RED)
+      if(length(true_path) != 0)
+        shade_areas(true_path[[i]][chr_pos], pos[chr_pos,2], rgb(1,0,0,0.2), lims=c(0.25,0.75,0.75,0.25))
     }
-  }
-
-  for(i in 1:n){
-    ## Plot
-    if(is.null(chrs)){
-      plot(abs_pos[,3], path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
-    }else{
-      plot(abs_pos[,3], path[[i]], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n", xaxt="n")
-      #axis(1, at=seq(0,max(abs_pos),10), labels=month.name)
-      for(chr in chrs) abline(v=chr)
-    }
-
-    # Add title
-    title(main=paste(titles[i],lkl[[i]],sep=" / "), cex.main=0.5)
-    
-    # Plot marginal probs (GREEN line)
-    if(length(marg_prob) != 0)
-      lines(abs_pos[,3], marg_prob[[i]], col=rgb(0,1,0,0.5), lwd=0.1)
-
-    # TRUE genotypes
-    if(length(true_geno) != 0)
-      points(abs_pos[,3], true_geno[[i]]/2, pch=".", col="cyan")
-
-    # Shade most prob state path (BLUE)
-    shade_areas(path[[i]], abs_pos[,3], rgb(0,0,1,0.2))
-    
-    # TRUE path (RED)
-    if(length(true_path) != 0)
-      shade_areas(true_path[[i]], abs_pos[,3], rgb(1,0,0,0.2), lims=c(0.25,0.75,0.75,0.25))
   }
 }
 
-shade_areas <- function(area, abs_pos, color, lims=c(0,1,1,0)){
+shade_areas <- function(area, pos, color, lims=c(0,1,1,0)){
   x <- rle(area)
   start <- (cumsum(x$lengths)-x$lengths)[x$values==1] + 1
   end <- cumsum(x$lengths)[x$values==1]
@@ -84,7 +59,7 @@ shade_areas <- function(area, abs_pos, color, lims=c(0,1,1,0)){
     return(-1);
   
   for (i in 1:length(start))
-    polygon(c(abs_pos[start[i]],abs_pos[start[i]],abs_pos[end[i]],abs_pos[end[i]]), lims, border=NA, col=color)
+    polygon(c(pos[start[i]],pos[start[i]],pos[end[i]],pos[end[i]]), lims, border=NA, col=color)
 }
 
 #####  Parse command-line arguments
@@ -99,14 +74,14 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
                     make_option(c("-w", "--width"), action="store", type="numeric", default=NULL, help="Each plot width [%default]"),
-                    make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output prefix [%default]"),
+                    make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output file [%default]"),
                     make_option(c("-q", "--quiet"), action="store_true", type="logical", default=FALSE, help="Print info to STDOUT? [%default]")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
 if(is.null(opt$width))
-  opt$width <- log10(opt$n_sites)
+  opt$width <- ceiling(log10(opt$n_sites))
 
-#opt$in_file="NGS_I10_D0.5_E0.005_F0.5-0.01.TG.ibd"; opt$n_ind=10; opt$n_sites=10000; opt$path="NGS_I10_D0.5_E0.005_F0.5-0.01.path.gz"; opt$geno="NGS_I10_D0.5_E0.005_F0.5-0.01.geno.gz"; opt$pos="NGS_I10_D0.5_E0.005_F0.5-0.01.pos";opt$marg_prob=TRUE
+#opt$in_file="ceuMaf05.LD.ngsF-HMM.ibd"; opt$n_ind=7; opt$n_sites=253993; opt$pos="ceuMaf05.LD.pos.gz";opt$marg_prob=TRUE
 
 ############################ Parsing input arguments ############################
 
@@ -128,11 +103,13 @@ if(!opt$quiet){
   cat('# Number sites:', opt$n_sites, fill=TRUE)
   cat('# Titles:', opt$titles, fill=TRUE)
   cat('# Positions file:', opt$pos, fill=TRUE)
+  cat('# Plot marginal probabilities?', opt$marg_prob, fill=TRUE)
   cat('# Known genotypes:', opt$geno, fill=TRUE)
   cat('# Known path:', opt$path, fill=TRUE)
   cat('# Subset:', opt$subset, fill=TRUE)
   cat('# Width:', opt$width, fill=TRUE)
-  cat('# Out prefix:', opt$out, fill=TRUE)
+  cat('# Out file:', opt$out, fill=TRUE)
+  cat('# Quiet run?', opt$quiet, fill=TRUE)
 }
 
 
@@ -143,8 +120,7 @@ if(!is.null(opt$geno) && file.exists(opt$geno)){
   true_geno <- as.list(read.table(opt$geno))
 
   # If there are positions info (at least 3 cols and the second are positions), remove them!
-  if( length(true_geno) >= 3 &&
-      max(true_geno[[2]] > 2) ){
+  if( length(true_geno) >= 3 && max(true_geno[[2]]) > 2 ){
     true_geno[[2]] <- NULL
     true_geno[[1]] <- NULL
   }
@@ -200,7 +176,7 @@ if(!is.null(opt$subset)){
 if(!is.null(opt$pos)){
   if(file.exists(opt$pos)){
     if(!opt$quiet)
-      cat("====> Reading positions file...", fill=TRUE)
+      cat("====> Reading POSITIONS file...", fill=TRUE)
     pos <- read.table(opt$pos, header=FALSE, stringsAsFactors=FALSE, check.names=FALSE)
     pos[,2] <- pos[,2]/1e6
     
@@ -290,7 +266,7 @@ while(TRUE) {
   # Plotting...
   if(!opt$quiet)
     cat("> Plotting iter", iter, "...", fill=TRUE)
-  iter_plot(pos, true_path, true_geno, lkl, path, marg_prob, titles)
+  iter_plot(pos, path, marg_prob, true_path, true_geno, lkl, titles)
 }
 
 close(fh)
