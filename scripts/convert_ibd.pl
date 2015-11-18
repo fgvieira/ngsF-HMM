@@ -14,14 +14,14 @@
 
 =head1 SYNOPSIS
 
-    perl file_utils.pl [-h] -ind_file /path/to/ind_file -pos_file /path/to/pos_file [-ibd_pos_file /path/to/ibd_pos_file] [-ibd_coord_file /path/to/ibd_coord_file]
+    perl file_utils.pl [-h] -ind_file /path/to/ind_file -pos_file /path/to/pos_file [-ibd_pos_file /path/to/ibd_pos_file] [-ibd_bed_file /path/to/ibd_bed_file]
 
     OPTIONS:
-       -help            This help screen
-       -ind_file        File with individual information (IND_ID on first column)
-       -pos_file        TSV file with position information (CHR,POS)
-       -ibd_pos_file    File with regions as IBD state per position (one indiv per line, one 0/1 per site)
-       -ibd_coord_file  BED file with the coordinates of the IBD regions (CHR,START,END,IND_ID).
+       --help            This help screen
+       --ind_file        File with individual information (IND_ID on first column)
+       --pos_file        TSV file with position information (CHR,POS)
+       --ibd_pos_file    File with regions as IBD state per position (one indiv per line, one 0/1 per site)
+       --ibd_bed_file    BED file with the coordinates of the IBD regions (CHR,START,END,IND_ID).
                         If IND_ID is blank or '*', interval is assumed on all individuals
 
 =head1 DESCRIPTION
@@ -45,10 +45,11 @@
 use strict;
 use warnings;
 use Getopt::Long;
+use IO::Zlib;
 $| = 1;
 
-my ($ind_file, $pos_file, $ibd_pos_file, $ibd_coord_file, $ids);
-my ($s, $chr, $start_pos, $end_pos, $inds_id, @buf, @inds, @sites, %ibd);
+my ($ind_file, $pos_file, $ibd_pos_file, $ibd_bed_file, $ids);
+my ($s, $chr, $start_pos, $end_pos, $inds_id, @buf, @inds, @sites, %ibd, $FILE);
 
 $ind_file='stdin';
 
@@ -57,46 +58,54 @@ $ind_file='stdin';
 	    'i|ind_file=s'      => \$ind_file,
             'p|pos_file=s'      => \$pos_file,
             'ibd_pos_file:s'    => \$ibd_pos_file,
-	    'ibd_coord_file:s'  => \$ibd_coord_file,
+	    'ibd_bed_file:s'    => \$ibd_bed_file,
     );
 
 
 
-if($ibd_pos_file && $ibd_coord_file) {
-    print(STDERR "ERROR: both IBD_POS and IBD_COORD files provided. What do you want to do?");
+if($ibd_pos_file && $ibd_bed_file) {
+    print(STDERR "ERROR: both IBD_POS and IBD_BED files provided!\n");
+    exit(-1)
+}
+if(!$ibd_pos_file && !$ibd_bed_file) {
+    print(STDERR "ERROR: no IBD_POS or IBD_BED files provided!\n");
     exit(-1)
 }
 
 
 
+# Get Zlib filehandle
+$FILE = new IO::Zlib;
+
+
 # Read POS file
-open(FILE, $pos_file) or die("ERROR: cannot read POSITIONS file: $pos_file\n");
-while(<FILE>) {
+$FILE->open($pos_file, "r") or die("ERROR: cannot read POSITIONS file: $pos_file\n");
+while(<$FILE>) {
     chomp();
     my ($chr, $pos) = split(/[\t ]/);
     push(@sites, {'chr' => $chr, 'pos' => $pos});
 }
 my $n_sites = $#sites+1;
-close(FILE);
+$FILE->close;
 
 
 
 # Read IND file
-open(FILE, $ind_file) or die("ERROR: cannot read INDIVIDUALS file: $ind_file\n");
-while(<FILE>) {
+$FILE->open($ind_file, "r") or die("ERROR: cannot read INDIVIDUALS file: $ind_file\n");
+while(<$FILE>) {
     my ($ind) = split(/[\t ]/);
     chomp($ind);
     push(@inds, $ind);
 }
-close(FILE);
+$FILE->close;
 
 
 
 if($ibd_pos_file) {
     my $curr_ind = -1;
     # IBD_POS file provided, will convert to REG...
-    open(FILE, $ibd_pos_file) or die("ERROR: cannot read IBD_POSITIONS file: $ibd_pos_file\n");
-    while(<FILE>) {
+    $FILE->open($ibd_pos_file, "r") or die("ERROR: cannot read IBD_POSITIONS file: $ibd_pos_file\n");
+    while(<$FILE>) {
 	chomp();
 	# Skip lines starting with "//" (IBD file first line)
 	next if(m/^\/\//);
@@ -123,13 +132,13 @@ if($ibd_pos_file) {
 	    }
 	}
     }
-    close(FILE);
-} elsif($ibd_coord_file) {
-    # IBD_COORD file provided, will convert to POS...
+    $FILE->close;
+} elsif($ibd_bed_file) {
+    # IBD_BED file provided, will convert to POS...
     $ibd{$_} = "0"x$n_sites for (@inds);
 
-    open(FILE, $ibd_coord_file) or die("ERROR: cannot read IBD_COORDINATES file: $ibd_coord_file\n");
-    while(<FILE>) {
+    $FILE->open($ibd_bed_file, "r") or die("ERROR: cannot read IBD_BED file: $ibd_bed_file\n");
+    while(<$FILE>) {
 	chomp();
 	($chr, $start_pos, $end_pos, $inds_id) = split(/[\t ]/);
 	# Assume all individuals if $inds_id empty or '*'
@@ -147,12 +156,9 @@ if($ibd_pos_file) {
 	    }
 	}
     }
-    close(FILE);
+    $FILE->close;
 
     # Print to STDOUT
     print($ibd{$_}."\n") for (@inds);
 
-} else {
-    print(STDERR "ERROR: no IBD_POS or IBD_COORDINATES files provided. What do you want to do?");
-    exit(-1)
-}
+} 
