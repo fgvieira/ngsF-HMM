@@ -52,13 +52,15 @@ int main (int argc, char** argv) {
     if(pars->verbose >= 1)
       printf("==> GZIP input file (not BINARY)\n");
     pars->in_bin = false;
-  }else if(pars->n_sites == st.st_size/sizeof(double)/pars->n_ind/N_GENO){
+  }else{
     if(pars->verbose >= 1)
       printf("==> BINARY input file (always lkl)\n");
     pars->in_bin = true;
     pars->in_lkl = true;
-  }else
-    error(__FUNCTION__, "invalid/corrupt genotype input file!");
+
+    if(pars->n_sites != st.st_size/sizeof(double)/pars->n_ind/N_GENO)
+      error(__FUNCTION__, "invalid/corrupt genotype input file!");
+  }
 
 
 
