@@ -51,7 +51,7 @@ $| = 1;
 my ($ind_file, $pos_file, $ibd_pos_file, $ibd_bed_file, $ids);
 my ($s, $chr, $start_pos, $end_pos, $inds_id, @buf, @inds, @sites, %ibd, $FILE);
 
-$ind_file='stdin';
+$ind_file='-';
 
 #Get the command-line options
 &GetOptions('h|help'            => sub { exec('perldoc',$0); exit; },
