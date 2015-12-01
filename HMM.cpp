@@ -19,10 +19,13 @@ struct pth_struct{
 // Function prototypes
 void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double **data, double *F, double *alpha, double *freq, char *path, double *pos_dist, uint64_t length);
 void thread_slave(void *ptr);
+double lkl(const double *x, const void *ptr);
 double forward(double **Fw, double **data, double F, double alpha, double *freq, double *pos_dist, uint64_t length);
 double backward(double **Bw, double **data, double F, double alpha, double *freq, double *pos_dist, uint64_t length);
 double viterbi(double **Vi, double **data, double F, double alpha, double *freq, char *path, double *pos_dist, uint64_t length);
-double lkl(const double *x, const void *ptr);
+double calc_trans(char k, char l, double pos_dist, double F, double alpha, bool cont = true);
+double calc_emission(double gl[3], double maf, uint64_t state);
+
 
 
 // General thread functions
@@ -103,15 +106,14 @@ double forward(double **Fw, double **data, double F, double alpha, double *freq,
 
   for (uint64_t s = 1; s <= length; s++)
     for(uint64_t l = 0; l < N_STATES; l++){
-      double prior[3];
-      calc_prior(prior, freq[s], l);
-      double e_l = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
+      double e_l = calc_emission(data[s], freq[s], l);
+
       // logsum(k==0,k==1)
-      Fw[s][l] = logsum2(Fw[s-1][0] + calc_trans(0,l,pos_dist[s],F,alpha),
-			 Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,alpha)) + e_l;
+      Fw[s][l] = logsum(Fw[s-1][0] + calc_trans(0,l,pos_dist[s],F,alpha),
+			Fw[s-1][1] + calc_trans(1,l,pos_dist[s],F,alpha)) + e_l;
 
       if(isnan(Fw[s][l])){
-	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tprior: %f %f %f\tfreq: %f\n", s, pos_dist[s], F, alpha, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,alpha), calc_trans(1,l,pos_dist[s],F,alpha), e_l, data[s][0], data[s][1], data[s][2], prior[0], prior[1], prior[2], freq[s]);
+	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tFw: %f %f %f\ttrans: %f %f\temission: %f\tGL: %f %f %f\tfreq: %f\n", s, pos_dist[s], F, alpha, l, Fw[s-1][0], Fw[s-1][1], Fw[s][l], calc_trans(0,l,pos_dist[s],F,alpha), calc_trans(1,l,pos_dist[s],F,alpha), e_l, data[s][0], data[s][1], data[s][2], freq[s]);
 	error(__FUNCTION__, "invalid Lkl found!");
       }
     }
@@ -127,16 +129,13 @@ double backward(double **Bw, double **data, double F, double alpha, double *freq
   Bw[length][1] = log(1);
 
   for (uint64_t s = length; s > 0; s--){
-    double prior[3];
-    calc_prior(prior, freq[s], 0);
-    double e_nIBD = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
-    calc_prior(prior, freq[s], 1);
-    double e_IBD  = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
+    double e_nIBD = calc_emission(data[s], freq[s], 0);
+    double e_IBD = calc_emission(data[s], freq[s], 1);
 
     for(uint64_t k = 0; k < N_STATES; k++){
       // logsum(l==0,l==1)
-      Bw[s-1][k] = logsum2(calc_trans(k,0,pos_dist[s],F,alpha) + e_nIBD + Bw[s][0],
-			   calc_trans(k,1,pos_dist[s],F,alpha) + e_IBD  + Bw[s][1]);
+      Bw[s-1][k] = logsum(calc_trans(k,0,pos_dist[s],F,alpha) + e_nIBD + Bw[s][0],
+			  calc_trans(k,1,pos_dist[s],F,alpha) + e_IBD  + Bw[s][1]);
 
       if(isnan(Bw[s-1][k])){
 	printf("site: %lu\tdist: %f\tF: %.15f %.15f\tstate: %lu\tBw: %f %f %f\ttrans: %f %f\temission: %f %f\tGL: %f %f %f\tfreq: %f\n", s, pos_dist[s], F, alpha, k, Bw[s][0], Bw[s][1], Bw[s-1][k], calc_trans(k,0,pos_dist[s],F,alpha), calc_trans(k,1,pos_dist[s],F,alpha), e_nIBD, e_IBD, data[s][0], data[s][1], data[s][2], freq[s]);
@@ -160,9 +159,7 @@ double viterbi(double **Vi, double **data, double F, double alpha, double *freq,
 
   for (uint64_t s = 1; s <= length; s++){
     for(uint64_t l = 0; l < N_STATES; l++){
-      double prior[3];
-      calc_prior(prior, freq[s], l);
-      double e_l = logsum3(data[s][0]+prior[0], data[s][1]+prior[1], data[s][2]+prior[2]);
+      double e_l = calc_emission(data[s], freq[s], l);
 
       // max(k==0,k==1)
       Vi[s][l] = max(Vi[s-1][0] + calc_trans(0,l,pos_dist[s],F,alpha),
@@ -173,4 +170,68 @@ double viterbi(double **Vi, double **data, double F, double alpha, double *freq,
   }
 
   return max(Vi[length][0], Vi[length][1]);
+}
+
+
+
+// Calculates transition probabilities between states k and l, depending on distance, inbreeding and transition rate
+double calc_trans(char k, char l, double pos_dist, double F, double alpha, bool cont){
+  double trans = 0;
+
+  if(cont){
+    double coanc_change = exp(-alpha*pos_dist);
+    // Continuous HMM
+    if(k == 0 && l == 0)
+      trans = (1-coanc_change) * (1-F) + coanc_change;
+    else if(k == 0 && l == 1)
+      trans = (1-coanc_change) * F;
+    else if(k == 1 && l == 0)
+      trans = (1-coanc_change) * (1-F);
+    else if(k == 1 && l == 1)
+      trans = (1-coanc_change) * F + coanc_change;
+  } else {
+    // HMM
+    if(k == 0 && l == 0)
+      trans = 1-alpha*F;
+    else if(k == 0 && l == 1)
+      trans = alpha*F;
+    else if(k == 1 && l == 0)
+      trans = alpha*(1-F);
+    else if(k == 1 && l == 1)
+      trans = 1-alpha*(1-F);
+  }
+
+  return log(trans);
+}
+
+
+
+// Calculates emission probabilities for "state" depending on the MAF. if state==0, assumes HWE, if not, assumes HWE with inbreeding.
+double calc_emission(double gl[3], double maf, uint64_t state){
+  double prior[3];
+  calc_prior(prior, maf, state);
+
+  return logsum(gl[0]+prior[0], gl[1]+prior[1], gl[2]+prior[2]);
+}
+
+
+
+// Calculates emission probabilities for "state" depending on the MAF. if state==0, assumes HWE, if not, assumes HWE with inbreeding.
+double calc_emissionLD(double **gl1, double **gl2, double maf1, double maf2, uint64_t n_ind, uint64_t state){
+  // P_BA, P_Ba, P_bA, P_ba
+  double hap_freq[4];
+
+  haplo_freq(hap_freq, gl1, gl2, maf1, maf2, n_ind);
+
+  if(state == 0){
+    //0 0
+  }else if(state == 1){
+
+
+  }else{
+    error(__FUNCTION__, "wrong state provided!");
+  }
+
+
+  return 0;//logsum(gl1[0]+prior[0], gl1[1]+prior[1], gl1[2]+prior[2]);
 }

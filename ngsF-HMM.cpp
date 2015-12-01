@@ -100,7 +100,7 @@ int main (int argc, char** argv) {
 	  if(pars->geno_lkl[i][s][g] < log(0.001))
 	    pars->geno_lkl[i][s][g] = log(0.001);
 	// Re-normalize GL
-	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO, true);
+	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
     }
 

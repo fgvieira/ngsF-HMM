@@ -11,7 +11,7 @@ int EM (params *pars) {
   double max_lkl_epsilon = -INFINITY;
   double *prev_ind_lkl = init_ptr(pars->n_ind, (double) -INFINITY);
   double *ind_lkl_epsilon = init_ptr(pars->n_ind, (double) -INFINITY);
-  gzFile log_fh;
+  gzFile log_fh = NULL;
 
 
 
@@ -216,33 +216,17 @@ void iter_EM(params *pars) {
     if(pars->verbose >= 1)
       printf("==> Estimate allele frequencies\n");
 
-    double pp[N_GENO];
+    double *indF = init_ptr(pars->n_ind, 0.0);
     for (uint64_t s = 1; s <= pars->n_sites; s++){
-      double num = 0; // Expected number minor alleles
-      double den = 0; // Expected total number of alleles
+      for(uint64_t i = 0; i < pars->n_ind; i++)
+	indF[i] = pars->marg_prob[i][s][1];
 
-      int iters = 0;
-      double prev_freq = 100;
+      pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], indF);
 
-      while (abs(prev_freq - pars->freq[s]) > EPSILON && iters++ < 100){
-	prev_freq = pars->freq[s];
-	for (uint64_t i = 0; i < pars->n_ind; i++){
-	  double indF = pars->marg_prob[i][s][1];
-
-	  double prior[3];
-	  calc_prior(prior, pars->freq[s], indF);
-	  post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO, true);
-
-	  num += exp(pp[1]) + exp(pp[2])*(2-indF);
-	  den += 2*exp(pp[1]) + exp(logsum2(pp[0],pp[2]))*(2-indF);
-	  if(pars->verbose >= 8)
-	    printf("%lu %lu; num: %f; den; %f; pp: %f %f %f; IBD: %f (%f)\n", s, i, num, den, exp(pp[0]), exp(pp[1]), exp(pp[2]), indF, marg_prob[i][s][1]);
-	}
-	pars->freq[s] = num/den;
-	if(pars->verbose >= 7)
-	  printf("%lu %d; num: %f; den: %f; freq: %f %f (%f)\n", s, iters, num, den, prev_freq, pars->freq[s], abs(prev_freq - pars->freq[s]));
-      }
+      if(pars->verbose >= 7)
+	printf("%lu; freq: %f\n", s, pars->freq[s]);
     }
+    free_ptr((void*) indF);
   }
 
 
@@ -327,7 +311,7 @@ void print_iter(char *out_prefix, params *pars){
       double prior[3];
       //calc_prior(prior, pars->freq[s], pars->marg_prob[i][s][1]);
       calc_prior(prior, pars->freq[s], (double) pars->path[i][s]);
-      post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO, true);
+      post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
       conv_space(pp, N_GENO, exp);
       gzwrite(out_fh, pp, sizeof(double)*N_GENO);
     }
@@ -378,35 +362,4 @@ void dump_data(gzFile fh, params *pars, bool out_bin){
       gzprintf(fh, "\n");
     }
   }
-}
-
-
-
-double calc_trans(char k, char l, double pos_dist, double F, double alpha, bool cont){
-  double trans = 0;
-
-  if(cont){
-    double coanc_change = exp(-alpha*pos_dist);
-    // Continuous HMM
-    if(k == 0 && l == 0)
-      trans = (1-coanc_change) * (1-F) + coanc_change;
-    else if(k == 0 && l == 1)
-      trans = (1-coanc_change) * F;
-    else if(k == 1 && l == 0)
-      trans = (1-coanc_change) * (1-F);
-    else if(k == 1 && l == 1)
-      trans = (1-coanc_change) * F + coanc_change;
-  } else {
-    // HMM
-    if(k == 0 && l == 0)
-      trans = 1-alpha*F;
-    else if(k == 0 && l == 1)
-      trans = alpha*F;
-    else if(k == 1 && l == 0)
-      trans = alpha*(1-F);
-    else if(k == 1 && l == 1)
-      trans = 1-alpha*(1-F);
-  }
-
-  return log(trans);
 }

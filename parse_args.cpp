@@ -297,7 +297,7 @@ int init_output(params* pars) {
       printf("==> Estimating initial frequency values assuming HWE.\n");
 
     for(uint64_t s = 1; s <= pars->n_sites; s++)
-      pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], (double) 0, true);
+      pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], (double) 0);
 
   } else if( (in_freq_fh = gzopen(pars->in_freq, "r")) != NULL ){
     if(pars->verbose >= 1)
