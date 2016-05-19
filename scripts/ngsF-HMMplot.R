@@ -2,7 +2,7 @@ library(optparse)
 library(plyr)
 
 ############################ FUNCTIONS ############################
-iter_plot <- function(pos, path, marg_prob, true_path, true_geno, lkl, titles){
+iter_plot <- function(pos, path, marg_prob, plot_sites, true_path, true_geno, lkl, titles){
   n = length(lkl)
   L = length(path[[1]])
 
@@ -16,7 +16,10 @@ iter_plot <- function(pos, path, marg_prob, true_path, true_geno, lkl, titles){
 
     for(i in 1:n){
       ## Plot
-      plot(pos[chr_pos,2], path[[i]][chr_pos], ylim=c(0,1), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
+      plot(pos[chr_pos,2], path[[i]][chr_pos], ylim=c(0,1.01), xlab="", ylab="", xaxs="i", yaxs="i", type="n")
+
+      if(plot_sites)
+        points(pos[chr_pos,2], rep(0.0, L), pch="|", col='dodgerblue', cex=0.5)
       
       # Add title
       title(main=paste(titles[i],chr,lkl[[i]],sep=" / "), cex.main=0.5)
@@ -24,7 +27,7 @@ iter_plot <- function(pos, path, marg_prob, true_path, true_geno, lkl, titles){
       # Plot marginal probs (GREEN line)
       if(length(marg_prob) != 0)
         lines(pos[chr_pos,2], marg_prob[[i]][chr_pos], col=rgb(0,1,0,0.5), lwd=0.1)
-      
+       
       # TRUE genotypes
       if(length(true_geno) != 0)
         points(pos[chr_pos,2], true_geno[[i]][chr_pos]/2, pch=".", col="cyan")
@@ -72,6 +75,7 @@ option_list <- list(make_option(c("-i", "--in_file"), action="store", type="char
                     make_option(c("-m", "--marg_prob"), action="store_true", type="logical", default=FALSE, help="Plot marginal probabilities? [%default]"),
                     make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
                     make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
+                    make_option(c("--plot_sites"), action="store_true", type="logical", default=FALSE, help="Plot position of SNPs? [%default]"),
                     make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
                     make_option(c("-w", "--width"), action="store", type="numeric", default=NULL, help="Each plot width [%default]"),
                     make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output file [%default]"),
@@ -106,6 +110,7 @@ if(!opt$quiet){
   cat('# Plot marginal probabilities?', opt$marg_prob, fill=TRUE)
   cat('# Known genotypes:', opt$geno, fill=TRUE)
   cat('# Known path:', opt$path, fill=TRUE)
+  cat('# Plot site positions?', opt$plot_sites, fill=TRUE)
   cat('# Subset:', opt$subset, fill=TRUE)
   cat('# Width:', opt$width, fill=TRUE)
   cat('# Out file:', opt$out, fill=TRUE)
@@ -266,7 +271,7 @@ while(TRUE) {
   # Plotting...
   if(!opt$quiet)
     cat("> Plotting iter", iter, "...", fill=TRUE)
-  iter_plot(pos, path, marg_prob, true_path, true_geno, lkl, titles)
+  iter_plot(pos, path, marg_prob, opt$plot_sites, true_path, true_geno, lkl, titles)
 }
 
 close(fh)
