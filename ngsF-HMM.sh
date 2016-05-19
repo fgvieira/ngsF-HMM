@@ -38,6 +38,19 @@ args=( $@ )
 ID=ngsF-HMM_$RANDOM
 mkdir -p $TMP_DIR
 
+# find -S/-seed/--seed argument
+in_array "--seed" "${args[@]}"
+if [[ $idx -eq 0 ]]; then
+    in_array "-seed" "${args[@]}"
+fi
+if [[ $idx -eq 0 ]]; then
+    in_array "-S" "${args[@]}"
+fi
+if [[ $idx -ne 0 ]]; then
+    RANDOM=${args[$idx]}
+    SEED_idx=$idx
+fi
+
 # find -o/-out/--out argument
 in_array "--out" "${args[@]}"
 if [[ $idx -eq 0 ]]; then
@@ -59,10 +72,13 @@ OUT=${args[$idx]}
 ##########################
 for REP in `seq -w 1 $N_REP`
 do
+    if [[ $SEED_idx -gt 0 ]]; then
+	args[$SEED_idx]=$RANDOM
+    fi
     args[$idx]=$TMP_DIR/$ID.REP_$REP
-    ${0%\.sh} ${args[@]}
+    echo ${0%\.sh} ${args[@]}
 done
-
+exit
 
 
 ##########################
