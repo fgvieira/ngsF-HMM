@@ -52,7 +52,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--n_sites INT`: total number of sites.
 * `--call_geno`: call genotypes before running analyses.
 * `--freqs DOUBLE or CHAR`: initial frequency values. Can be defined by user as a DOUBLE, (r)andom, (e)stimated or read from a FILE.
-* `--freqs_fixed`: allele frequencies are fixed (will not be optimized).
+* `--freqs_est INT`: allele frequency estimation method: 0) fixed (no optimizatopn); 1) assuming independence of sites; and 2) through haplotype frequency.
 * `--indF DOUBLE-DOUBLE or CHAR`: initial inbreeding and transition parameter values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
 * `--indF_fixed`: inbreeding and transition parameter values are fixed (will not be optimized).
 * `--out CHAR`: prefix for output files.
@@ -73,6 +73,15 @@ As input `ngsF-HMM` reads a Genotype Likelihood (GL) file composed of 3 genotype
 An issue on iterative algorithms is the stopping criteria. `ngsF-HMM` implements a dual condition threshold: relative difference in log-likelihood and estimates RMSD (F and freq). As for which threshold to use, simulations show that 1e-5 seems to be a reasonable value. However, if you're dealing with low coverage data (2x-3x), it might be worth to use lower thresholds (between 1e-6 and 1e-9).
 
 To avoid convergence to local maxima, ngsF-HMM should be run several times from different starting points. To make this task easier, a script (`ngsF-HMM.sh`) is provided that can be called with the exact same parameters as `ngsF-HMM`.
+
+### Output files
+`ngsF-HMM` will output several files, some depending on input options:
+
+* `.indF`: file similar to [ngsF](https://github.com/fgvieira/ngsF) output format, where the first line stands for the final log-likelihood, followed by per individual (one per line) inbreeding coefficients (1st column) and transition rate parameters (2nd column) and, finally, the per-site minor allele frequency.
+* `.ibd`: file storing IBD tracts results, where first line stands for the per-individual final log-likelihood, followed by per individual (one per line) most-probable inbreeding tracts (0: position is not IBD; 1: position is IBD), and IBD posterior probabilities.
+* `.geno`: binary file with genotype posterior probabilities (similar to ANGSD `-doGeno 32`).
+* `.log.gz`: if option `-log INT` is specified, a gziped log file similar to `.ibd` is printed every `INT` iterations.
+* `.pdf`: optionally, the `scripts/ngsF-HMMplot.R` script can be used to plot the IBD tracts.
 
 ### Thread pool
 The thread pool implementation was adapted from Mathias Brossard's and is freely available from:

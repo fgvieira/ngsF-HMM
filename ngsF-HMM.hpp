@@ -1,6 +1,7 @@
 #pragma once
 
 #include "read_data.hpp"
+#include "HMM.hpp"
 #include "threadpool.h"
 #include "bfgs.h"
 
@@ -19,7 +20,8 @@ typedef struct {
   uint64_t n_sites;
   bool call_geno;
   char *in_freq;
-  bool freq_fixed;
+  int freq_est;
+  int e_prob_calc;
   char *in_indF;
   bool indF_fixed;
   char *out_prefix;
@@ -37,11 +39,13 @@ typedef struct {
   double ***geno_lkl_s;  // n_sites+1 * n_ind * N_GENO
   double *pos_dist;      // n_sites+1
   double *freq;          // n_sites+1
+  double ***e_prob;      // n_ind * n_sites+1 * N_STATES
   char **path;           // n_ind * n_sites+1
   double ***marg_prob;   // n_ind * n_sites+1 * N_STATES
   double *indF;          // n_ind
   double *alpha;         // n_ind
   double *ind_lkl;       // n_ind
+  double prev_tot_lkl;
   double tot_lkl;
 
   threadpool_t *thread_pool;

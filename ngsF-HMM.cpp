@@ -93,7 +93,7 @@ int main (int argc, char** argv) {
       // Call genotypes
       if(pars->call_geno)
 	call_geno(pars->geno_lkl[i][s], N_GENO);
-
+      /*
       // Ensure minimum GL allowed
       if( pars->geno_lkl[i][s][array_min_pos(pars->geno_lkl[i][s], N_GENO)] < log(0.001) ){
 	for(uint64_t g = 0; g < N_GENO; g++)
@@ -102,6 +102,8 @@ int main (int argc, char** argv) {
 	// Re-normalize GL
 	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
+      */
+      post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
     }
 
 

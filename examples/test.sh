@@ -38,19 +38,19 @@ do
     fi
 
     ID=TRUE
-    ../ngsF-HMM -verbose 2 -n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF $INDF,$ALPHA --indF_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM --verbose 2 --n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_est 0 --indF $INDF,$ALPHA --indF_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=BEST
-    ../ngsF-HMM -verbose 2 -n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --indF $INDF,$ALPHA --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM --verbose 2 --n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --indF $INDF,$ALPHA --out testF-HMM.$ID.$TYPE --log 1
 
     ID=freq_fixed
-    ../ngsF-HMM -verbose 2 -n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_fixed --indF 0.1,0.2 --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM --verbose 2 --n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq $FREQ --freq_est 0 --indF 0.1,0.2 --out testF-HMM.$ID.$TYPE --log 1
 
     ID=indF_fixed
-    ../ngsF-HMM -verbose 2 -n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF $INDF,$ALPHA --indF_fixed --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM --verbose 2 --n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF $INDF,$ALPHA --indF_fixed --out testF-HMM.$ID.$TYPE --log 1
 
     ID=normal
-    ../ngsF-HMM -verbose 2 -n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF 0.1,0.2 --out testF-HMM.$ID.$TYPE --log 1
+    ../ngsF-HMM --verbose 2 --n_threads $N_IND --seed $SEED --geno $FILE --n_ind $N_IND --n_sites $N_SITES --pos testF-HMM.SIM.pos.gz --freq 0.1 --indF 0.1,0.2 --out testF-HMM.$ID.$TYPE --log 1
 
 
     echo "===== Plot ====="

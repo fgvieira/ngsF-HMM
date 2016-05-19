@@ -14,7 +14,8 @@ void init_pars(params *pars) {
   pars->pos_dist = NULL;
   pars->call_geno = false;
   pars->in_freq = NULL;
-  pars->freq_fixed = false;
+  pars->freq_est = 1;
+  pars->e_prob_calc = 1;
   pars->in_indF = NULL;
   pars->indF_fixed = false;
   pars->out_prefix = NULL;
@@ -26,7 +27,8 @@ void init_pars(params *pars) {
   pars->n_threads = 1;
   pars->version = false;
   pars->verbose = 1;
-  pars->seed = time(NULL) + rand() % 1000;
+  pars->seed = rand() % 1000;
+  pars->prev_tot_lkl = 0;
   pars->tot_lkl = 0;
   pars->thread_pool = NULL;
 }
@@ -48,7 +50,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"n_sites", required_argument, NULL, 's'},
       {"call_geno", no_argument, NULL, 'G'},
       {"freq", required_argument, NULL, 'f'},
-      {"freq_fixed", no_argument, NULL, 'F'},
+      {"freq_est", required_argument, NULL, 'F'},
+      {"e_prob", required_argument, NULL, 'e'},
       {"indF", required_argument, NULL, 'i'},
       {"indF_fixed", no_argument, NULL, 'I'},
       {"out", required_argument, NULL, 'o'},
@@ -56,7 +59,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"log_bin", required_argument, NULL, 'b'},
       {"min_iters", required_argument, NULL, 'm'},
       {"max_iters", required_argument, NULL, 'M'},
-      {"min_epsilon", required_argument, NULL, 'e'},
+      {"min_epsilon", required_argument, NULL, 'E'},
       {"n_threads", required_argument, NULL, 'x'},
       {"version", no_argument, NULL, 'v'},
       {"verbose", required_argument, NULL, 'V'},
@@ -65,7 +68,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:Fi:Io:X:b:m:M:e:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:F:e:i:Io:X:b:m:M:E:x:vV:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -93,7 +96,10 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       pars->in_freq = optarg;
       break;
     case 'F':
-      pars->freq_fixed = true;
+      pars->freq_est = atoi(optarg);
+      break;
+    case 'e':
+      pars->e_prob_calc = atoi(optarg);
       break;
     case 'i':
       pars->in_indF = optarg;
@@ -117,7 +123,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     case 'M':
       pars->max_iters = atoi(optarg);
       break;
-    case 'e':
+    case 'E':
       pars->min_epsilon = atof(optarg);
       break;
     case 'x':
@@ -157,7 +163,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   ///////////////////////////////
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_fixed: %s\n\tindF: %s\n\tindF_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_est: %d\n\te_prob: %d\n\tindF: %s\n\tindF_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
            pars->in_geno,
 	   pars->in_pos,
 	   pars->in_lkl ? "true":"false",
@@ -166,7 +172,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 	   pars->n_sites,
 	   pars->call_geno ? "true":"false",
 	   pars->in_freq,
-	   pars->freq_fixed ? "true":"false",
+	   pars->freq_est,
+	   pars->e_prob_calc,
 	   pars->in_indF,
 	   pars->indF_fixed ? "true":"false",
 	   pars->out_prefix,
@@ -200,6 +207,14 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     error(__FUNCTION__, "number of sites (--n_sites) missing!");
   if(pars->call_geno && !pars->in_lkl)
     error(__FUNCTION__, "can only call genotypes from likelihoods!");
+  if(pars->freq_est < 0 || pars->freq_est > 2)
+    error(__FUNCTION__, "invalid MAF estimation method!");
+  if(pars->e_prob_calc < 0 || pars->e_prob_calc > 2)
+    error(__FUNCTION__, "invalid emission probability calculation method!");
+  if(pars->e_prob_calc > 1)
+    warn(__FUNCTION__, "calculation of emission probabilities accounting for LD is still under development!");
+  //if(pars->freq_est == 2 && pars->e_prob_calc == 1)
+  //error(__FUNCTION__, "incompatible MAF and EMISSION algorithms!");
   if(pars->out_prefix == NULL)
     error(__FUNCTION__, "output prefix (--out) missing!");
   if(pars->log < 0)
@@ -279,6 +294,7 @@ int init_output(params* pars) {
   /////////////////////////////
   double freq_rng_min = 0.01;
   double freq_rng_max = 0.5 - freq_rng_min;
+  double hap_freq[4]; // P_AB, P_Ab, P_aB, P_ab
   gzFile in_freq_fh;
 
   pars->freq = init_ptr(pars->n_sites+1, freq_rng_min);
@@ -297,7 +313,12 @@ int init_output(params* pars) {
       printf("==> Estimating initial frequency values assuming HWE.\n");
 
     for(uint64_t s = 1; s <= pars->n_sites; s++)
-      pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], (double) 0);
+      if(pars->freq_est == 1 || s == 1){
+	pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], (double) 0);
+      }else if(pars->freq_est == 2){
+	haplo_freq(hap_freq, pars->geno_lkl_s[s-1], pars->geno_lkl_s[s], pars->freq[s-1], pars->freq[s], pars->n_ind);
+	pars->freq[s] = hap_freq[1] + hap_freq[3];
+      }
 
   } else if( (in_freq_fh = gzopen(pars->in_freq, "r")) != NULL ){
     if(pars->verbose >= 1)
@@ -336,6 +357,27 @@ int init_output(params* pars) {
 
     for(uint64_t s = 1; s <= pars->n_sites; s++)
       pars->freq[s] = min(max(atof(pars->in_freq), freq_rng_min), freq_rng_max);
+  }
+
+
+
+  ///////////////////////////////////////
+  // Initialize emission probabilities //
+  ///////////////////////////////////////
+  if(pars->verbose >= 1)
+    printf("==> Calculating initial emission probabilities\n");
+  pars->e_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
+
+  for(uint64_t s = 1; s <= pars->n_sites; s++){
+    if(pars->e_prob_calc == 2)
+      haplo_freq(hap_freq, pars->geno_lkl_s[s-1], pars->geno_lkl_s[s], pars->freq[s-1], pars->freq[s], pars->n_ind);
+
+    for(uint64_t i = 0; i < pars->n_ind; i++)
+      for(uint64_t k = 0; k < N_STATES; k++)
+	if(pars->e_prob_calc == 1 || s == 1)
+	  pars->e_prob[i][s][k] = calc_emission(pars->geno_lkl[i][s], pars->freq[s], k);
+	else if(pars->e_prob_calc == 2)
+	  pars->e_prob[i][s][k] = calc_emissionLD(hap_freq, pars->geno_lkl[i][s-1], pars->geno_lkl[i][s], pars->freq[s-1], pars->freq[s], k);
   }
 
 

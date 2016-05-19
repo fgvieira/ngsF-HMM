@@ -11,7 +11,6 @@ int EM (params *pars) {
   double max_lkl_epsilon = -INFINITY;
   double *prev_ind_lkl = init_ptr(pars->n_ind, (double) -INFINITY);
   double *ind_lkl_epsilon = init_ptr(pars->n_ind, (double) -INFINITY);
-  gzFile log_fh = NULL;
 
 
 
@@ -30,29 +29,20 @@ int EM (params *pars) {
 
 
 
-  // Open filehandle for iteration log
-  if(pars->log){
-    char *tmp_out = strdcat(pars->out_prefix, ".log.gz");
-    log_fh = open_gzfile(tmp_out, (pars->log_bin ? "wb9" : "w9"), pars->n_sites+100);
-    delete [] tmp_out;
-
-    if(log_fh == NULL)
-      error(__FUNCTION__, "cannot open LOG file!");
-
-    if(pars->verbose >= 1)
-      printf("==> Dumping initial values to LOG file\n");
-    dump_data(log_fh, pars, pars->log_bin);
-  }
-
-
-
   ////////////////////
   // Iteration loop //
   ////////////////////
-  while((max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
-    time_t iter_start = time(NULL);
+  while((pars->prev_tot_lkl - pars->tot_lkl > pars->min_epsilon || max_lkl_epsilon > pars->min_epsilon || iter < pars->min_iters) && iter < pars->max_iters && SIG_COND) {
+
+    // Dump previous iteration data
+    if(pars->log && (iter == 1 || iter % pars->log == 0)){
+      if(pars->verbose >= 1)    
+	printf("==> Printing current iteration parameters\n");
+      print_iter(pars->out_prefix, pars);
+    }
 
     // Next Iteration...
+    time_t iter_start = time(NULL);
     iter++;
     if(pars->verbose >= 1)
       printf("\nIteration %lu:\n", iter);
@@ -61,6 +51,7 @@ int EM (params *pars) {
     iter_EM(pars);
 
     // Check convergence criteria
+    pars->prev_tot_lkl = pars->tot_lkl;
     pars->tot_lkl = 0;
     for (uint64_t i = 0; i < pars->n_ind; i++){
       // Get total Lkl
@@ -68,29 +59,19 @@ int EM (params *pars) {
       // Get per-indiv lkl epsilon
       ind_lkl_epsilon[i] = (pars->ind_lkl[i] - prev_ind_lkl[i]) / fabs(prev_ind_lkl[i]);
     }
-    max_lkl_epsilon = ind_lkl_epsilon[array_max_pos(ind_lkl_epsilon, pars->n_ind)];
+    uint64_t ind_max_lkl_epsilon  = array_max_pos(ind_lkl_epsilon, pars->n_ind);
+    max_lkl_epsilon = ind_lkl_epsilon[ind_max_lkl_epsilon];
     // Save current LKLs
     cpy(prev_ind_lkl, pars->ind_lkl, pars->n_ind, sizeof(double));
 
-    if(pars->verbose >= 3)
-      printf("Lkl epsilon: %s\n", join(ind_lkl_epsilon, pars->n_ind, "\t"));
-
-    // Dump iteration data
-    if(pars->log && (iter == 1 || iter % pars->log == 0)){
-      if(pars->verbose >= 1)
-	printf("==> Dumping iteration to log file\n");
-      dump_data(log_fh, pars, pars->log_bin);
-      
-      if(pars->verbose >= 1)    
-	printf("==> Printing current iteration parameters\n");
-      print_iter(pars->out_prefix, pars);
-    }
-
     // Print iteration info..
-    if(pars->verbose >= 1){
-      time_t iter_end = time(NULL);
-      printf("\tLogLkl: %.15f\t lkl epsilon: %.15f\ttime: %.0f (s)\n", pars->tot_lkl, max_lkl_epsilon, difftime(iter_end, iter_start) );
-    }
+    time_t iter_end = time(NULL);
+    if(pars->verbose >= 1)
+      printf("\tLogLkl: %.15f\t max lkl epsilon: %.15f\ttime: %.0f (s)\n", pars->tot_lkl, max_lkl_epsilon, difftime(iter_end, iter_start) );
+
+    if(pars->verbose >= 3)
+      for (uint64_t i = 0; i < pars->n_ind; i++)
+	printf("\tInd %lu: %.15f\t lkl epsilon: %.15f%s\n", i+1, pars->ind_lkl[i], ind_lkl_epsilon[i], i == ind_max_lkl_epsilon ? " (max)" : "");
 
     fflush(stdout);
   }
@@ -108,7 +89,7 @@ int EM (params *pars) {
   double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
 
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 3, Vi[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, pars->path[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 3, Vi[i], &pars->indF[i], &pars->alpha[i], pars->e_prob[i], pars->path[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
   free_ptr((void***) Vi, pars->n_ind, pars->n_sites+1);
@@ -127,8 +108,6 @@ int EM (params *pars) {
 
 
   // Free memory and return
-  if(pars->log)
-    gzclose(log_fh);
   free_ptr((void*) ind_lkl_epsilon);
   free_ptr((void*) prev_ind_lkl);
   return 0;
@@ -149,26 +128,26 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 1, Fw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, Fw[i], &pars->indF[i], &pars->alpha[i], pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
     
   // Backward recursion
   time_t bwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 2, Bw[i], pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, Bw[i], &pars->indF[i], &pars->alpha[i], pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
 
-  /*
+
   // Lkl check! - relaxed (to 0.001) due to precision issues on large datasets
   for (uint64_t i = 0; i < pars->n_ind; i++)
     if( abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) > 0.001 ){
       printf("Ind %lu: %.15f\t%.15f (%.15f)\n", i, logsum(Fw[i][pars->n_sites],2), logsum(Bw[i][0],2), abs(logsum(Fw[i][pars->n_sites],2) - logsum(Bw[i][0],2)) );
       error(__FUNCTION__, "Fw and Bw lkl do not match!");
     }
-  */
+
 
 
   // Marginal probabilities
@@ -196,7 +175,7 @@ void iter_EM(params *pars) {
       printf("==> Update inbreeding and transition parameter\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, NULL, pars->geno_lkl[i], &pars->indF[i], &pars->alpha[i], pars->freq, NULL, pars->pos_dist, pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 4, NULL, &pars->indF[i], &pars->alpha[i], pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
 
     threadpool_wait(pars->thread_pool);
 
@@ -209,24 +188,62 @@ void iter_EM(params *pars) {
 
   // Estimate allele frequencies (EM)
   time_t freqs_t = time(NULL);
-  if(pars->freq_fixed){
+  if(pars->freq_est == 0){
     if(pars->verbose >= 1)
       printf("==> Alelle frequencies not estimated!\n");
   }else{
     if(pars->verbose >= 1)
-      printf("==> Estimate allele frequencies\n");
+      printf("==> Estimating allele frequencies and calculating emission probabilities\n");
 
+    double prior[N_GENO], hap_freq[4];
     double *indF = init_ptr(pars->n_ind, 0.0);
+    double **prev_site = init_ptr(pars->n_ind, N_GENO, 0.0);
+    double **curr_site = init_ptr(pars->n_ind, N_GENO, 0.0);
+
     for (uint64_t s = 1; s <= pars->n_sites; s++){
-      for(uint64_t i = 0; i < pars->n_ind; i++)
+      for(uint64_t i = 0; i < pars->n_ind; i++){
 	indF[i] = pars->marg_prob[i][s][1];
 
-      pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], indF);
+	calc_HWE(prior, pars->freq[s-1], pars->marg_prob[i][s-1][1]);
+	post_prob(prev_site[i], pars->geno_lkl[i][s-1], prior, N_GENO);
+	calc_HWE(prior, pars->freq[s], pars->marg_prob[i][s][1]);
+	post_prob(curr_site[i], pars->geno_lkl[i][s], prior, N_GENO);
+      }
 
-      if(pars->verbose >= 7)
-	printf("%lu; freq: %f\n", s, pars->freq[s]);
+      // Calculate haplotype frequency through an EM
+      if(pars->freq_est == 2 || pars->e_prob_calc == 2)
+	haplo_freq(hap_freq, prev_site, curr_site, pars->freq[s-1], pars->freq[s], pars->n_ind);
+
+      // Estimated MAF
+      if(pars->freq_est == 1 || s == 1){
+	// Calculate MAF assuming independent sites through an EM
+	pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], indF);
+      }else if(pars->freq_est == 2){
+	// Calculate MAF through the haplotype frequency
+	pars->freq[s] = hap_freq[1] + hap_freq[3];
+      }else
+	error(__FUNCTION__, "wrong MAF estimation method!");
+
+      // Calculate emission probabilites
+      if(pars->e_prob_calc == 1 || s == 1)
+	for(uint64_t i = 0; i < pars->n_ind; i++)
+	  for(uint64_t k = 0; k < N_STATES; k++)
+	    if(pars->e_prob_calc == 1 || s == 1)
+	      // Calculate emission probability conditioned on MAF
+	      pars->e_prob[i][s][k] = calc_emission(pars->geno_lkl[i][s], pars->freq[s], k);
+	    else if(pars->e_prob_calc == 2)
+	      // Calculate emission probability conditioned on previous site genotype
+	      pars->e_prob[i][s][k] = calc_emissionLD(hap_freq, pars->geno_lkl[i][s-1], pars->geno_lkl[i][s], pars->freq[s-1], pars->freq[s], k);
+	    else
+	      error(__FUNCTION__, "wrong emission probability calculation method!");
+
+      if(pars->verbose >= 7){
+	printf("Site %lu; freq: %f; emission: ", s, pars->freq[s]);
+	for(uint64_t i = 0; i < pars->n_ind; i++)
+	  printf("\t%f/%f", exp(pars->e_prob[i][s][0]), exp(pars->e_prob[i][s][1]));
+	printf("\n");
+      }
     }
-    free_ptr((void*) indF);
   }
 
 
@@ -249,7 +266,7 @@ void iter_EM(params *pars) {
 
 
 void print_iter(char *out_prefix, params *pars){
-  char *tmp_out;
+  char *tmp_out, *buf;
   gzFile out_fh;
 
   // Open filehandle to "indF" file
@@ -290,7 +307,28 @@ void print_iter(char *out_prefix, params *pars){
     error(__FUNCTION__, "cannot open IBD output file!");
 
   // Print IBD info: most probable path (Viterbi) and IBD marg probs
-  dump_data(out_fh, pars, false);
+  buf = join(pars->ind_lkl, pars->n_ind, "\t");
+  // Print Lkl
+  if(gzprintf(out_fh, "//\t%s\n", buf) <= 0)
+    error(__FUNCTION__, "cannot write LKL info to file!");
+  delete [] buf;
+
+  // Print most probable path (Viterbi)
+  for (uint64_t i = 0; i < pars->n_ind; i++){
+    buf = join(pars->path[i]+1, pars->n_sites, "");
+    if(gzprintf(out_fh, "%s\n", buf) <= 0)
+      error(__FUNCTION__, "cannot write PATH info to file!");
+    delete [] buf;
+  }
+
+  // Print marginal probs
+  for (uint64_t i = 0; i < pars->n_ind; i++){
+    // To avoid leading \t
+    gzprintf(out_fh, "%f", pars->marg_prob[i][1][1]);
+    for (uint64_t s = 2; s <= pars->n_sites; s++)
+      gzprintf(out_fh, "\t%f", pars->marg_prob[i][s][1]);
+    gzprintf(out_fh, "\n");
+  }
 
   // Close "IBD" filehandle
   gzclose(out_fh);
@@ -309,8 +347,8 @@ void print_iter(char *out_prefix, params *pars){
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     for (uint64_t i = 0; i < pars->n_ind; i++){
       double prior[3];
-      //calc_prior(prior, pars->freq[s], pars->marg_prob[i][s][1]);
-      calc_prior(prior, pars->freq[s], (double) pars->path[i][s]);
+      //calc_HWE(prior, pars->freq[s], pars->marg_prob[i][s][1]);
+      calc_HWE(prior, pars->freq[s], (double) pars->path[i][s]);
       post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
       conv_space(pp, N_GENO, exp);
       gzwrite(out_fh, pp, sizeof(double)*N_GENO);
@@ -318,48 +356,4 @@ void print_iter(char *out_prefix, params *pars){
 
   // Close filehandle
   gzclose(out_fh);
-}
-
-
-
-void dump_data(gzFile fh, params *pars, bool out_bin){
-  char *buf;
-
-  if(out_bin){
-    // Print Lkl
-    gzwrite(fh, pars->ind_lkl, sizeof(double)*pars->n_ind);
-
-    // Print most probable path (Viterbi)
-    for (uint64_t i = 0; i < pars->n_ind; i++)
-      gzwrite(fh, pars->path[i]+1, sizeof(char)*pars->n_sites);
-
-    // Print marginal probs
-    for (uint64_t i = 0; i < pars->n_ind; i++)
-      for (uint64_t s = 1; s <= pars->n_sites; s++){
-	gzwrite(fh, &pars->marg_prob[i][s][1], sizeof(double));
-      }
-  }else{
-    buf = join(pars->ind_lkl, pars->n_ind, "\t");
-    // Print Lkl
-    if(gzprintf(fh, "//\t%s\n", buf) <= 0)
-      error(__FUNCTION__, "cannot write LKL info to file!");
-    delete [] buf;
-
-    // Print most probable path (Viterbi)
-    for (uint64_t i = 0; i < pars->n_ind; i++){
-      buf = join(pars->path[i]+1, pars->n_sites, "");
-      if(gzprintf(fh, "%s\n", buf) <= 0)
-	error(__FUNCTION__, "cannot write PATH info to file!");
-      delete [] buf;
-    }
-
-    // Print marginal probs
-    for (uint64_t i = 0; i < pars->n_ind; i++){
-      // To avoid leading \t
-      gzprintf(fh, "%f", pars->marg_prob[i][1][1]);
-      for (uint64_t s = 2; s <= pars->n_sites; s++)
-	gzprintf(fh, "\t%f", pars->marg_prob[i][s][1]);
-      gzprintf(fh, "\n");
-    }
-  }
 }

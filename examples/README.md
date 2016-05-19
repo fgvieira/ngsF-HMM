@@ -1,6 +1,6 @@
 # Inbreeding
 
-In case of data with inbreeding, almost all analyses can be carried out in the same fashion. Main difference is in how we use `ANGSD` and `ngsF` to estimate inbreeding coefficients and incorporate them into the analyses. Also, output from `angsd` is in log format, so all analyses should be carried using the `-islog 1` option.
+In case of data with inbreeding, almost all analyses can be carried out in the same fashion. Main difference is in how we use `ANGSD` and `ngsF-HMM` to estimate inbreeding coefficients and incorporate them into the analyses.
 
 In this example, we will estimate inbreeding coefficients per individual and incorporate them into the calculation of posterior probabilities. First, calculate genotype likelihoods and call SNPs:
 
@@ -11,7 +11,7 @@ Then, estimate inbreeding coefficients:
 
     N_SITES=$((`zcat testF.mafs.gz | wc -l`-1))
     gunzip testF.glf.gz
-    ../ngsF-HMM --verbose 2 --seed 12345 --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.1 --path 0 --out testF --log 1
+    ../ngsF-HMM --verbose 2 --seed 12345 --geno testF.glf --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.1 --out testF --log 1
 
 We now incorporate these estimates in the calculation of genotype posterior probabilities:
 
