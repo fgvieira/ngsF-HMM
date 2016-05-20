@@ -1,6 +1,6 @@
-SIM_DATA=../../ngsTools/ngsSim/examples
-ANGSD=../../ngsTools/angsd
-NGSPOPGEN=../../ngsTools/ngsPopGen
+SIM_DATA=../../ngsSim/examples
+ANGSD=../../angsd
+NGSPOPGEN=../../ngsPopGen
 
 
 ##### Clean-up
@@ -64,8 +64,8 @@ done >&2
 
 ##### Get genotype likelihoods
 N_IND=20
-$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doGlf 2 -doMaf 1 -SNP_pval 1e-4 -out testF
-$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doGlf 3 -doMaf 1 -SNP_pval 1e-4 -out testF
+$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd $N_IND -doMajorMinor 1 -doGlf 2 -doMaf 1 -SNP_pval 1e-4 -out testF
+$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd $N_IND -doMajorMinor 1 -doGlf 3 -doMaf 1 -SNP_pval 1e-4 -out testF
 gunzip -f testF.glf.gz
 
 
@@ -80,27 +80,27 @@ N_SITES=`cat testF.pos | wc -l`
 
 ##### Get genotypes' posterior probability with inbreeding prior
 head -n $((N_IND+1)) testF.indF | tail -n $N_IND | cut -f 1 > /tmp/testF.indF
-$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -indF /tmp/testF.indF -doGeno 32 -doSaf 2 -anc $SIM_DATA/testAF.ANC.fas -out testF.indF
+$ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd $N_IND -doMajorMinor 1 -doPost 1 -doMaf 1 -indF /tmp/testF.indF -doGeno 32 -doSaf 2 -anc $SIM_DATA/testAF.ANC.fas -out testF.indF
 
 
 
 ##### Calculate covariance matrix
-gunzip -f testF.indF.geno.gz
-$NGSPOPGEN/ngsCovar -probfile testF.indF.geno -outfile testF.indF.covar -nind $N_IND -nsites $N_SITES -call 0 -sfsfile testF.indF.saf -norm 0
+gunzip -f testF.indF.geno.gz testF.indF.saf.gz
+$NGSPOPGEN/ngsCovar -probfile testF.indF.geno -nind $N_IND -nsites $N_SITES -call 0 -sfsfile testF.indF.saf -norm 0 -outfile testF.indF.covar
 
 
 
 ##### Calculate population genetics statistics
-$NGSPOPGEN/ngsStat -npop 1 -postfiles testF.indF.saf -nsites $N_SITES -iswin 1 -nind $N_IND -outfile testF.indF.stat -isfold 0 -islog 1 -block_size $N_SITES
+$NGSPOPGEN/ngsStat -npop 1 -postfiles testF.indF.saf -nsites $N_SITES -iswin 1 -nind $N_IND -block_size $N_SITES -outfile testF.indF.stat 
 
 
 
 ##### SFS
 # Calculating folded SFS
-cat testF.indF.saf | hexdump -v -e "$((N_IND+1))/8 \"%.10g\t\"\"\n\"" | perl -na -e '$sum=0; $sum+=exp($_) for @F; next if($sum==0); for $i (0..$#F){$frq[$i]+=exp($F[$i])/$sum}; END{$tsum+=$_ for @frq; $_/=$tsum for @frq; print join("\t",@frq)."\n"}' > testF.indF.fold-saf_sum
+hexdump -v -s 8 -e "$((N_IND+1))/4 \"%.10g\t\"\"\n\"" testF.indF.saf | hexdump -v -e "$((N_IND+1))/8 \"%.10g\t\"\"\n\"" | perl -na -e '$sum=0; $sum+=exp($_) for @F; next if($sum==0); for $i (0..$#F){$frq[$i]+=exp($F[$i])/$sum}; END{$tsum+=$_ for @frq; $_/=$tsum for @frq; print join("\t",@frq)."\n"}' > testF.indF.fold-saf_sum
 
 # Calculating unfolded SFS
-cat testF.indF.saf | hexdump -v -e "$((2*N_IND+1))/8 \"%.10g\t\"\"\n\"" | perl -na -e '$sum=0; $sum+=exp($_) for @F; next if($sum==0); for $i (0..$#F){$frq[$i]+=exp($F[$i])/$sum}; END{$tsum+=$_ for @frq; $_/=$tsum for @frq; print join("\t",@frq)."\n"}' > testF.indF.saf_sum
+hexdump -v -s 8 -e "$((N_IND+1))/4 \"%.10g\t\"\"\n\"" testF.indF.saf | hexdump -v -e "$((2*N_IND+1))/8 \"%.10g\t\"\"\n\"" | perl -na -e '$sum=0; $sum+=exp($_) for @F; next if($sum==0); for $i (0..$#F){$frq[$i]+=exp($F[$i])/$sum}; END{$tsum+=$_ for @frq; $_/=$tsum for @frq; print join("\t",@frq)."\n"}' > testF.indF.saf_sum
 
 
 
