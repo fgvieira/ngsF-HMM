@@ -7,12 +7,11 @@
 
 ### Citation
 
-`ngsF-HMM` was been submitted to [Bioinformatics](http://bioinformatics.oxfordjournals.org/), so please cite it if you use it in your work:
+`ngsF-HMM` was published in 2016 at [Bioinformatics](http://bioinformatics.oxfordjournals.org/content/32/14/2096), so please cite it if you use it in your work:
 
-    Vieira FG, Albrechtsen A, Gilbert MT and Nielsen R
+    Vieira FG, Albrechtsen A and Nielsen R
     Estimating IBD tracts from low coverage NGS data
-    Bioinformatics (submitted)
-
+    Bioinformatics (2016) 32: 2096-2102
 
 ### Installation
 
