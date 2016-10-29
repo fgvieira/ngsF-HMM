@@ -7,7 +7,7 @@ SHARED_LIB = gen_func.cpp read_data.cpp threadpool.c bfgs.cpp
 CFLAGS = -I$(SHARED_DIR)
 DFLAGS = -g -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 #DFLAGS = -O3 -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-LIB = -lgsl -lgslcblas -lz -lpthread
+LIB = $(shell pkg-config --cflags --libs gsl) -lz -lpthread
 
 
 
@@ -32,4 +32,4 @@ test:
 	@cd examples/; bash ./test.sh 2> test.log; cd ../
 
 clean:
-	@rm -f *~ *.o ngsF-HMM examples/testF* examples/testF.log
+	@rm -f *~ *.o ngsF-HMM examples/testF* examples/test.log
