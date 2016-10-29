@@ -108,8 +108,9 @@ hexdump -v -s 8 -e "$((N_IND+1))/4 \"%.10g\t\"\"\n\"" testF.indF.saf | hexdump -
 
 ##### Check MD5
 rm -f *.arg
-md5sum testF* | sort -k 2,2 | fgrep -v '.pdf' | fgrep -v '.log.gz' > /tmp/test.md5
-if diff /tmp/test.md5 test.md5 > /dev/null
+TMP=`mktemp`
+md5sum testF* | sort -k 2,2 | fgrep -v '.pdf' | fgrep -v '.log.gz' > $TMP
+if diff $TMP test.md5 > /dev/null
 then
     echo "ngsF-HMM: All tests OK!"
 else
