@@ -6,8 +6,18 @@ shopt -s extglob
 #################
 ### Variables ###
 #################
-N_REP=10
-TMP_DIR=$HOME/scratch/ngsF-HMM
+N_REP=20
+# Check if ngsF-HMM is compiled
+if [[ ! -x ${0%\.sh} ]]; then
+    echo "ERROR: ngsF-HMM binary not found! Did you compile it?"
+    exit -1
+fi
+
+# Set TMP folder
+if [ -z $TMP_DIR ]; then
+    TMP_DIR=$HOME/scratch
+fi
+TMP_DIR=$TMP_DIR/ngsF-HMM_$USER
 
 
 
@@ -76,9 +86,9 @@ do
 	args[$SEED_idx]=$RANDOM
     fi
     args[$idx]=$TMP_DIR/$ID.REP_$REP
-    echo ${0%\.sh} ${args[@]}
+    ${0%\.sh} ${args[@]}
 done
-exit
+
 
 
 ##########################
