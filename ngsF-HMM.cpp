@@ -21,7 +21,7 @@
 
 #include "ngsF-HMM.hpp"
 
-char const* version = "0.0.1b";
+char const* version = "1.0.0";
 
 
 int main (int argc, char** argv) {

@@ -1,6 +1,25 @@
 
 #include "ngsF-HMM.hpp"
-#include "HMM.cpp"
+
+
+// General structure for launching threads
+struct pth_struct{
+  int type;
+  double **ptr;
+  double *F;
+  double *alpha;
+  double **e_prob;
+  char *path;
+  double *pos_dist;
+  uint64_t length;
+};
+
+
+// Function prototypes
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double *F, double *alpha, double **e_prob, char *path, double *pos_dist, uint64_t length);
+void thread_slave(void *ptr);
+double lkl(const double*, const void*);
+
 
 
 int EM (params *pars) {
@@ -356,4 +375,77 @@ void print_iter(char *out_prefix, params *pars){
 
   // Close filehandle
   gzclose(out_fh);
+}
+
+
+
+// General thread function
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double *F, double *alpha, double **e_prob, char *path, double *pos_dist, uint64_t length){
+  pth_struct *p = new pth_struct;
+
+  p->type = type;
+  p->ptr = ptr;
+  p->F = F;
+  p->alpha = alpha;
+  p->e_prob = e_prob;
+  p->path = path;
+  p->pos_dist = pos_dist;
+  p->length = length;
+
+  // Add task to thread pool
+  int ret = threadpool_add(thread_pool, thread_slave, (void*) p, 0);
+  if(ret == -1)
+    error(__FUNCTION__, "invalid thread pool!");
+  else if(ret == -2)
+    error(__FUNCTION__, "thread pool lock failure!");
+  else if(ret == -3)
+    error(__FUNCTION__, "queue full!");
+  else if(ret == -4)
+    error(__FUNCTION__, "thread pool is shutting down!");
+  else if(ret == -5)
+    error(__FUNCTION__, "thread failure!");
+}
+
+void thread_slave(void *ptr){
+  pth_struct* p = (pth_struct*) ptr;
+  double F[N_STATES] = {1-*p->F, *p->F};
+
+  if(p->type == 1)
+    forward(p->ptr, F, *p->alpha, p->e_prob, p->pos_dist, p->length, N_STATES);
+  else if(p->type == 2)
+    backward(p->ptr, F, *p->alpha, p->e_prob, p->pos_dist, p->length, N_STATES);
+  else if(p->type == 3)
+    viterbi(p->ptr, F, *p->alpha, p->e_prob, p->path, p->pos_dist, p->length, N_STATES);
+  else if(p->type == 4){
+    double val[2] = {*p->F, *p->alpha};
+    double l_bound[2] = {1/INF, 1/INF};
+    double u_bound[2] = {1-l_bound[0], 10};
+    int lims[2] = {2, 2};
+
+    findmax_bfgs(2, val, (void*) p, &lkl, NULL, l_bound, u_bound, lims, -1);
+    *p->F = val[0];
+    *p->alpha = val[1];
+  }else
+    error(__FUNCTION__, "invalid thread task option!");
+
+  delete p;
+}
+
+
+
+double lkl(const double *pars, const void *data){
+  pth_struct* p = (pth_struct*) data;
+  double **Fw = init_ptr(p->length+1, N_STATES, (double) 0);
+  double lkl = 0;
+
+  if(isnan(pars[0]) || isinf(pars[0]) ||
+     isnan(pars[1]) || isinf(pars[1]) )
+    lkl = INF; // Added due to a putative bug on the BFGS function
+  else{
+    double F[N_STATES] = {1-pars[0], pars[0]};
+    lkl = forward(Fw, F, pars[1], p->e_prob, p->pos_dist, p->length, N_STATES);
+  }
+
+  free_ptr((void**) Fw, p->length+1);
+  return -lkl;
 }
