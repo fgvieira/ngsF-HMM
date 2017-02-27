@@ -219,8 +219,10 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     error(__FUNCTION__, "output prefix (--out) missing!");
   if(pars->log < 0)
     error(__FUNCTION__, "invalid LOG (--log) option!");
+  if(pars->min_iters < 1 || pars->max_iters < 1 || pars->min_iters >= pars->max_iters)
+    error(__FUNCTION__, "invalid number of iterations!");
   if(pars->n_threads < 1)
-    error(__FUNCTION__, "number of threads cannot be less than 1!");
+    error(__FUNCTION__, "invalid number of threads!");
 }
 
 

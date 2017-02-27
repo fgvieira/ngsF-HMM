@@ -21,7 +21,7 @@
 
 #include "ngsF-HMM.hpp"
 
-char const* version = "1.0.0";
+char const* version = "1.0.1";
 
 
 int main (int argc, char** argv) {
@@ -68,20 +68,24 @@ int main (int argc, char** argv) {
   // Read input data //
   /////////////////////
   // Read positions from file
-  if(pars->verbose >= 1)
-    printf("==> Getting sites coordinates\n");
-  if(pars->in_pos)
+  if(pars->verbose >= 1){
+    printf("==> Reading data\n");
+    printf("> Sites coordinates\n");
+  }
+  if(pars->in_pos){
     pars->pos_dist = read_pos(pars->in_pos, pars->n_sites);
-  else
+  }else{
     pars->pos_dist = init_ptr(pars->n_sites+1, (double) INFINITY);
+  }
   // Convert position distances to Mb
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     pars->pos_dist[s] /= 1e6;
 
   // Read data from GENO file
   if(pars->verbose >= 1)
-    printf("> Reading data from file...\n");
+    printf("> GENO data\n");
   pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->in_loglkl, pars->n_ind, pars->n_sites);
+  // Transp GL matrix
   pars->geno_lkl_s = transp_matrix(pars->geno_lkl, pars->n_ind, pars->n_sites+1);
 
   // Read_geno always returns genos in logscale

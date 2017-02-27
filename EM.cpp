@@ -285,12 +285,9 @@ void iter_EM(params *pars) {
 
 
 void print_iter(char *out_prefix, params *pars){
-  char *tmp_out, *buf;
-  gzFile out_fh;
-
   // Open filehandle to "indF" file
-  tmp_out = strdcat(out_prefix, ".indF");
-  out_fh = open_gzfile(tmp_out, "wT");
+  char *tmp_out = strdcat(out_prefix, ".indF");
+  gzFile out_fh = open_gzfile(tmp_out, "wT");
   delete [] tmp_out;
 
   if(out_fh == NULL)
@@ -319,14 +316,14 @@ void print_iter(char *out_prefix, params *pars){
   /////////////////////////////////////////////////
   // Open filehandle to "IBD" file
   tmp_out = strdcat(out_prefix, ".ibd");
-  out_fh = open_gzfile(tmp_out, "wT", pars->n_sites+100);
+  out_fh = open_gzfile(tmp_out, "wT", max(10000,pars->n_sites)+100);
   delete [] tmp_out;
 
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open IBD output file!");
 
   // Print IBD info: most probable path (Viterbi) and IBD marg probs
-  buf = join(pars->ind_lkl, pars->n_ind, "\t");
+  char *buf = join(pars->ind_lkl, pars->n_ind, "\t");
   // Print Lkl
   if(gzprintf(out_fh, "//\t%s\n", buf) <= 0)
     error(__FUNCTION__, "cannot write LKL info to file!");
@@ -334,10 +331,10 @@ void print_iter(char *out_prefix, params *pars){
 
   // Print most probable path (Viterbi)
   for (uint64_t i = 0; i < pars->n_ind; i++){
-    buf = join(pars->path[i]+1, pars->n_sites, "");
-    if(gzprintf(out_fh, "%s\n", buf) <= 0)
-      error(__FUNCTION__, "cannot write PATH info to file!");
-    delete [] buf;
+    for (uint64_t s = 1; s <= pars->n_sites; s++)
+      if(gzprintf(out_fh, "%c", pars->path[i][s]+48) <= 0)
+	error(__FUNCTION__, "cannot write PATH info to file!");
+    gzprintf(out_fh, "\n");
   }
 
   // Print marginal probs
@@ -361,11 +358,10 @@ void print_iter(char *out_prefix, params *pars){
   if(out_fh == NULL)
     error(__FUNCTION__, "cannot open GENO output file!");
 
-  double pp[N_GENO];
+  double pp[N_GENO], prior[N_GENO];
 
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     for (uint64_t i = 0; i < pars->n_ind; i++){
-      double prior[3];
       //calc_HWE(prior, pars->freq[s], pars->marg_prob[i][s][1]);
       calc_HWE(prior, pars->freq[s], (double) pars->path[i][s]);
       post_prob(pp, pars->geno_lkl[i][s], prior, N_GENO);
