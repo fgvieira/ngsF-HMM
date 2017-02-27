@@ -17,6 +17,7 @@
 
 `ngsF-HMM` can be easily installed but has some external dependencies:
 
+* `gcc` : v4.9.2 tested on Debian 7.8 (wheezy)
 * `zlib`: v1.2.7 tested on Debian 7.8 (wheezy)
 * `gsl` : v1.15 tested on Debian 7.8 (wheezy)
 * `md5sum`: only needed for `make test`
