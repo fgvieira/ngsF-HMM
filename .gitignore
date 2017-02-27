@@ -1,0 +1,4 @@
+*.o
+ngsF-HMM
+examples/testF*
+examples/test.log
