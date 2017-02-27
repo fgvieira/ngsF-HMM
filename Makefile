@@ -1,5 +1,5 @@
-CC=gcc
-CXX=g++
+CC?=gcc
+CXX?=g++
 
 SHARED_DIR = ./shared
 SHARED_LIB = gen_func.cpp read_data.cpp HMM.cpp threadpool.c bfgs.cpp
