@@ -67,7 +67,8 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--seed INT`: seed for random number generator.
 
 ### Input data
-As input `ngsF-HMM` reads a Genotype Likelihood (GL) file composed of 3 genotype likelihoods, per site and individual. The file can be either in binary (as doubles) or gzipped text (sites on rows). The latter case allows for initial non-genotype columns.
+As input, `ngsF-HMM` accepts both genotypes, genotype likelihoods (GP) or genotype posterior probabilities (GP). Genotypes must be input as gziped TSV with one row per site and one column per individual ![n_sites.n_ind](http://mathurl.com/ycxtfy8u.png) and genotypes coded as [-1, 0, 1, 2]. The file can have a header and an arbitrary number of columns preceeding the actual data (that will all be ignored), much like the Beagle file format ([link](http://faculty.washington.edu/browning/beagle/beagle.html)).
+As for GL and GP, `ngsF-HMM` accepts both gzipd TSV and binary formats, but with 3 columns per individual ![3.n_sites.n_ind](http://mathurl.com/ycvy5fvx.png) and, in the case of binary, the GL/GP coded as doubles.
 
 ### Stopping Criteria
 An issue on iterative algorithms is the stopping criteria. `ngsF-HMM` implements a dual condition threshold: relative difference in log-likelihood and estimates RMSD (F and freq). As for which threshold to use, simulations show that 1e-5 seems to be a reasonable value. However, if you're dealing with low coverage data (2x-3x), it might be worth to use lower thresholds (between 1e-6 and 1e-9).
