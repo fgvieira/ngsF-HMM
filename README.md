@@ -45,7 +45,7 @@ Executables are built into the main directory. If you wish to clean all binaries
 
 #### Parameters
 * `--geno FILE`: input file with genotypes, genotype likelihoods or genotype posterior probabilities.
-* `--pos` FILE: input site coordinates file
+* `--pos` FILE: input file with site coordinates (one per line), where the 1st column stands for the chromosome/contig and the 2nd for the position (bp); remaining columns are ignored.
 * `--lkl`: input are genotype likelihoods (BEAGLE format).
 * `--loglkl`: input are genotype log-likelihoods.
 * `--n_ind INT`: sample size (number of individuals).
@@ -62,7 +62,6 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--max_iters INT`: maximum number of EM iterations. [100]
 * `--min_epsilon FLOAT`: maximum RMSD between iterations to assume convergence. [1e-5]
 * `--n_threads INT`: number of threads to use. [1]
-* `--version`: prints program version and exits.
 * `--verbose INT`: selects verbosity level. [1]
 * `--seed INT`: seed for random number generator.
 

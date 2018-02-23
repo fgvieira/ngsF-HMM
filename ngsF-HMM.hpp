@@ -31,7 +31,6 @@ typedef struct {
   uint max_iters;
   double min_epsilon;
   uint n_threads;
-  bool version;
   uint verbose;
   uint seed;
 

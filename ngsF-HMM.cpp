@@ -21,7 +21,7 @@
 
 #include "ngsF-HMM.hpp"
 
-char const* version = "1.0.1";
+char const* version = "1.0.2";
 
 
 int main (int argc, char** argv) {
@@ -84,12 +84,9 @@ int main (int argc, char** argv) {
   // Read data from GENO file
   if(pars->verbose >= 1)
     printf("> GENO data\n");
-  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, pars->in_loglkl, pars->n_ind, pars->n_sites);
+  pars->geno_lkl = read_geno(pars->in_geno, pars->in_bin, pars->in_lkl, &pars->in_loglkl, pars->n_ind, pars->n_sites);
   // Transp GL matrix
   pars->geno_lkl_s = transp_matrix(pars->geno_lkl, pars->n_ind, pars->n_sites+1);
-
-  // Read_geno always returns genos in logscale
-  pars->in_loglkl = true;
 
   // If input is not genotypes, check whether to call genotypes
   for(uint64_t i = 0; i < pars->n_ind; i++)

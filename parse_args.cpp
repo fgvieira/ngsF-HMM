@@ -25,7 +25,6 @@ void init_pars(params *pars) {
   pars->max_iters = 100;
   pars->min_epsilon = 1e-5;
   pars->n_threads = 1;
-  pars->version = false;
   pars->verbose = 1;
   pars->seed = rand() % 1000;
   pars->prev_tot_lkl = 0;
@@ -61,14 +60,13 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"max_iters", required_argument, NULL, 'M'},
       {"min_epsilon", required_argument, NULL, 'E'},
       {"n_threads", required_argument, NULL, 'x'},
-      {"version", no_argument, NULL, 'v'},
       {"verbose", required_argument, NULL, 'V'},
       {"seed", required_argument, NULL, 'S'},
       {0, 0, 0, 0}
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:F:e:i:Io:X:b:m:M:E:x:vV:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:F:e:i:Io:X:b:m:M:E:x:V:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -129,9 +127,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     case 'x':
       pars->n_threads = atoi(optarg);
       break;
-    case 'v':
-      pars->version = true;
-      break;
     case 'V':
       pars->verbose = atoi(optarg);
       break;
@@ -163,7 +158,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   ///////////////////////////////
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_est: %d\n\te_prob: %d\n\tindF: %s\n\tindF_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tversion: %s\n\tverbose: %d\n\tseed: %d\n\n",
+    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_est: %d\n\te_prob: %d\n\tindF: %s\n\tindF_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
            pars->in_geno,
 	   pars->in_pos,
 	   pars->in_lkl ? "true":"false",
@@ -183,9 +178,9 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 	   pars->max_iters,
 	   pars->min_epsilon,
 	   pars->n_threads,
-	   pars->version ? "true":"false",
 	   pars->verbose,
-	   pars->seed);
+	   pars->seed,
+	   version, __DATE__, __TIME__);
   }
   if(pars->verbose >= 4)
     printf("==> Verbose values greater than 4 for debugging purpose only. Expect large amounts of info on screen\n");
@@ -195,10 +190,6 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   /////////////////////
   // Check Arguments //
   /////////////////////
-  if(pars->version) {
-    printf("ngsF-HMM v%s\nCompiled on %s @ %s\n", version, __DATE__, __TIME__);
-    exit(0);
-  }
   if(pars->in_geno == NULL)
     error(__FUNCTION__, "genotype input file (--geno) missing!");
   if(pars->n_ind == 0)
