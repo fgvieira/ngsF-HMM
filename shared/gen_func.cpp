@@ -195,6 +195,10 @@ void chomp(char *str){
 
 
 // Open gzFile
+// rb - read
+// wb6 - write with compresion level 6
+// wb9 - write with compresion level 9
+// wbT -  write without compression
 gzFile open_gzfile(const char* name, const char* mode, uint64_t buf_size){
   gzFile fh = NULL;
 
@@ -826,9 +830,9 @@ bool miss_data(double *geno){
       n_geno            : number of genotypes in array
       log_scale         : are the probs in log scale?
       N_prob_thresh     : minimum prob to use data.
-                          If max prob is lower, data set as missing
+                          If highest prob is lower, data set as missing
       call_prob_thresh  : minimum prob to call a genotype. 
-                          If max prob is lower, leave geno as probs
+                          If highest prob is lower, leave geno as probs
       miss_data         : how the missing data is handled
           0 = missing data (all genot with equal prob)
 	  1 = sample random genotype
@@ -961,39 +965,6 @@ double est_maf(uint64_t n_ind, double **pdg, double *indF){
 
 
 
-
-// Calculates LD directly from GLs by getting ML estimates (through an EM) of the four haplotype frequencies
-void bcf_pair_LD (double LD[3], double **s1, double **s2, double maf1, double maf2, uint64_t n_ind, bool log_scale)
-{
-  // Estimate haplotype frequencies
-  double hap_freq[4];
-  haplo_freq(hap_freq, s1, s2, maf1, maf2, n_ind, log_scale);
-
-  // Allele frequencies
-  double maf[2];
-  maf[0] = 1 - (hap_freq[0] + hap_freq[1]);
-  maf[1] = 1 - (hap_freq[0] + hap_freq[2]);
-
-  // calculate r^2
-  double r2, D, Dp;
-  D = hap_freq[0] * hap_freq[3] - hap_freq[1] * hap_freq[2]; // P_BA * P_ba - P_Ba * P_bA
-  // or
-  //D = hap_freq[0] - (1-maf[0]) * (1-maf[1]);               // P_BA - P_B * P_A
-  Dp = D / (D < 0 ? -min(maf[0]*maf[1], (1-maf[0])*(1-maf[1])) : min(maf[0]*(1-maf[1]), (1-maf[0])*maf[1]) );
-  r2 = pow(D / sqrt(maf[0] * maf[1] * (1-maf[0]) * (1-maf[1])), 2);
-
-  /*
-  if(isnan(r2))
-    r2 = -1.0;
-  */
-
-  LD[0] = D;
-  LD[1] = Dp;
-  LD[2] = r2;
-}
-
-
-
 // Adapted from BCFTOOLS: https://github.com/lh3/samtools/blob/6bbe1609e10f27796e5bf29ac3207bb2e35ceac8/bcftools/em.c#L266-L310
 // EM to obtain the ML estimate of haplotype frequencies
 /*
@@ -1005,11 +976,12 @@ void bcf_pair_LD (double LD[3], double **s1, double **s2, double maf1, double ma
   n_ind - number of individuals
   log_scale - are GLs in log scale?
 */
-int haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1, double maf2, uint64_t n_ind, bool log_scale){
+uint64_t haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1, double maf2, uint64_t n_ind, bool log_scale){
+  uint64_t i;
   double hap_freq_last[4];
 
   if(maf1 < 0 || maf1 > 1 || maf2 < 0 || maf2 > 1)
-    return -1;
+    error("__FUNCTION__", "invalid allele frequencies");
 
   // Initialize haplotype frequencies
   hap_freq[0] = (1 - maf1) * (1 - maf2); // P_BA
@@ -1018,7 +990,7 @@ int haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1, doub
   hap_freq[3] = maf1 * maf2;             // P_ba
 
   // iteration
-  for(uint64_t i = 0; i < ITER_MAX; i++) {
+  for(i = 0; i < ITER_MAX; i++) {
     double eps = 0;
     memcpy(hap_freq_last, hap_freq, 4 * sizeof(double));
     if(log_scale)
@@ -1035,7 +1007,7 @@ int haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1, doub
       break;
   }
 
-  return 0;
+  return i;
 }
 
 
@@ -1063,16 +1035,18 @@ int pair_freq_iter(double f[4], double **s1, double **s2, uint64_t n)
     double *p[2], sum, tmp;
     p[0] = s1[i];
     p[1] = s2[i];
+
     sum = 0;
-    for (k = 0, sum = 0.; k < 4; ++k)
+    for (k = 0; k < 4; ++k)
       for (h = 0; h < 4; ++h)
 	sum += f[k] * f[h] * p[0][_G1(k,h)] * p[1][_G2(k,h)];
+
     for (k = 0; k < 4; ++k) {
-      tmp = f[0] * (p[0][_G1(0,k)] * p[1][_G2(0,k)] + p[0][_G1(k,0)] * p[1][_G2(k,0)])
-	+ f[1] * (p[0][_G1(1,k)] * p[1][_G2(1,k)] + p[0][_G1(k,1)] * p[1][_G2(k,1)])
-	+ f[2] * (p[0][_G1(2,k)] * p[1][_G2(2,k)] + p[0][_G1(k,2)] * p[1][_G2(k,2)])
-	+ f[3] * (p[0][_G1(3,k)] * p[1][_G2(3,k)] + p[0][_G1(k,3)] * p[1][_G2(k,3)]);
-      ff[k] += f[k] * tmp / sum;
+      tmp = 0;
+      for (h = 0; h < 4; ++h)
+	tmp += f[k] * f[h] * (p[0][_G1(h,k)] * p[1][_G2(h,k)] + p[0][_G1(k,h)] * p[1][_G2(k,h)]);
+
+      ff[k] += tmp / sum;
     }
   }
 
@@ -1111,16 +1085,18 @@ int pair_freq_iter_log(double f[4], double **s1, double **s2, uint64_t n)
     double *p[2], sum, tmp;
     p[0] = s1[i];
     p[1] = s2[i];
+
     sum = -INFINITY;
     for (k = 0; k < 4; ++k)
       for (h = 0; h < 4; ++h)
 	sum = logsum(sum, f[k] + f[h] + p[0][_G1(k,h)] + p[1][_G2(k,h)]);
+
     for (k = 0; k < 4; ++k) {
-      tmp = logsum(f[0] + logsum(p[0][_G1(0,k)] + p[1][_G2(0,k)], p[0][_G1(k,0)] + p[1][_G2(k,0)]),
-		   f[1] + logsum(p[0][_G1(1,k)] + p[1][_G2(1,k)], p[0][_G1(k,1)] + p[1][_G2(k,1)]),
-		   f[2] + logsum(p[0][_G1(2,k)] + p[1][_G2(2,k)], p[0][_G1(k,2)] + p[1][_G2(k,2)]),
-		   f[3] + logsum(p[0][_G1(3,k)] + p[1][_G2(3,k)], p[0][_G1(k,3)] + p[1][_G2(k,3)]));
-      ff[k] = logsum(ff[k], f[k] + tmp - sum);
+      tmp = -INFINITY;
+      for (h = 0; h < 4; ++h)
+	logsum(tmp, f[k] + f[h] + logsum(p[0][_G1(h,k)] + p[1][_G2(h,k)], p[0][_G1(k,h)] + p[1][_G2(k,h)]));
+
+      ff[k] = logsum(ff[k], tmp - sum);
     }
   }
 
