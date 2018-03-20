@@ -31,7 +31,7 @@ and run:
     % cd ngsF-HMM
     % make
 
-To run the tests:
+To run the tests (only if installed through [ngsTools](https://github.com/mfumagalli/ngsTools)):
 
     % make test
 
