@@ -66,17 +66,17 @@ shade_areas <- function(area, pos, color, lims=c(0,1,1,0)){
 }
 
 #####  Parse command-line arguments
-option_list <- list(make_option(c("-i", "--in_file"), action="store", type="character", default=NULL, help="Path to input file [%default]"),
+option_list <- list(make_option(c("-i", "--in_file"), action="store", type="character", default=NULL, help="Path to input IBD file [%default]"),
                     make_option(c("-b", "--binary"), action="store_true", type="logical", default=FALSE, help="Is input in binary? [%default]"),
                     make_option(c("-n", "--n_ind"), action="store", type="integer", default=10, help="Number of individuals [%default]"),
                     make_option(c("-s", "--n_sites"), action="store", type="integer", default=1000, help="Number of sites [%default]"),
                     make_option(c("-t", "--titles"), action="store", type="character", default=NULL, help="File with per-plot titles."),
                     make_option(c("--pos"), action="store", type="character", default=NULL, help="Path to file with site positions [%default]"),
                     make_option(c("-m", "--marg_prob"), action="store_true", type="logical", default=FALSE, help="Plot marginal probabilities? [%default]"),
-                    make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with known/true genotypes (if available) [%default]"),
-                    make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with known/true paths (if available) [%default]"),
-                    make_option(c("--plot_sites"), action="store_true", type="logical", default=FALSE, help="Plot position of SNPs? [%default]"),
-                    make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (if available) [%default]"),
+                    make_option(c("-g", "--geno"), action="store", type="character", default=NULL, help="Path to file with genotypes (optional) [%default]"),
+                    make_option(c("-p", "--path"), action="store", type="character", default=NULL, help="Path to file with user defined paths (optional) [%default]"),
+                    make_option(c("--plot_sites"), action="store_true", type="logical", default=FALSE, help="Plot position of SNPs? (optional) [%default]"),
+                    make_option(c("--subset"), action="store", type="character", default=NULL, help="Iteration subset to plot (optional) [%default]"),
                     make_option(c("-w", "--width"), action="store", type="numeric", default=NULL, help="Each plot width [%default]"),
                     make_option(c("-o", "--out"), action="store", type="character", default=NULL, help="Output file [%default]"),
                     make_option(c("-q", "--quiet"), action="store_true", type="logical", default=FALSE, help="Print info to STDOUT? [%default]")
@@ -85,7 +85,7 @@ opt <- parse_args(OptionParser(option_list = option_list))
 if(is.null(opt$width))
   opt$width <- ceiling(log10(opt$n_sites))
 
-#opt$in_file="ceuMaf05.LD.ngsF-HMM.ibd"; opt$n_ind=7; opt$n_sites=253993; opt$pos="ceuMaf05.LD.pos.gz";opt$marg_prob=TRUE
+
 
 ############################ Parsing input arguments ############################
 
