@@ -192,6 +192,8 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   /////////////////////
   if(pars->in_geno == NULL)
     error(__FUNCTION__, "genotype input file (--geno) missing!");
+  if(pars->in_pos == NULL)
+    error(__FUNCTION__, "positions input file (--pos) missing!");
   if(pars->n_ind == 0)
     error(__FUNCTION__, "number of individuals (--n_ind) missing!");
   if(pars->n_sites == 0)
