@@ -244,7 +244,7 @@ void iter_EM(params *pars) {
 	error(__FUNCTION__, "wrong MAF estimation method!");
 
       // Calculate emission probabilites
-      if(pars->e_prob_calc == 1 || s == 1)
+      if(pars->e_prob_calc == 1 || s == 1) {
 	for(uint64_t i = 0; i < pars->n_ind; i++)
 	  for(uint64_t k = 0; k < N_STATES; k++)
 	    if(pars->e_prob_calc == 1 || s == 1)
@@ -255,6 +255,7 @@ void iter_EM(params *pars) {
 	      pars->e_prob[i][s][k] = calc_emissionLD(hap_freq, pars->geno_lkl[i][s-1], pars->geno_lkl[i][s], pars->freq[s-1], pars->freq[s], k);
 	    else
 	      error(__FUNCTION__, "wrong emission probability calculation method!");
+      }
 
       if(pars->verbose >= 7){
 	printf("Site %lu; freq: %f; emission: ", s, pars->freq[s]);
