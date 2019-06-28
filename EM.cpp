@@ -188,7 +188,7 @@ void iter_EM(params *pars) {
   
   // Estimate inbreeding and transition parameter
   time_t indF_t = time(NULL);
-  if(pars->indF_fixed){
+  if(pars->indF_fixed && pars->alpha_fixed){
     if(pars->verbose >= 1)
       printf("==> Inbreeding and transition parameter not estimated!\n");
   }else{
