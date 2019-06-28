@@ -24,6 +24,7 @@ typedef struct {
   int e_prob_calc;
   char *in_indF;
   bool indF_fixed;
+  bool alpha_fixed;
   char *out_prefix;
   unsigned int log;
   bool log_bin;

@@ -7,7 +7,9 @@ struct pth_struct{
   int type;
   double **ptr;
   double *F;
+  bool F_fixed;
   double *alpha;
+  bool alpha_fixed;
   double **e_prob;
   char *path;
   double *pos_dist;
@@ -16,7 +18,7 @@ struct pth_struct{
 
 
 // Function prototypes
-void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double *F, double *alpha, double **e_prob, char *path, double *pos_dist, uint64_t length);
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double *F, bool F_fixed, double *alpha, bool alpha_fixed, double **e_prob, char *path, double *pos_dist, uint64_t length);
 void thread_slave(void *ptr);
 double lkl(const double*, const void*);
 
@@ -108,7 +110,7 @@ int EM (params *pars) {
   double ***Vi = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
 
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 3, Vi[i], &pars->indF[i], &pars->alpha[i], pars->e_prob[i], pars->path[i], pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 3, Vi[i], &pars->indF[i], false, &pars->alpha[i], false, pars->e_prob[i], pars->path[i], pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
   free_ptr((void***) Vi, pars->n_ind, pars->n_sites+1);
@@ -147,14 +149,14 @@ void iter_EM(params *pars) {
   if(pars->verbose >= 1)
     printf("==> Forward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 1, Fw[i], &pars->indF[i], &pars->alpha[i], pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 1, Fw[i], &pars->indF[i], false, &pars->alpha[i], false, pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
     
   // Backward recursion
   time_t bwd_t = time(NULL);
   if(pars->verbose >= 1)
     printf("==> Backward Recursion\n");
   for (uint64_t i = 0; i < pars->n_ind; i++)
-    threadpool_add_task(pars->thread_pool, 2, Bw[i], &pars->indF[i], &pars->alpha[i], pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
+    threadpool_add_task(pars->thread_pool, 2, Bw[i], &pars->indF[i], false, &pars->alpha[i], false, pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
 
   threadpool_wait(pars->thread_pool);
 
@@ -194,7 +196,7 @@ void iter_EM(params *pars) {
       printf("==> Update inbreeding and transition parameter\n");
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
-      threadpool_add_task(pars->thread_pool, 4, NULL, &pars->indF[i], &pars->alpha[i], pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
+      threadpool_add_task(pars->thread_pool, 4, NULL, &pars->indF[i], pars->indF_fixed, &pars->alpha[i], pars->alpha_fixed, pars->e_prob[i], NULL, pars->pos_dist, pars->n_sites);
 
     threadpool_wait(pars->thread_pool);
 
@@ -377,13 +379,15 @@ void print_iter(char *out_prefix, params *pars){
 
 
 // General thread function
-void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double *F, double *alpha, double **e_prob, char *path, double *pos_dist, uint64_t length){
+void threadpool_add_task(threadpool_t *thread_pool, int type, double **ptr, double *F, bool F_fixed, double *alpha, bool alpha_fixed, double **e_prob, char *path, double *pos_dist, uint64_t length){
   pth_struct *p = new pth_struct;
 
   p->type = type;
   p->ptr = ptr;
   p->F = F;
+  p->F_fixed = F_fixed;
   p->alpha = alpha;
+  p->alpha_fixed = alpha_fixed;
   p->e_prob = e_prob;
   p->path = path;
   p->pos_dist = pos_dist;
@@ -418,6 +422,15 @@ void thread_slave(void *ptr){
     double l_bound[2] = {1/INF, 1/INF};
     double u_bound[2] = {1-l_bound[0], 10};
     int lims[2] = {2, 2};
+
+    if(p->F_fixed){
+      l_bound[0] = *p->F;
+      u_bound[0] = *p->F;
+    }
+    if(p->alpha_fixed){
+      l_bound[1] = *p->alpha;
+      u_bound[1] = *p->alpha;
+    }
 
     findmax_bfgs(2, val, (void*) p, &lkl, NULL, l_bound, u_bound, lims, -1);
     *p->F = val[0];

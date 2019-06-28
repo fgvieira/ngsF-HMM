@@ -18,6 +18,7 @@ void init_pars(params *pars) {
   pars->e_prob_calc = 1;
   pars->in_indF = NULL;
   pars->indF_fixed = false;
+  pars->alpha_fixed = false;
   pars->out_prefix = NULL;
   pars->log = 0;
   pars->log_bin = false;
@@ -53,6 +54,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       {"e_prob", required_argument, NULL, 'e'},
       {"indF", required_argument, NULL, 'i'},
       {"indF_fixed", no_argument, NULL, 'I'},
+      {"alpha_fixed", no_argument, NULL, 'A'},
       {"out", required_argument, NULL, 'o'},
       {"log", required_argument, NULL, 'X'},
       {"log_bin", required_argument, NULL, 'b'},
@@ -66,7 +68,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
     };
   
   int c = 0;
-  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:F:e:i:Io:X:b:m:M:E:x:V:S:", long_options, NULL)) != -1 )
+  while ( (c = getopt_long_only(argc, argv, "g:Z:lLn:s:Gf:F:e:i:IAo:X:b:m:M:E:x:V:S:", long_options, NULL)) != -1 )
     switch (c) {
     case 'g':
       pars->in_geno = optarg;
@@ -104,6 +106,9 @@ void parse_cmd_args(params* pars, int argc, char** argv){
       break;
     case 'I':
       pars->indF_fixed = true;
+      break;
+    case 'A':
+      pars->alpha_fixed = true;
       break;
     case 'o':
       pars->out_prefix = optarg;
@@ -158,7 +163,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
   ///////////////////////////////
   if(pars->verbose >= 1){
     printf("==> Input Arguments:\n");
-    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_est: %d\n\te_prob: %d\n\tindF: %s\n\tindF_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
+    printf("\tgeno: %s\n\tpos: %s\n\tlkl: %s\n\tloglkl: %s\n\tn_ind: %lu\n\tn_sites: %lu\n\tcall_geno: %s\n\tfreq: %s\n\tfreq_est: %d\n\te_prob: %d\n\tindF: %s\n\tindF_fixed: %s\n\talpha_fixed: %s\n\tout: %s\n\tlog: %u\n\tlog_bin: %s\n\tmin_iters: %d\n\tmax_iters: %d\n\tmin_epsilon: %.10f\n\tn_threads: %d\n\tverbose: %d\n\tseed: %d\n\tversion: %s (%s @ %s)\n\n",
            pars->in_geno,
 	   pars->in_pos,
 	   pars->in_lkl ? "true":"false",
@@ -171,6 +176,7 @@ void parse_cmd_args(params* pars, int argc, char** argv){
 	   pars->e_prob_calc,
 	   pars->in_indF,
 	   pars->indF_fixed ? "true":"false",
+	   pars->alpha_fixed ? "true":"false",
 	   pars->out_prefix,
 	   pars->log,
 	   pars->log_bin ? "true":"false",
