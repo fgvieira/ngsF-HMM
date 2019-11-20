@@ -73,8 +73,8 @@ gunzip -f testF.glf.gz
 ##### Estimate F
 zcat testF.beagle.gz | tail -n +2 | cut -f 1 | tr "_" "\t" > testF.pos
 N_SITES=`cat testF.pos | wc -l`
-../ngsF-HMM --verbose 2 -n_threads $N_IND --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.2 --max_iters 20 --out testF     --log 1 >&2
-../ngsF-HMM --verbose 2 -n_threads $N_IND --seed $SEED --geno testF.glf    --loglkl --n_ind $N_IND --n_sites $N_SITES --freq 0.1 --indF 0.1,0.2 --max_iters 20 --out testF_bin --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads $N_IND --seed $SEED --geno testF.beagle.gz --lkl --n_ind $N_IND --n_sites $N_SITES --pos testF.pos --freq 0.1 --indF 0.1,0.2 --max_iters 20 --out testF     --log 1 >&2
+../ngsF-HMM --verbose 2 -n_threads $N_IND --seed $SEED --geno testF.glf    --loglkl --n_ind $N_IND --n_sites $N_SITES --pos testF.pos --freq 0.1 --indF 0.1,0.2 --max_iters 20 --out testF_bin --log 1 >&2
 
 
 
