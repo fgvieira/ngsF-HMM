@@ -129,7 +129,7 @@ if(file.exists(opt$freq)){
   freq <- runif(opt$n_sites)
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$freq),fill=TRUE)
-  freq <- rep(as.numeric(opt$freq),opt$n_ind)
+  freq <- rep(as.numeric(opt$freq),opt$n_sites)
 }
 
 
@@ -163,8 +163,8 @@ if(file.exists(opt$depth)){
     quit("no",-1)
   }
 }else if(opt$depth == "r"){
-  cat("==> Using random values",fill=TRUE)
-  depth <- runif(opt$n_ind)
+  cat("==> Using random values between 1..5",fill=TRUE)
+  depth <- runif(opt$n_ind)*4+1
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$depth),fill=TRUE)
   depth <- rep(as.numeric(opt$depth),opt$n_ind)
@@ -197,6 +197,17 @@ if(file.exists(opt$site_pos)){
 }else{
   cat("==> Setting to fixed value:",as.numeric(opt$site_pos),fill=TRUE)
   pos_dist <- rep(as.numeric(opt$site_pos),opt$n_sites)
+}
+
+
+
+### Print IND info
+cat("====> Printing individual info...",fill=TRUE)
+ind_out <- paste(opt$out,"ind.txt",sep=".")
+if(!is.na(file.info(ind_out)[,"size"])){
+  warning("WARN: individual info file already exists. Skipping...");
+} else {
+  write.table(cbind(depth,indF,alpha), ind_out, quote=FALSE, sep="\t", row.names=FALSE, col.names=FALSE)
 }
 
 
@@ -281,6 +292,6 @@ if(!is.na(file.info(dist_out)[,"size"])){
 } else {
   x <- as.matrix(as.data.frame(true_depth))
   fh <- gzfile(dist_out, "w", compression=9)
-  write.table(paste("chrSIM",cumsum(as.numeric(pos_dist)),rowSums(x),apply(x,1,paste,collapse=","),sep="\t"), fh, quote=FALSE, sep="\n", row.names=FALSE, col.names=FALSE)
+  write.table(paste("chrSIM",cumsum(as.numeric(pos_dist)),freq,rowSums(x),apply(x,1,paste,collapse=","),sep="\t"), fh, quote=FALSE, sep="\n", row.names=FALSE, col.names=FALSE)
   close(fh)
 }
