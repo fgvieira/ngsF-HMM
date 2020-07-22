@@ -63,7 +63,7 @@ getLikes <- function(x,depth=5,error=0.01,norm=TRUE,loglikeR=FALSE){
     res <- t(apply(res, 1, function(x){x/max}))
   }
   
-  return(list(log(res),depth))
+  return(list(round(log(res),digits=10),depth))
 }
 
 #####  Parse command-line arguments
