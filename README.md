@@ -83,7 +83,7 @@ To avoid convergence to local maxima, ngsF-HMM should be run several times from 
 `ngsF-HMM` will output several files, some depending on input options:
 
 * `.indF`: file similar to [ngsF](https://github.com/fgvieira/ngsF) output format, where the first line stands for the final log-likelihood, followed by per individual (one per line) inbreeding coefficients (1st column) and transition rate parameters (2nd column) and, finally, the per-site minor allele frequency.
-* `.ibd`: file storing IBD tracts results, where first line stands for the per-individual final log-likelihood, followed by per individual (one per line) most-probable inbreeding tracts (0: position is not IBD; 1: position is IBD), and IBD posterior probabilities.
+* `.ibd`: file storing IBD tracts results, where the first line stores per-individual log-likelihoods. The following lines (one per individual) contain the most-probable inbreeding tracts coded as an INT per site (0: position is not IBD; 1: position is IBD), followed by the IBD posterior probabilities coded as a FLOAT per site (one line per individual).
 * `.geno`: binary file with genotype posterior probabilities (similar to ANGSD `-doGeno 32`).
 * `.log.gz`: if option `-log INT` is specified, a gziped log file similar to `.ibd` is printed every `INT` iterations.
 * `.pdf`: optionally, the `scripts/ngsF-HMMplot.R` script can be used to plot the IBD tracts.

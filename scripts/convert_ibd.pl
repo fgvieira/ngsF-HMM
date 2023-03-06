@@ -10,19 +10,18 @@
 
 =head1 NAME
 
-    convert_ibd.pl v0.0.2
+    convert_ibd.pl v0.0.3
 
 =head1 SYNOPSIS
 
-    perl file_utils.pl [-h] -ind_file /path/to/ind_file -pos_file /path/to/pos_file [-ibd_pos_file /path/to/ibd_pos_file] [-ibd_bed_file /path/to/ibd_bed_file]
+    perl file_utils.pl [-h] --ind /path/to/ind_file --pos/path/to/pos_file [--ibd_pos /path/to/ibd_pos | --ibd_bed /path/to/ibd_bed]
 
     OPTIONS:
-       --help            This help screen
-       --ind_file        File with individual information (IND_ID on first column)
-       --pos_file        TSV file with position information (CHR,POS)
-       --ibd_pos_file    File with regions as IBD state per position (one indiv per line, one 0/1 per site)
-       --ibd_bed_file    BED file with the coordinates of the IBD regions (CHR,START,END,IND_ID).
-                        If IND_ID is blank or '*', interval is assumed on all individuals
+       --help       This help screen
+       --ind        File with individual information (IND_ID on first column)
+       --pos        TSV file with genomic coordinates (CHR,POS)
+       --ibd_pos    File with IBD state per position (one indiv per line, 0/1 per site)
+       --ibd_bed    FILE with IBD state per region in BED format (CHR,START,END,IND_ID). If IND_ID is blank or '*', interval is assumed for all individuals
 
 =head1 DESCRIPTION
 
@@ -48,27 +47,23 @@ use Getopt::Long;
 use IO::Zlib;
 $| = 1;
 
-my ($ind_file, $pos_file, $ibd_pos_file, $ibd_bed_file, $ids);
+my ($ind_file, $pos_file, $ibd_pos_file, $ibd_bed_file);
 my ($s, $chr, $start_pos, $end_pos, $inds_id, @buf, @inds, @sites, %ibd, $FILE);
 
-$ind_file='-';
+$ind_file = "-";
 
 #Get the command-line options
-&GetOptions('h|help'            => sub { exec('perldoc',$0); exit; },
-	    'i|ind_file=s'      => \$ind_file,
-            'p|pos_file=s'      => \$pos_file,
-            'ibd_pos_file:s'    => \$ibd_pos_file,
-	    'ibd_bed_file:s'    => \$ibd_bed_file,
+&GetOptions('h|help'       => sub { exec('perldoc',$0); exit; },
+	    'i|ind=s'      => \$ind_file,
+	    'p|pos=s'      => \$pos_file,
+	    'ibd_pos:s'    => \$ibd_pos_file,
+	    'ibd_bed:s'    => \$ibd_bed_file,
     );
 
 
 
 if($ibd_pos_file && $ibd_bed_file) {
     print(STDERR "ERROR: both IBD_POS and IBD_BED files provided!\n");
-    exit(-1)
-}
-if(!$ibd_pos_file && !$ibd_bed_file) {
-    print(STDERR "ERROR: no IBD_POS or IBD_BED files provided!\n");
     exit(-1)
 }
 
@@ -120,12 +115,11 @@ if($ibd_pos_file) {
 	while( (($s = index($_, "1", $s)) != -1) ) {
 	    $chr = $sites[$s]{'chr'};
 	    $start_pos = $sites[$s]{'pos'}-1;
-	    $inds_id = $inds[$curr_ind];
 
 	    for(; $s<=$#sites; $s++) {
-		if($s == $#sites || $sites[$s+1]{'chr'} != $chr || substr($_, $s+1, 1) == 0) {
+		if($s == $#sites || $sites[$s+1]{'chr'} ne $chr || substr($_, $s+1, 1) == 0) {
 		    $end_pos = $sites[$s]{'pos'};
-		    print($chr."\t".$start_pos."\t".$end_pos."\t".$inds_id."\t".($end_pos-$start_pos)."\n");
+		    print($chr."\t".$start_pos."\t".$end_pos."\t".$inds[$curr_ind]."\t".($end_pos-$start_pos)."\n");
 		    $s++;
 		    last;
 		}
@@ -133,6 +127,7 @@ if($ibd_pos_file) {
 	}
     }
     $FILE->close;
+
 } elsif($ibd_bed_file) {
     # IBD_BED file provided, will convert to POS...
     $ibd{$_} = "0"x$n_sites for (@inds);
@@ -161,4 +156,7 @@ if($ibd_pos_file) {
     # Print to STDOUT
     print($ibd{$_}."\n") for (@inds);
 
-} 
+} else {
+    print(STDERR "ERROR: no IBD_POS or IBD_BED files provided!\n");
+    exit(-1)
+}
