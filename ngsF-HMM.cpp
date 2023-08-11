@@ -73,13 +73,22 @@ int main (int argc, char** argv) {
     printf("> Sites coordinates\n");
   }
   if(pars->in_pos){
-    pars->pos_dist = read_pos(pars->in_pos, pars->n_sites);
+    // Temp FIX since ngsF-HMM uses 1-based arrays
+    double *pos_dist = read_dist(pars->in_pos, 0, pars->n_sites);
+    pars->pos_dist = init_ptr(pars->n_sites+1, (double) INFINITY);
+    memcpy(pars->pos_dist+1, pos_dist, pars->n_sites * sizeof(double));
+    free_ptr((void*) pos_dist);
   }else{
     pars->pos_dist = init_ptr(pars->n_sites+1, (double) INFINITY);
   }
   // Convert position distances to Mb
   for(uint64_t s = 1; s <= pars->n_sites; s++)
     pars->pos_dist[s] /= 1e6;
+  if(pars->verbose >= 7){
+    for(uint64_t s = 1; s <= min(10,pars->n_sites); s++){
+      printf("%f\n", pars->pos_dist[s]);
+    }
+  }
 
   // Read data from GENO file
   if(pars->verbose >= 1)
@@ -93,15 +102,15 @@ int main (int argc, char** argv) {
     for(uint64_t s = 1; s <= pars->n_sites; s++){
       // Call genotypes
       if(pars->call_geno)
-	call_geno(pars->geno_lkl[i][s], N_GENO);
+        call_geno(pars->geno_lkl[i][s], N_GENO);
       /*
       // Ensure minimum GL allowed
       if( pars->geno_lkl[i][s][array_min_pos(pars->geno_lkl[i][s], N_GENO)] < log(0.001) ){
-	for(uint64_t g = 0; g < N_GENO; g++)
-	  if(pars->geno_lkl[i][s][g] < log(0.001))
-	    pars->geno_lkl[i][s][g] = log(0.001);
-	// Re-normalize GL
-	post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
+        for(uint64_t g = 0; g < N_GENO; g++)
+          if(pars->geno_lkl[i][s][g] < log(0.001))
+            pars->geno_lkl[i][s][g] = log(0.001);
+        // Re-normalize GL
+        post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
       }
       */
       post_prob(pars->geno_lkl[i][s], pars->geno_lkl[i][s], NULL, N_GENO);
@@ -112,6 +121,8 @@ int main (int argc, char** argv) {
   /////////////////////////////////////////////
   // Declare and initialize output variables //
   /////////////////////////////////////////////
+  if(pars->verbose >= 6)
+    printf("> Init output\n");
   init_output(pars);
 
 
@@ -119,7 +130,8 @@ int main (int argc, char** argv) {
   //////////////////
   // Analyze Data //
   //////////////////
-  // Create thread pool
+  if(pars->verbose >= 6)
+    printf("> Create threadpool\n");
   if( (pars->thread_pool = threadpool_create(pars->n_threads, 2*pars->n_ind, 0)) == NULL )
     error(__FUNCTION__, "failed to create thread pool!");
 

@@ -181,6 +181,12 @@ double logsum(double a, double b, double c, double d){
 }
 
 
+// Round double to a 'dec' decimal places
+double round_dec(double val, int dec){
+  dec = pow(10, dec);
+  return round(val * dec) / dec;
+}
+
 
 // Remove trailing newlines from strings
 void chomp(char *str){
@@ -218,53 +224,73 @@ gzFile open_gzfile(const char* name, const char* mode, uint64_t buf_size){
 
 
 
-// Read data from file and place into array
-char **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, uint64_t buff_size){
+/*
+Read data from file and place into array
+  in_file    : input file to read
+  out_ptr    : char*** where to store data
+  offset     : which line to start reading
+  n_rows     : how many lines to read
+  buff_size  : buffers size
+
+  RETURNS
+    number of lines read
+*/
+uint64_t read_file(const char *in_file, char*** out_ptr, uint64_t offset, uint64_t n_rows, uint64_t buff_size){
   uint64_t cnt = 0;
   char buf[buff_size];
-  char **ptr = init_ptr(n_lines-start_line, 0, (const char*) '\0');
+  char** ptr = NULL;
 
   // Open file
-  gzFile in_file_fh = gzopen(in_file, "r");
+  gzFile in_file_fh = open_gzfile(in_file, "r");
   if(in_file_fh == NULL)
-    return NULL;
+    error(__FUNCTION__, "cannot open file!");
 
-  for(cnt = 0; cnt < n_lines && !gzeof(in_file_fh); cnt++){
+  for(cnt = 0; cnt < n_rows; cnt++){
     buf[0] = '\0';
     // Read line from file
     gzgets(in_file_fh, buf, buff_size);
+    // Check for EOF
+    if(gzeof(in_file_fh))
+      break;
     // Remove trailing newline
     chomp(buf);
     // Check if empty
-    if(strlen(buf) == 0){
+    if(strlen(buf) == 0 || buf[0] == '#'){
       cnt--;
       continue;
     }
-    // Skip until star_line
-    if(cnt < start_line){
+    // Skip offset
+    if(cnt < offset){
       cnt--;
+      offset--;
       continue;
     }
+    // Realloc
+    ptr = (char**) realloc(ptr, (cnt+1) * sizeof(char*));
+    if(ptr == NULL)
+      error(__FUNCTION__, "could not realloc memory!");
     // Alloc memory and copy line
     ptr[cnt] = init_ptr(strlen(buf)+1, buf);
   }
 
-  if(cnt != n_lines)
+  if(n_rows != INF && n_rows != ++cnt)
     error(__FUNCTION__, "could not read specified number of lines!");
 
+  *out_ptr = ptr;
   gzclose(in_file_fh);
-  return ptr;
+  return cnt;
 }
 
 
-
+/*
 // Read data from file and place into array double
-double **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, int n_cols, uint64_t buff_size){
-  char **tmp = read_file(in_file, start_line, n_lines, buff_size);
+double **read_file(const char *in_file, uint64_t offset, uint64_t n_lines, int n_cols, uint64_t buff_size){
+  char **tmp;
+  uint64_t n_rows = read_file(in_file, &tmp);
   if(tmp == NULL)
     return NULL;
 
-  double **ptr = init_ptr(n_lines-start_line, 0, 0.0);
+  double **ptr = init_ptr(n_lines, 0, 0.0);
   for(uint64_t cnt = 0; cnt < n_lines; cnt++)
     if(split(tmp[cnt], (const char*) " \t", &ptr[cnt]) != n_cols)
       error(__FUNCTION__, "number of columns do not match!");
@@ -272,7 +298,7 @@ double **read_file(const char *in_file, uint64_t start_line, uint64_t n_lines, i
   free_ptr((void**) tmp, n_lines);
   return ptr;
 }
-
+*/
 
 
 // New strtok function to allow for empty ("") separators
@@ -722,7 +748,7 @@ char *init_ptr(uint64_t A, const char *init){
 
 char **init_ptr(uint64_t A, uint64_t B, const char *init){
   if(A < 1)
-    error(__FUNCTION__, "invalid size of array!");
+    return NULL;
 
   char **ptr;
   try{
@@ -741,6 +767,25 @@ char **init_ptr(uint64_t A, uint64_t B, const char *init){
     ptr[a] = init_ptr(B, pinit);
   }
   delete [] pinit;
+
+  return ptr;
+}
+
+
+
+char ***init_ptr(uint64_t A, uint64_t B, uint64_t C, const char *init){
+  if(A < 1)
+    error(__FUNCTION__, "invalid size of array!");
+
+  char ***ptr;
+  try{
+    ptr = new char**[A];
+  }catch (std::bad_alloc&){
+    error(__FUNCTION__, "cannot allocate more memory!");
+  }
+
+  for(uint64_t a = 0; a < A; a++)
+    ptr[a] = init_ptr(B, C, init);
 
   return ptr;
 }
@@ -870,9 +915,8 @@ void call_geno(double *geno, int n_geno, bool log_scale, double N_prob_thresh, d
 
 
 
-// Calculate posterio probabilities (PP) from GLs and prior
-// GL in log-space by default, but can be in normal-space if flag set
-// prior and PP always given log-space
+// Calculate posterior probabilities (PP) from GLs and prior
+// GL, prior and PP always given log-space
 void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
   for(uint64_t cnt = 0; cnt < n_geno; cnt++){
     pp[cnt] = lkl[cnt];
@@ -891,11 +935,10 @@ void post_prob(double *pp, double *lkl, double *prior, uint64_t n_geno){
 
 // Calculate HWE genotype frequencies
 // MAF and F in normal-space
-// Genotype frequencies in log-space
-void calc_HWE(double *genot_freq, double freq, double F, bool log_scale){
-  genot_freq[0] = pow(1-freq,2)   +   (1-freq)*freq*F;
-  genot_freq[1] = 2*(1-freq)*freq - 2*(1-freq)*freq*F;
-  genot_freq[2] = pow(freq,2)     +   (1-freq)*freq*F;
+void calc_HWE(double *genot_freq, double maf, double F, bool log_scale){
+  genot_freq[0] = pow(1-maf,2)  +   (1-maf)*maf*F;
+  genot_freq[1] = 2*(1-maf)*maf - 2*(1-maf)*maf*F;
+  genot_freq[2] = pow(maf,2)    +   (1-maf)*maf*F;
 
   if(log_scale)
     conv_space(genot_freq, N_GENO, log);
@@ -918,17 +961,17 @@ void calc_HWE(double *genot_freq, double freq, double F, bool log_scale){
 // Estimate site MAF from (logscaled) GL through an EM
 // If indF == NULL, assumes uniform prior
 // Else (0 < indF < 1), assumes HWE with specified level of inbreeding
-double est_maf(uint64_t n_ind, double **pdg, double F){
+double est_maf(uint64_t n_ind, double **pdg, double F, bool ignore_miss_data){
   double maf;
   double *indF = init_ptr(n_ind, F);
 
-  maf = est_maf(n_ind, pdg, indF);
+  maf = est_maf(n_ind, pdg, indF, ignore_miss_data);
 
   free_ptr((void*) indF);
   return maf;
 }
 
-double est_maf(uint64_t n_ind, double **pdg, double *indF){
+double est_maf(uint64_t n_ind, double **pdg, double *indF, bool ignore_miss_data){
   int iters = 0;
   double num = 0; // Expected number minor alleles
   double den = 0; // Expected total number of alleles
@@ -939,6 +982,8 @@ double est_maf(uint64_t n_ind, double **pdg, double *indF){
     prev_freq = freq;
 
     for(uint64_t i = 0; i < n_ind; i++){
+      if(miss_data(pdg[i]) && ignore_miss_data)
+	continue;
       if(indF == NULL){
 	F = 0;
 	post_prob(pp, pdg[i], NULL, N_GENO);
@@ -954,7 +999,7 @@ double est_maf(uint64_t n_ind, double **pdg, double *indF){
       num += pp[1] + pp[2]*(2-F);
       den += 2*pp[1] + (pp[0]+pp[2])*(2-F);
 
-      //printf("Ind: %lu; num: %f; den: %f; pp: %f %f %f; IBD: %f\n", i, num, den, pp[0], pp[1], pp[2], F);
+      //printf("Ind: %lu; gl: %f %f %f; pp: %f %f %f; IBD: %f; num: %f; den: %f\n", i, pdg[i][0], pdg[i][1], pdg[i][2], pp[0], pp[1], pp[2], F, num, den);
     }
 
     freq = num/den;
@@ -969,19 +1014,21 @@ double est_maf(uint64_t n_ind, double **pdg, double *indF){
 // EM to obtain the ML estimate of haplotype frequencies
 /*
   hap_freq - array to store haplotype frequencies
+  loglkl - loglkl of estimates (currently not calculated)
+  n - number of individuals with data
   gl1 - GLs for site1 for all "n" individuals
   gl2 - GLs for site2 for all "n" individuals
   maf1 - minor allele frequency at site1
   maf2 - minor allele frequency at site2
-  n_ind - number of individuals
+  n_ind - total number of individuals
+  ignore_miss_data - ignore missing genotypes
   log_scale - are GLs in log scale?
 */
-uint64_t haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1, double maf2, uint64_t n_ind, bool log_scale){
-  uint64_t i;
+uint64_t haplo_freq(double hap_freq[4], double *loglkl, uint64_t *n, double **gl1, double **gl2, double maf1, double maf2, uint64_t n_ind, bool ignore_miss_data, bool log_scale){
   double hap_freq_last[4];
 
   if(maf1 < 0 || maf1 > 1 || maf2 < 0 || maf2 > 1)
-    error("__FUNCTION__", "invalid allele frequencies");
+    error(__FUNCTION__, "invalid allele frequencies");
 
   // Initialize haplotype frequencies
   hap_freq[0] = (1 - maf1) * (1 - maf2); // P_BA
@@ -990,14 +1037,15 @@ uint64_t haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1,
   hap_freq[3] = maf1 * maf2;             // P_ba
 
   // iteration
-  for(i = 0; i < ITER_MAX; i++) {
+  uint64_t n_iter;
+  for(n_iter = 0; n_iter < ITER_MAX; n_iter++) {
     double eps = 0;
     memcpy(hap_freq_last, hap_freq, 4 * sizeof(double));
     if(log_scale)
-      pair_freq_iter_log(hap_freq, gl1, gl2, n_ind);
+      *n = pair_freq_iter_log(hap_freq, gl1, gl2, n_ind, ignore_miss_data);
     else
-      pair_freq_iter(hap_freq, gl1, gl2, n_ind);
-      
+      *n = pair_freq_iter(hap_freq, gl1, gl2, n_ind, ignore_miss_data);
+
     for (uint64_t j = 0; j < 4; j++) {
       double x = fabs(hap_freq[j] - hap_freq_last[j]);
       if (x > eps) eps = x;
@@ -1007,7 +1055,7 @@ uint64_t haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1,
       break;
   }
 
-  return i;
+  return n_iter;
 }
 
 
@@ -1019,15 +1067,17 @@ uint64_t haplo_freq(double hap_freq[4], double **gl1, double **gl2, double maf1,
   s1 - GLs (in normal scale) for site1 for all "n" individuals
   s2 - GLs (in normal scale) for site2 for all "n" individuals
   n - number of individuals
+  x - number of individuals with data
 */
 
 #define _G1(h, k) ((h>>1&1) + (k>>1&1))
 #define _G2(h, k) ((h&1) + (k&1))
 
-int pair_freq_iter(double f[4], double **s1, double **s2, uint64_t n)
+uint64_t pair_freq_iter(double f[4], double **s1, double **s2, uint64_t n, bool ignore_miss_data)
 {
   double ff[4];
   int k, h;
+  uint64_t x = 0;
 
   memset(ff, 0, 4 * sizeof(double));
 
@@ -1036,6 +1086,10 @@ int pair_freq_iter(double f[4], double **s1, double **s2, uint64_t n)
     p[0] = s1[i];
     p[1] = s2[i];
 
+    if((miss_data(p[0]) || miss_data(p[1])) && ignore_miss_data)
+      continue;
+
+    x++;
     sum = 0;
     for (k = 0; k < 4; ++k)
       for (h = 0; h < 4; ++h)
@@ -1052,13 +1106,16 @@ int pair_freq_iter(double f[4], double **s1, double **s2, uint64_t n)
 
   // Calculate frequency
   for (k = 0; k < 4; ++k)
-    f[k] = ff[k] / (2 * n);
+    f[k] = ff[k] / (2 * x);
 
   // Normalize
   for (k = 0; k < 4; k++)
     f[k] /= f[0] + f[1] + f[2] + f[3];
 
-  return 0;
+  if(!((ignore_miss_data && x<= n) || (!ignore_miss_data && x == n)))
+    error(__FUNCTION__, "invalid number of individuals!");
+
+  return x;
 }
 
 
@@ -1070,11 +1127,13 @@ int pair_freq_iter(double f[4], double **s1, double **s2, uint64_t n)
   s1 - GLs (in log scale) for site1 for all "n" individuals
   s2 - GLs (in log scale) for site2 for all "n" individuals
   n - number of individuals
+  x - number of individuals with data
 */
-int pair_freq_iter_log(double f[4], double **s1, double **s2, uint64_t n)
+uint64_t pair_freq_iter_log(double f[4], double **s1, double **s2, uint64_t n, bool ignore_miss_data)
 {
   double ff[4];
   int k, h;
+  uint64_t x = 0;
 
   // Convert haplot frequencies to log-scale
   conv_space(f, 4, log);
@@ -1086,6 +1145,10 @@ int pair_freq_iter_log(double f[4], double **s1, double **s2, uint64_t n)
     p[0] = s1[i];
     p[1] = s2[i];
 
+    if((miss_data(p[0]) || miss_data(p[1])) && ignore_miss_data)
+      continue;
+
+    x++;
     sum = -INFINITY;
     for (k = 0; k < 4; ++k)
       for (h = 0; h < 4; ++h)
@@ -1102,11 +1165,14 @@ int pair_freq_iter_log(double f[4], double **s1, double **s2, uint64_t n)
 
   // Calculate frequency
   for (k = 0; k < 4; ++k)
-    f[k] = exp(ff[k]) / (2 * n);
+    f[k] = exp(ff[k]) / (2 * x);
 
   // Normalize
   for (k = 0; k < 4; k++)
     f[k] /= f[0] + f[1] + f[2] + f[3];
 
-  return 0;
+  if(!((ignore_miss_data && x<= n) || (!ignore_miss_data && x == n)))
+    error(__FUNCTION__, "invalid number of individuals!");
+
+  return x;
 }

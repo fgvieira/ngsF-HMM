@@ -232,8 +232,11 @@ void iter_EM(params *pars) {
       }
 
       // Calculate haplotype frequency through an EM
-      if(pars->freq_est == 2 || pars->e_prob_calc == 2)
-	haplo_freq(hap_freq, prev_site, curr_site, pars->freq[s-1], pars->freq[s], pars->n_ind);
+      if(pars->freq_est == 2 || pars->e_prob_calc == 2) {
+	double loglkl;
+        uint64_t n_iter, n_ind_data;
+	n_iter = haplo_freq(hap_freq, &loglkl, &n_ind_data, prev_site, curr_site, pars->freq[s-1], pars->freq[s], pars->n_ind, false);
+      }
 
       // Estimated MAF
       if(pars->freq_est == 1 || s == 1){

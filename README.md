@@ -55,8 +55,8 @@ Executables are built into the main directory. If you wish to clean all binaries
 * `--n_ind INT`: sample size (number of individuals).
 * `--n_sites INT`: total number of sites.
 * `--call_geno`: call genotypes before running analyses.
-* `--freqs DOUBLE or CHAR`: initial frequency values. Can be defined by user as a DOUBLE, (r)andom, (e)stimated or read from a FILE.
-* `--freqs_est INT`: allele frequency estimation method: 0) fixed (no optimizatopn); 1) assuming independence of sites; and 2) through haplotype frequency.
+* `--freq DOUBLE or CHAR`: initial frequency values. Can be defined by user as a DOUBLE, (r)andom, (e)stimated or read from a FILE.
+* `--freq_est INT`: allele frequency estimation method: 0) fixed (no optimizatopn); 1) assuming independence of sites; and 2) through haplotype frequency.
 * `--indF DOUBLE-DOUBLE or CHAR`: initial inbreeding and transition parameter values. Can be defined by user as a DOUBLE-DOUBLE, (r)andom, or read from a FILE.
 * `--indF_fixed`: inbreeding parameter values are fixed (will not be optimized).
 * `--alpha_fixed`: transition parameter values are fixed (will not be optimized).

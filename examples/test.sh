@@ -84,22 +84,6 @@ $ANGSD/angsd -glf $SIM_DATA/testF.glf.gz -fai $SIM_DATA/testAF.ANC.fas.fai -nInd
 
 
 
-##### Calculate covariance matrix
-gunzip -f testF.indF.geno.gz testF.indF.saf.gz
-$NGSPOPGEN/ngsCovar -probfile testF.indF.geno -nind $N_IND -nsites $N_SITES -call 0 -sfsfile testF.indF.saf -norm 0 -outfile testF.indF.covar
-
-
-
-##### Calculate population genetics statistics
-$NGSPOPGEN/ngsStat -npop 1 -postfiles testF.indF.saf -nsites $N_SITES -iswin 1 -nind $N_IND -block_size $N_SITES -outfile testF.indF.stat 
-
-
-
-##### SFS
-hexdump -v -s 8 -e "$((2*N_IND+1))/4 \"%.10g\t\"\"\n\"" testF.indF.saf | perl -na -e '$sum=0; $sum+=exp($_) for @F; next if($sum==0); for $i (0..$#F){$frq[$i]+=exp($F[$i])/$sum}; END{$tsum+=$_ for @frq; $_/=$tsum for @frq; print join("\t",@frq)."\n"}' > testF.indF.saf_sum
-
-
-
 ##### Check MD5
 rm -f *.arg
 TMP=`mktemp --suffix .ngsF-HMM`

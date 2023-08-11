@@ -317,7 +317,9 @@ int init_output(params* pars) {
       if(pars->freq_est == 1 || s == 1){
 	pars->freq[s] = est_maf(pars->n_ind, pars->geno_lkl_s[s], (double) 0);
       }else if(pars->freq_est == 2){
-	haplo_freq(hap_freq, pars->geno_lkl_s[s-1], pars->geno_lkl_s[s], pars->freq[s-1], pars->freq[s], pars->n_ind);
+	double loglkl;
+	uint64_t n_iter, n_ind_data;
+	n_iter = haplo_freq(hap_freq, &loglkl, &n_ind_data, pars->geno_lkl_s[s-1], pars->geno_lkl_s[s], pars->freq[s-1], pars->freq[s], pars->n_ind, false);
 	pars->freq[s] = hap_freq[1] + hap_freq[3];
       }
 
@@ -370,8 +372,11 @@ int init_output(params* pars) {
   pars->e_prob = init_ptr(pars->n_ind, pars->n_sites+1, N_STATES, (double) 0);
 
   for(uint64_t s = 1; s <= pars->n_sites; s++){
-    if(pars->e_prob_calc == 2)
-      haplo_freq(hap_freq, pars->geno_lkl_s[s-1], pars->geno_lkl_s[s], pars->freq[s-1], pars->freq[s], pars->n_ind);
+    if(pars->e_prob_calc == 2) {
+      double loglkl;
+      uint64_t n_iter, n_ind_data;
+      n_iter = haplo_freq(hap_freq, &loglkl, &n_ind_data, pars->geno_lkl_s[s-1], pars->geno_lkl_s[s], pars->freq[s-1], pars->freq[s], pars->n_ind, false);
+    }
 
     for(uint64_t i = 0; i < pars->n_ind; i++)
       for(uint64_t k = 0; k < N_STATES; k++)
